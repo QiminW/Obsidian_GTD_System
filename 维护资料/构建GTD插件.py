@@ -10,7 +10,8 @@ if manifest.get('id')!='gtd-quick-actions':raise SystemExit('目标不是 GTD �
 logic=(source/'logic.cjs').read_text(encoding='utf-8')
 bridge=(source/'calendar-bridge.cjs').read_text(encoding='utf-8')
 body=(source/'main-body.js').read_text(encoding='utf-8')
-bundle='const logic = (() => { const module = {exports:{}};\n'+logic+'\nreturn module.exports;\n})();\nconst installTaskCalendarBridge = (() => { const module = {exports:{}};\n'+bridge+'\nreturn module.exports;\n})();\n'+body
+undo=(source/'undo-history.cjs').read_text(encoding='utf-8')
+bundle='const logic = (() => { const module = {exports:{}};\n'+logic+'\nreturn module.exports;\n})();\nconst installTaskCalendarBridge = (() => { const module = {exports:{}};\n'+bridge+'\nreturn module.exports;\n})();\nconst UndoHistory = (() => { const module = {exports:{}};\n'+undo+'\nreturn module.exports;\n})();\n'+body
 (target/'main.js').write_bytes(bundle.encode('utf-8'))
 (target/'styles.css').write_bytes((source/'styles.css').read_bytes())
 print('GTD 插件已重新组合，请在 Obsidian 中重新启用该插件。')

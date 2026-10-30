@@ -534,7 +534,39 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
 
 return module.exports;
 })();
-const { Plugin, Modal, Notice, TFile, TFolder, Menu, MarkdownRenderChild, MarkdownRenderer, Component, setIcon } = require('obsidian');
+const UndoHistory = (() => { const module = {exports:{}};
+module.exports=class UndoHistory {
+ constructor(){this.entries=[];this.tail=Promise.resolve();this.current=null;this.restoring=false;this.pending=0;}
+ enqueue(action){
+  this.pending++;
+  const result=this.tail.then(action);this.tail=result.catch(()=>{});
+  return result.finally(()=>this.pending--);
+ }
+ run(label,action){return this.enqueue(async()=>{
+  const entry={label,steps:[]};this.current=entry;
+  try{return await action();}
+  finally{this.current=null;if(entry.steps.length){this.entries.push(entry);if(this.entries.length>30)this.entries.shift();}}
+ });}
+ record(step){if(this.current&&!this.restoring)this.current.steps.push(step);}
+ undo(){return this.enqueue(async()=>{
+  const entry=this.entries.at(-1);if(!entry)return null;
+  for(const step of entry.steps)await step.check();
+  this.restoring=true;const restored=[];
+  try{
+   for(const step of [...entry.steps].reverse()){await step.undo();restored.push(step);}
+   this.entries.pop();return entry.label;
+  }catch(error){
+   try{for(const step of restored.reverse())await step.redo();}
+   catch(rollback){throw new Error('撤销未完成，请检查相关笔记：'+(rollback.message||String(rollback)));}
+   throw error;
+  }finally{this.restoring=false;}
+ });}
+ clear(){return this.enqueue(async()=>{this.entries.length=0;});}
+};
+
+return module.exports;
+})();
+const { Plugin, Modal, Notice, TFile, TFolder, Menu, MarkdownRenderChild, MarkdownRenderer, Component, setIcon, parseYaml, stringifyYaml } = require('obsidian');
 const HOME = '00 GTD/首页.md';
 const PROJECTS = '00 GTD/00 工作区/01 项目';
 const INBOX = '00 GTD/00 工作区/00 功能页面/收件箱.md';
@@ -824,7 +856,117 @@ module.exports = class GtdQuickActions extends Plugin {
       if (day !== this.currentDayKey) { this.currentDayKey = day; this.app.workspace.trigger('gtd-task-day-changed'); }
     }, 30000));
     await this.migrateLegacyPlanningDates();
+    this.installUndoHistory();
+    this.registerDomEvent(document,'keydown',event=>this.handleUndoShortcut(event),true);
     this.installTaskCalendarBridge();
+  }
+  installUndoHistory() {
+    if(this.undoHistory)return;
+    const history=this.undoHistory=new UndoHistory();this.undoOriginals={};
+    const actions={addTask:'添加任务',mutateCalendarTask:'修改日历任务',toggleProjectTaskDay:'安排日期',toggleInboxTask:'完成收集项',moveInboxTask:'移入项目',setProjectStatus:'修改项目状态',updateProjectDeadline:'修改项目截止日期',archiveProject:'归档项目',renameProject:'修改项目名称',renameProjectTask:'修改任务名称',toggleProjectTask:'完成任务',updateProjectTaskDate:'修改任务截止日期',deleteProjectTask:'删除任务',restoreProjectTaskDeletion:'恢复删除任务',reorderProjectTask:'调整任务顺序',moveProjectDisplay:'调整项目顺序'};
+    for(const [name,label]of Object.entries(actions)){
+      const original=this[name];this.undoOriginals[name]=original;
+      this[name]=(...args)=>history.run(label,()=>original.apply(this,args));
+    }
+    for(const name of ['createProject','createArea']){
+      const original=this[name];
+      this[name]=(...args)=>history.run('新建项目或领域',async()=>{const result=await original.apply(this,args);history.entries.length=0;return result;});
+    }
+  }
+  async assertUndoFile(file,path,expected) {
+    if(this.app.vault.getAbstractFileByPath(path)!==file||file.path!==path||await this.app.vault.read(file)!==expected||file.path!==path)throw new Error('笔记内容或位置已变化，未撤销，以保留现有内容');
+  }
+  recordUndoContent(file,path,before,after,remapName=false) {
+    if(before===after)return;
+    const write=async(expected,next)=>{
+      await this.assertUndoFile(file,path,expected);
+      await this.app.vault.process(file,current=>{
+        if(file.path!==path||this.app.vault.getAbstractFileByPath(path)!==file||current!==expected)throw new Error('笔记内容已变化，未撤销');
+        return next;
+      });
+      if(remapName)this.remapTaskNameState(path,logic.projectTaskTree(expected),logic.projectTaskTree(next));
+      else this.rebaseInlineTaskReferences(path,expected,next);
+    };
+    this.undoHistory?.record({check:()=>this.assertUndoFile(file,path,after),undo:()=>write(after,before),redo:()=>write(before,after)});
+  }
+  async processGtdChange(file,transform,remapName=false) {
+    const path=file.path;let before,after;
+    await this.app.vault.process(file,current=>{before=current;after=transform(current);return after;});
+    this.recordUndoContent(file,path,before,after,remapName);
+    if(!remapName&&before!==after)this.rebaseInlineTaskReferences(path,before,after);
+  }
+  rebaseInlineTaskReferences(path,before,after) {
+    const flatten=nodes=>nodes.flatMap(node=>[node,...flatten(node.children)]),oldNodes=flatten(logic.projectTaskTree(before).roots),next=flatten(logic.projectTaskTree(after).roots);
+    const unambiguous=(nodes,node)=>{
+      while(node&&!/^block:[^/]+$/.test(node.key)){
+        if(nodes.filter(item=>item.parentLine===node.parentLine&&item.title===node.title).length!==1)return false;
+        node=nodes.find(item=>item.line===node.parentLine);
+      }
+      return true;
+    };
+    for(const state of this.inlineTaskEntries.values()){
+      const target=next.find(node=>node.key===state.parentKey);
+      if(state.project===path&&state.referenceStale&&target&&state.reference?.version===target.reference.version&&state.reference.line===target.line&&state.reference.raw===target.reference.raw){state.referenceStale=false;state.error='';}
+      if(state.project!==path||state.busy||state.reference?.version!==oldNodes[0]?.reference.version)continue;
+      const old=oldNodes.find(node=>node.key===state.parentKey&&node.line===state.reference.line&&node.reference.raw===state.reference.raw);
+      if(!old||!target)continue;
+      if(!unambiguous(oldNodes,old)||!unambiguous(next,target)){state.referenceStale=true;state.error='父任务层级已变化，请保留草稿，关闭输入框后重新选择';continue;}
+      state.reference=target.reference;
+    }
+  }
+  async processGtdFrontmatter(file,update) {
+    return this.processGtdChange(file,content=>{
+      const match=/^(\uFEFF?)---\r?\n((?:[\s\S]*?\r?\n)?)---(?:\r?\n|$)/.exec(content),newline=match?.[0].includes('\r\n')?'\r\n':'\n';
+      const data=match?(parseYaml(match[2])||{}):{};
+      if(typeof data!=='object'||Array.isArray(data))throw new Error('项目属性格式不正确');
+      update(data);
+      const yaml=stringifyYaml(data).replace(/\r?\n/g,newline),bom=content.startsWith('\uFEFF')?'\uFEFF':'';
+      return bom+'---'+newline+yaml+(yaml.endsWith(newline)?'':newline)+'---'+newline+content.slice(match?.[0].length||bom.length);
+    });
+  }
+  recordUndoProjectOrder(before,after) {
+    if(JSON.stringify(before)===JSON.stringify(after))return;
+    const clone=value=>value===undefined?undefined:JSON.parse(JSON.stringify(value));
+    before=clone(before);after=clone(after);
+    const check=expected=>{if(JSON.stringify(this.data.projectOrder)!==JSON.stringify(expected))throw new Error('项目顺序已变化，未撤销');};
+    const write=async(expected,next)=>{
+      check(expected);this.data.projectOrder=clone(next);
+      try{await this.saveData(this.data);}catch(error){this.data.projectOrder=clone(expected);throw error;}
+      this.app.workspace.trigger('gtd-project-order-changed');
+    };
+    this.undoHistory?.record({check:async()=>check(after),undo:()=>write(after,before),redo:()=>write(before,after)});
+  }
+  async renameGtdFile(file,destination,projectName=false) {
+    const before=file.path;if(before===destination)return;
+    await this.app.fileManager.renameFile(file,destination);
+    if(!this.undoHistory?.current||this.undoHistory.restoring)return;
+    let content;try{content=await this.app.vault.read(file);}catch(_){return;}
+    const check=async(from,to)=>{
+      await this.assertUndoFile(file,from,content);
+      if(this.app.vault.getAbstractFileByPath(to))throw new Error('原位置已被占用，未撤销');
+    };
+    const move=async(from,to)=>{
+      await check(from,to);
+      if(projectName)await this.undoOriginals.renameProject.call(this,from,to.slice(to.lastIndexOf('/')+1,-3));
+      else await this.app.fileManager.renameFile(file,to);
+    };
+    this.undoHistory?.record({check:()=>check(destination,before),undo:()=>move(destination,before),redo:()=>move(before,destination)});
+  }
+  handleUndoShortcut(event,doc=document) {
+    if(event.defaultPrevented||!(event.ctrlKey||event.metaKey)||event.altKey||event.shiftKey||event.key?.toLowerCase()!=='z'||event.isComposing||event.keyCode===229)return;
+    const target=event.target?.nodeType===3?event.target.parentElement:event.target,field=target?.closest?.('input,textarea,select');
+    if(target?.isContentEditable||field&&!(field.tagName==='INPUT'&&['checkbox','button','submit'].includes(field.type))||doc.querySelector('.modal'))return;
+    const view=this.app.workspace.activeLeaf?.view;
+    if(!view?.file?.path.startsWith('00 GTD/')||view.getViewType?.()!=='markdown'||!view.containerEl.querySelector('.gtd-project-progress,.gtd-inbox'))return;
+    if(view.getMode?.()==='source'&&!target?.closest?.('.gtd-project-progress,.gtd-inbox'))return;
+    event.preventDefault();event.stopPropagation();
+    if(this.undoShortcutBusy)return;
+    if([...this.inlineTaskEntries.values(),...this.taskTitleEdits.values(),...this.projectNameEdits.values()].some(state=>state.busy)){new Notice('正在保存，请稍后撤销');return;}
+    this.undoShortcutBusy=true;
+    this.undoHistory.undo().then(label=>{
+      if(label){this.taskDayPanels.clear();this.activeDayPopover?.hidePopover();this.app.workspace.trigger('gtd-task-day-changed');this.app.commands.executeCommandById('dataview:dataview-force-refresh-views');}
+      new Notice(label?'已撤销：'+label:'当前没有可撤销的首页操作',2500);
+    }).catch(error=>new Notice(error.message||String(error))).finally(()=>this.undoShortcutBusy=false);
   }
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
   protectProjectView(component,container) {
@@ -899,15 +1041,17 @@ module.exports = class GtdQuickActions extends Plugin {
   }
   orderedProjectPaths(paths) { return logic.orderProjectPaths(paths,this.data.projectOrder); }
   async moveProjectDisplay(source,target,side) {
+    const before=this.data.projectOrder;
     const paths=this.app.vault.getMarkdownFiles().filter(file=>file.path.startsWith(PROJECTS+'/')).sort((a,b)=>a.basename.localeCompare(b.basename,'zh-CN')).map(file=>file.path);
     this.data.projectOrder=logic.moveDisplayItem(this.orderedProjectPaths(paths),source,target,side);
+    this.recordUndoProjectOrder(before,this.data.projectOrder);
     await this.saveData(this.data);this.app.workspace.trigger('gtd-project-order-changed');
   }
   async reorderProjectTask(path,source,target,side) {
     const file=this.app.vault.getAbstractFileByPath(path);
     if(!(file instanceof TFile)||!path.startsWith(PROJECTS+'/')||file.extension!=='md')throw new Error('找不到项目笔记');
     let failure;
-    await this.app.vault.process(file,content=>{try{return logic.moveSiblingTask(content,source,target,side);}catch(error){failure=error;return content;}});
+    await this.processGtdChange(file,content=>{try{return logic.moveSiblingTask(content,source,target,side);}catch(error){failure=error;return content;}});
     if(failure)throw failure;
   }
   installTaskCalendarBridge() {
@@ -931,7 +1075,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const file = this.app.vault.getAbstractFileByPath(task.path);
     if (!(file instanceof TFile) || !file.path.startsWith('00 GTD/') || file.extension !== 'md') throw new Error('找不到任务笔记');
     let result, failure;
-    await this.app.vault.process(file, content => {
+    await this.processGtdChange(file, content => {
       try { result = change(content, logic.calendarTaskReference(content, task)); return typeof result === 'string' ? result : result.content; }
       catch (error) { failure = error; return content; }
     });
@@ -942,7 +1086,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     let failure;
-    await this.app.vault.process(file, content => {
+    await this.processGtdChange(file, content => {
       try { return logic.setProjectTaskDay(content, reference, date); }
       catch (error) { failure = error; return content; }
     });
@@ -971,7 +1115,7 @@ module.exports = class GtdQuickActions extends Plugin {
       try { parent = typeof data.parent === 'string' ? JSON.parse(data.parent) : data.parent; }
       catch { throw new Error('请重新选择父任务'); }
     }
-    await this.app.vault.process(file, content => parent ? logic.insertSubtask(content, taskLine, parent) : logic.insertTask(content, taskLine, path === INBOX ? 'inbox' : 'project'));
+    await this.processGtdChange(file, content => parent ? logic.insertSubtask(content, taskLine, parent) : logic.insertTask(content, taskLine, path === INBOX ? 'inbox' : 'project'));
     if (path !== INBOX) this.rememberProject(path);
     return file;
   }
@@ -981,7 +1125,7 @@ module.exports = class GtdQuickActions extends Plugin {
     if(!(file instanceof TFile))throw new Error('找不到收件箱笔记');
     if(!api?.executeToggleTaskDoneCommand)throw new Error('请先启用 Tasks 插件');
     let failure;
-    await this.app.vault.process(file,content=>{try{return logic.replaceProjectTask(content,reference,logic.preserveTaskDays(reference.raw,api.executeToggleTaskDoneCommand(logic.stripTaskDays(reference.raw),INBOX)));}catch(error){failure=error;return content;}});
+    await this.processGtdChange(file,content=>{try{return logic.replaceProjectTask(content,reference,logic.preserveTaskDays(reference.raw,api.executeToggleTaskDoneCommand(logic.stripTaskDays(reference.raw),INBOX)));}catch(error){failure=error;return content;}});
     if(failure)throw failure;
   }
   openInboxMoveModal(context) { const modal=new InboxMoveModal(this,context);modal.open();return modal; }
@@ -1001,6 +1145,8 @@ module.exports = class GtdQuickActions extends Plugin {
         if(failure)throw failure;
       };
       await logic.commitInboxMove(plan,(expected,next)=>compareWrite(source,expected,next,true),(expected,next)=>compareWrite(target,expected,next));
+      this.recordUndoContent(target,path,plan.targetBefore,plan.target);
+      this.recordUndoContent(source,INBOX,plan.sourceBefore,plan.source);
       this.rememberProject(path);
     } finally {this.movingInboxTask=false;}
   }
@@ -1017,14 +1163,14 @@ module.exports = class GtdQuickActions extends Plugin {
     const file=this.app.vault.getAbstractFileByPath(path);
     if(!(file instanceof TFile)||!path.startsWith(PROJECTS+'/')||file.extension!=='md')throw new Error('找不到项目笔记');
     if(!['active','done'].includes(status))throw new Error('未知项目状态');
-    await this.app.fileManager.processFrontMatter(file,frontmatter=>{frontmatter.status=status;});
+    await this.processGtdFrontmatter(file,frontmatter=>{frontmatter.status=status;});
     new Notice(status==='done'?'项目已完成，可在项目总览中恢复或归档':'项目已恢复进行中');
   }
   async updateProjectDeadline(path,value,expected) {
     const file=this.app.vault.getAbstractFileByPath(path);
     if(!(file instanceof TFile)||!path.startsWith(PROJECTS+'/')||file.extension!=='md')throw new Error('找不到项目笔记');
     const deadline=logic.projectDeadlineValue(value);
-    await this.app.fileManager.processFrontMatter(file,frontmatter=>{
+    await this.processGtdFrontmatter(file,frontmatter=>{
       if(file.path!==path)throw new Error('项目位置已变化，请刷新后重试');
       if(expected!==undefined&&String(frontmatter.deadline??'')!==expected)throw new Error('项目截止日期已变化，请刷新后重新选择');
       if(deadline)frontmatter.deadline=deadline;else delete frontmatter.deadline;
@@ -1039,7 +1185,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const segments=destination.split('/').slice(0,-1);let folder='';
     for(const part of segments){folder+=(folder?'/':'')+part;const existing=this.app.vault.getAbstractFileByPath(folder);if(existing&&!(existing instanceof TFolder))throw new Error('归档路径被同名文件占用');if(!existing)await this.app.vault.createFolder(folder);}
     if(file.path!==path)throw new Error('项目位置已变化，请刷新后归档');
-    await this.app.fileManager.renameFile(file,destination);
+    await this.renameGtdFile(file,destination);
     new Notice('项目已归档，任务和记录均已保留');
     return file;
   }
@@ -1052,7 +1198,7 @@ module.exports = class GtdQuickActions extends Plugin {
     if (!this.listProjects().some(file => file.path === path)) throw new Error('所选项目不可用，请刷新后重试');
     const key = JSON.stringify([scope, path, parent?.key || '']);
     const state = this.inlineTaskEntries.get(key) || { key, scope, project: path, parentKey: parent?.key || '', draft: '', busy: false };
-    if (!state.busy) { state.reference = parent?.reference || null; state.error = ''; }
+    if (!state.busy&&!state.referenceStale) { state.reference = parent?.reference || null; state.error = ''; }
     state.hidden=false;
     state.ownerLeaf=this.app.workspace.activeLeaf?.id;
     this.inlineTaskEntries.set(key, state); this.inlineTaskFocusKey = key;
@@ -1088,6 +1234,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const previous = state.reference, draft = state.draft;
     this.app.workspace.trigger('gtd-inline-task-entry', state.project);
     try {
+      if(state.referenceStale)throw new Error('父任务层级已变化，请保留草稿，关闭输入框后重新选择');
       if (state.parentKey && !previous) throw new Error('父任务已变化，请重新点击加号');
       await this.addTask({ title: draft, project: state.project, parent: previous });
       if (state.draft === draft) {state.draft = '';state.selectionStart=state.selectionEnd=0;}
@@ -1215,7 +1362,7 @@ module.exports = class GtdQuickActions extends Plugin {
     if(existing&&existing!==file)throw new Error('同一文件夹中已有这个项目名称');
     const content=await this.app.vault.read(file),before=logic.projectTaskTree(content);
     if(file.path!==path)throw new Error('项目位置已变化，请刷新后重试');
-    if(destination!==path)await this.app.fileManager.renameFile(file,destination);
+    if(destination!==path)await this.renameGtdFile(file,destination,true);
     const remap=value=>value===path?destination:value;
     const remapKey=key=>key.split('::').map((part,index)=>index===0?remap(part):part.replace(/^(project|task|days):(.*)$/,(_,kind,value)=>kind+':'+remap(value))).join('::');
     this.data.treeExpanded=Object.fromEntries(Object.entries(this.data.treeExpanded||{}).map(([key,value])=>[remapKey(key),value]));
@@ -1231,22 +1378,26 @@ module.exports = class GtdQuickActions extends Plugin {
     const file=this.app.vault.getAbstractFileByPath(path);
     if(!(file instanceof TFile)||!path.startsWith(PROJECTS+'/')||file.extension!=='md')throw new Error('找不到项目笔记');
     let failure,before,after;
-    await this.app.vault.process(file,content=>{
+    await this.processGtdChange(file,content=>{
       try{
         if(file.path!==path)throw new Error('项目位置已变化，请刷新后重试');
         const changed=logic.renameProjectTask(content,reference,title);
         before=logic.projectTaskTree(content);after=logic.projectTaskTree(changed);
         return changed;
       }catch(error){failure=error;return content;}
-    });
+    },true);
     if(failure)throw failure;
+    this.remapTaskNameState(path,before,after);
+    return {path,file,before,after};
+  }
+  remapTaskNameState(path,before,after) {
     const flatten=nodes=>nodes.flatMap(node=>[node,...flatten(node.children)]),oldNodes=flatten(before.roots),nextByLine=new Map(flatten(after.roots).map(node=>[node.line,node]));
     const keyMap=new Map(oldNodes.map(node=>[node.key,nextByLine.get(node.line).key]));
     const marker='::task:'+path+'::',snapshot=Object.entries(this.data.treeExpanded||{}),remapped={...this.data.treeExpanded};
     for(const [key] of snapshot){const at=key.lastIndexOf(marker);if(at>=0&&keyMap.has(key.slice(at+marker.length)))delete remapped[key];}
     for(const [key,value] of snapshot){const at=key.lastIndexOf(marker),next=at>=0?keyMap.get(key.slice(at+marker.length)):undefined;if(next!==undefined)remapped[key.slice(0,at+marker.length)+next]=value;}
     this.data.treeExpanded=remapped;
-    const pending=[...this.inlineTaskEntries.values()].filter(state=>state.project===path&&!state.busy&&state.reference?.version===reference.version);
+    const pending=[...this.inlineTaskEntries.values()].filter(state=>state.project===path&&!state.busy&&state.reference?.version===oldNodes[0]?.reference.version);
     for(const state of pending)this.inlineTaskEntries.delete(state.key);
     for(const state of pending){
       const next=nextByLine.get(state.reference.line),oldKey=state.key;
@@ -1254,7 +1405,6 @@ module.exports = class GtdQuickActions extends Plugin {
       this.inlineTaskEntries.set(state.key,state);if(this.inlineTaskFocusKey===oldKey)this.inlineTaskFocusKey=state.key;
     }
     this.saveData(this.data).catch(error=>console.error('GTD：无法保存折叠状态',error));
-    return {path,file,before,after};
   }
   async toggleProjectTask(path, reference) {
     const file = this.app.vault.getAbstractFileByPath(path);
@@ -1262,7 +1412,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const api = this.app.plugins.plugins['obsidian-tasks-plugin']?.apiV1;
     if (!api?.executeToggleTaskDoneCommand) throw new Error('请先启用 Tasks 插件');
     let failure = null;
-    await this.app.vault.process(file, content => {
+    await this.processGtdChange(file, content => {
       try {
         return logic.replaceProjectTask(content, reference, logic.preserveTaskDays(reference.raw, api.executeToggleTaskDoneCommand(logic.stripTaskDays(reference.raw), path)));
       } catch (error) { failure = error; return content; }
@@ -1273,7 +1423,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     let failure;
-    await this.app.vault.process(file, content => {
+    await this.processGtdChange(file, content => {
       try { return logic.updateProjectTaskDate(content, reference, field, value); }
       catch (error) { failure = error; return content; }
     });
@@ -1283,7 +1433,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || (path!==INBOX&&!path.startsWith(PROJECTS + '/')) || file.extension !== 'md') throw new Error('找不到任务笔记');
     let result, failure;
-    await this.app.vault.process(file, content => {
+    await this.processGtdChange(file, content => {
       try { if(file.path!==path)throw new Error('任务笔记位置已变化，请刷新后重试');result = logic.deleteProjectTask(content, reference); return result.content; }
       catch (error) { failure = error; return content; }
     });
@@ -1294,7 +1444,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || !path.startsWith('00 GTD/') || file.extension !== 'md') throw new Error('找不到任务笔记');
     let failure;
-    await this.app.vault.process(file, content => {
+    await this.processGtdChange(file, content => {
       try { return logic.restoreProjectTask(content, undo); }
       catch (error) { failure = error; return content; }
     });

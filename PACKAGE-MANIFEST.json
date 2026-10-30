@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.9.8",
-  "builtAt": "2026-10-30T16:09:03+08:00",
+  "version": "1.9.9",
+  "builtAt": "2026-10-30T17:36:14+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.9.8",
+      "version": "1.9.9",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,13 +100,13 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 88419,
-      "sha256": "d01b5ebf45f0a7f8187ad228360de651ebd35fc9100fcc6c2b1d4cbeeed7aedc"
+      "bytes": 98494,
+      "sha256": "936a87c95f9db09f474b5821d62ea93bb67ab8a0dc691aa8f69a225ae41612db"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 293,
-      "sha256": "852ffa67b23081b45b195e32cd76000e6d81eae5121f2539cff0941b35b3c50e"
+      "sha256": "cad03094438b18d48058bfa6ff6ee4053d8876204d9e28753a5790467fa032a1"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
@@ -245,13 +245,13 @@
     },
     {
       "path": "00 GTD/00 工作区/05 系统视图/项目进度.js",
-      "bytes": 32780,
-      "sha256": "64efbbea75c81086cf50534a56d39f3f5df1138d79fbe936705279fa78913c7b"
+      "bytes": 32802,
+      "sha256": "4ddef0e73ba646da04ebbcc5484e3e8e6217ef7f9936a59ab0423de2947fe862"
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 13672,
-      "sha256": "fe9aeaad244db798c3d135ae30645bbf89606a5b7cbf4036cfc67ea3a23bb6a6"
+      "bytes": 14847,
+      "sha256": "7bdc4df41e5908ebede733731d63afaefd1a50bd14ea96f15a75de400b651468"
     },
     {
       "path": "00 GTD/首页.md",
@@ -265,8 +265,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 13987,
-      "sha256": "2ffc6216307a0e34658f3eed60e74228709bff0f4832b3d7e08b0f88ea6790aa"
+      "bytes": 14444,
+      "sha256": "e995114cb39789aadda0ca665e3d8834b8f22f4ad44a315d7ed1249461cb7cef"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -309,6 +309,11 @@
       "sha256": "8f5a0d60c0d56856f7130c08fa95bb6eb861ba855667b1e31fcfc5505b8aff16"
     },
     {
+      "path": "docs/superpowers/plans/2026-10-30-home-undo.md",
+      "bytes": 3497,
+      "sha256": "bd8b1c93b10ee4496c3f7a7d9eb82db050fa6a7b22a4ee5d80af3025c31d6062"
+    },
+    {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
       "bytes": 5621,
       "sha256": "fcc466dc811ce147d77d03e1a38780b3c6944618e4403e0e9e41a2f56ace8130"
@@ -345,8 +350,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/main-body.js",
-      "bytes": 53404,
-      "sha256": "53cf4686616bbc70f1e12dbeb424ca779e3f6015fd4afeca894d30b1481bd3a1"
+      "bytes": 62060,
+      "sha256": "b96d44857044b68624fc7dca98b508454fe731b0aff2a7586b2b2329e9c6f821"
     },
     {
       "path": "维护资料/GTD快捷操作源码/name-edit-state.test.cjs",
@@ -369,9 +374,24 @@
       "sha256": "a79e0d2d63027a12ce4c6f2daedcd35aa4544775e3e671daf195fc1e999d4881"
     },
     {
+      "path": "维护资料/GTD快捷操作源码/undo-history.cjs",
+      "bytes": 1299,
+      "sha256": "80152e93ca7220928b289947dcf78b15ea127880256c5f88ed4756a8786dd3da"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/undo-history.test.cjs",
+      "bytes": 3872,
+      "sha256": "45232095a6c22dc26b683637b524b4da2d26d1855a1e5fdb3158a13210904b67"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/undo-plugin.test.cjs",
+      "bytes": 14434,
+      "sha256": "23b3b3b845708aeac32d6abb8e0666f27913718635afb856e3ba80eefbb97562"
+    },
+    {
       "path": "维护资料/README.md",
-      "bytes": 2106,
-      "sha256": "0f6c4c44eb5310a9b956430a1da6acf391a87f3f138dfdf66b5db1f7b3416b41"
+      "bytes": 2409,
+      "sha256": "5d9e6595194038f5130679b13643fd63fab0eae0bc74b84399240f4cb8f8b3c5"
     },
     {
       "path": "维护资料/底色来源.md",
@@ -380,8 +400,8 @@
     },
     {
       "path": "维护资料/构建GTD插件.py",
-      "bytes": 1086,
-      "sha256": "a87c942478c8385d83f5fea6f88bf3ab90002afb42d1bf02837d82594cdbc600"
+      "bytes": 1247,
+      "sha256": "d1a060f7b2674f1194e937f4642e58122e2ad306cf8cbfdb3ea2cfeec56bb984"
     },
     {
       "path": "维护资料/适配日历.py",

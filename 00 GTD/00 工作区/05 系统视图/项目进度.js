@@ -339,7 +339,7 @@ for (const project of pages) {
       });
       if(childContainer)visibleChildren.forEach(child=>addNode(childContainer,child));
       const entry=entries.find(state=>state.parentKey===node.key);
-      if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});addEditor(childContainer,entry,node.completed||node.cancelled);}
+      if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});addEditor(childContainer,entry,node.completed||node.cancelled||entry.referenceStale);}
       if(panelState){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});addDayPanel(childContainer,node,panelState,arrange);}
     }
     model.roots.filter(isVisible).forEach(node=>addNode(list,node));
