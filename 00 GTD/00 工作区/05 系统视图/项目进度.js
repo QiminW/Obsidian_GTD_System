@@ -1,5 +1,8 @@
 const plugin = app.plugins.plugins['gtd-quick-actions'];
 if (!plugin?.readProjectTaskTree) throw new Error('请启用最新版本的 GTD 快捷操作');
+const refreshGuard=plugin.protectProjectView(dv.component,dv.container);
+const finishView=refreshGuard.begin();
+try {
 const indexedPages = dv.pages('"00 GTD/00 工作区/01 项目"')
   .where(p => !input?.activeOnly || (p.status || 'active') === 'active').sort(p => p.file.name).array();
 const byPath=new Map(indexedPages.map(page=>[page.file.path,page]));
@@ -65,7 +68,7 @@ function renderNameInput(parent,state,kind,unavailable=false) {
   form.addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();save();});
   name.addEventListener('keydown',event=>{
     if(event.isComposing||event.keyCode===229||state.composing)return;
-    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();plugin.closeNameEdit(state.key,kind);}
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();name.blur();plugin.closeNameEdit(state.key,kind);refreshGuard.resume();}
     else if(event.key==='Enter'){event.preventDefault();event.stopPropagation();form.requestSubmit();}
   });
   const error=unavailable?'任务位置已变化，输入内容已保留，请取消后重新编辑':state.error;
@@ -73,10 +76,10 @@ function renderNameInput(parent,state,kind,unavailable=false) {
     form.createDiv({cls:'gtd-form-error gtd-task-name-error',text:error,attr:{role:'alert'}});
     const cancel=form.createEl('button',{text:'取消',cls:'gtd-name-cancel',attr:{type:'button'}});
     cancel.addEventListener('pointerdown',event=>event.preventDefault());
-    cancel.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();plugin.closeNameEdit(state.key,kind);});
+    cancel.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();name.blur();plugin.closeNameEdit(state.key,kind);refreshGuard.resume();});
   }
   window.requestAnimationFrame(()=>{
-    if(!state.busy&&form.isConnected&&form.getClientRects().length&&plugin[focusKey]===state.key&&state.ownerLeaf===app.workspace.activeLeaf?.id&&app.workspace.activeLeaf?.view.file?.path===state.scope){name.focus();name.setSelectionRange(state.selectionStart??0,state.selectionEnd??name.value.length);}
+    if(!state.busy&&form.isConnected&&form.getClientRects().length&&plugin[focusKey]===state.key&&state.ownerLeaf===app.workspace.activeLeaf?.id&&app.workspace.activeLeaf?.view.file?.path===state.scope){name.focus({preventScroll:true});name.setSelectionRange(state.selectionStart??0,state.selectionEnd??name.value.length);}
   });
 }
 for (const project of pages) {
@@ -166,9 +169,12 @@ for (const project of pages) {
     }
   }
   async function renderTree() {
+    return refreshGuard.run(path,renderTreeNow);
+  }
+  async function renderTreeNow() {
     const ticket = ++rendering;
     const model = await plugin.readProjectTaskTree(path);
-    if (ticket!==rendering) return;
+    if (ticket!==rendering||!tree.isConnected||refreshGuard.defer(path,renderTreeNow)) return;
     row.dataset.done=String(model.done);row.dataset.total=String(model.total);
     bar.value=model.total?Math.round(model.done/model.total*100):0;
     bar.setAttribute('aria-label',project.file.name+' '+bar.value+'%');
@@ -237,12 +243,13 @@ for (const project of pages) {
       const submit=line.createEl('button',{text:'添加',attr:{type:'submit'}});submit.disabled=state.busy||orphaned;
       const close=line.createEl('button',{text:'×',cls:'gtd-task-action',attr:{type:'button','aria-label':'收起任务输入框',title:'收起输入框'}});
       close.dataset.gtdInlineClose='true';close.addEventListener('click',()=>plugin.closeInlineTaskEntry(state.key));
-      input.addEventListener('input',()=>state.draft=input.value);
-      input.addEventListener('focus',()=>plugin.inlineTaskFocusKey=state.key);
-      input.addEventListener('blur',event=>{if(event.relatedTarget&&!form.contains(event.relatedTarget)&&plugin.inlineTaskFocusKey===state.key)plugin.inlineTaskFocusKey='';});
+      const remember=()=>{state.draft=input.value;state.selectionStart=input.selectionStart;state.selectionEnd=input.selectionEnd;};
+      input.addEventListener('input',remember);input.addEventListener('select',remember);
+      input.addEventListener('focus',()=>{state.ownerLeaf=app.workspace.activeLeaf?.id;plugin.inlineTaskFocusKey=state.key;});
+      input.addEventListener('blur',event=>{remember();if(event.relatedTarget&&!form.contains(event.relatedTarget)&&plugin.inlineTaskFocusKey===state.key)plugin.inlineTaskFocusKey='';});
       input.addEventListener('keydown',event=>{
         if(event.isComposing||event.keyCode===229)return;
-        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();plugin.closeInlineTaskEntry(state.key);}
+        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();input.blur();plugin.closeInlineTaskEntry(state.key);}
         else if(event.key==='Enter'){event.preventDefault();event.stopPropagation();if(!orphaned)form.requestSubmit();}
       });
       form.addEventListener('submit',event=>{
@@ -254,7 +261,7 @@ for (const project of pages) {
       const error=orphaned?'父任务已变化，请保留输入内容并重新选择父任务':state.error;
       if(error)form.createDiv({cls:'gtd-inline-error gtd-form-error',text:error,attr:{role:'alert'}});
       window.requestAnimationFrame(()=>{
-        if(!state.busy&&form.isConnected&&form.getClientRects().length&&plugin.inlineTaskFocusKey===state.key&&app.workspace.activeLeaf?.view.file?.path===scope){input.focus();input.setSelectionRange(input.value.length,input.value.length);}
+        if(!state.busy&&form.isConnected&&form.getClientRects().length&&plugin.inlineTaskFocusKey===state.key&&state.ownerLeaf===app.workspace.activeLeaf?.id&&app.workspace.activeLeaf?.view.file?.path===scope){input.focus({preventScroll:true});input.setSelectionRange(state.selectionStart??input.value.length,state.selectionEnd??input.value.length);}
       });
     }
     function addNameEditor(parent,state,orphaned=false) {
@@ -349,7 +356,7 @@ for (const project of pages) {
           else if(list.parentElement===tree&&!tree.querySelector('.gtd-task-empty'))tree.createDiv({cls:'gtd-task-empty',text:'暂无任务'});
         }
       }
-      return;
+      refreshGuard.resume();return;
     }
     renderTree().catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));
   }));
@@ -369,3 +376,4 @@ for (const project of pages) {
 }
 reorderProjectRows();
 if(!pages.length){const cell=body.createEl('tr').createEl('td',{text:'暂无项目'});cell.colSpan=6;}
+} finally { finishView(); }

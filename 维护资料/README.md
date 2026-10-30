@@ -4,7 +4,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.9.7 的逻辑、Obsidian 接口、日历桥接、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.9.8 的逻辑、Obsidian 接口、日历桥接、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -17,6 +17,8 @@ python 构建GTD插件.py
 ```text
 node --test logic.test.cjs inbox-move.test.cjs inline-edit.test.cjs name-edit-state.test.cjs inline-entry-state.test.cjs completed-display.test.cjs
 ```
+
+`refresh-input.native.js` 和 `refresh-reading-mode.native.js` 是 Obsidian 内的输入与滚动回归脚本。前者检查组合输入、异步读取、连续提交、Esc 和并发高度释放；后者通过真实 Dataview 刷新检查查看模式中的输入、滚动及日历间距。使用专用演示库打开首页的查看模式，退出其他编辑后，通过 Obsidian CLI 的 `eval` 执行脚本。结果保存在 `window.__gtdRefreshInputTest` 和 `window.__realRefreshTest`；每次运行会创建并清理自己的示例项目。
 
 ## Tasks Calendar 截止日红底
 

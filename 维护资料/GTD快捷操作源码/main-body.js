@@ -291,6 +291,76 @@ module.exports = class GtdQuickActions extends Plugin {
     this.installTaskCalendarBridge();
   }
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
+  protectProjectView(component,container) {
+    if(component.gtdRefreshGuard)return component.gtdRefreshGuard;
+    const doc=container.ownerDocument,original=component.render;
+    let disposed=false,composing=null,pointer=false,timer,fullPending=false,rendering=false,viewRunning=false,viewReady=Promise.resolve(),viewportDepth=0,releaseViewport;
+    const pending=new Map();
+    const blocked=()=>!!composing||pointer||(container.contains(doc.activeElement)&&doc.activeElement.matches('input:not([type="checkbox"]):not(:disabled),textarea:not(:disabled),[contenteditable="true"]'));
+    const withViewport=async render=>{
+      if(viewportDepth++===0){
+        const minimum=container.style.minHeight,scrollers=[];
+        for(let node=container.parentElement;node;node=node.parentElement)if(node.scrollHeight>node.clientHeight&&node.clientHeight)scrollers.push([node,node.scrollTop,node.scrollLeft]);
+        container.style.minHeight=Math.max(container.getBoundingClientRect().height,parseFloat(minimum)||0)+'px';
+        let interacted=false;
+        const interact=()=>interacted=true;
+        for(const event of ['wheel','touchmove','pointerdown','keydown'])doc.addEventListener(event,interact,true);
+        releaseViewport=()=>{
+          container.style.minHeight=minimum;
+          for(const event of ['wheel','touchmove','pointerdown','keydown'])doc.removeEventListener(event,interact,true);
+          if(!interacted)for(const [node,top,left]of scrollers)if(node.isConnected){node.scrollTop=top;node.scrollLeft=left;}
+        };
+      }
+      try{return await render();}
+      finally{if(--viewportDepth===0){releaseViewport();releaseViewport=null;}}
+    };
+    const schedule=()=>{window.clearTimeout(timer);timer=window.setTimeout(()=>flush().catch(error=>console.error('GTD：刷新项目视图失败',error)),0);};
+    const refresh=async(...args)=>{
+      if(disposed)return;
+      if(blocked()||rendering||viewRunning){fullPending=true;return;}
+      fullPending=false;pending.clear();rendering=true;
+      try{return await withViewport(async()=>{const result=await original.apply(component,args);await viewReady;return result;});}
+      finally{rendering=false;if(fullPending||pending.size)schedule();}
+    };
+    const flush=async()=>{
+      if(disposed||blocked()||rendering||viewRunning)return;
+      if(fullPending){await refresh();return;}
+      const jobs=[...pending.values()];pending.clear();
+      for(const job of jobs){if(blocked()){pending.set(job.key,job);continue;}await withViewport(job.render);}
+    };
+    const guard={resume:schedule,begin(){
+      viewRunning=true;let finish;viewReady=new Promise(resolve=>finish=resolve);
+      return ()=>{viewRunning=false;finish();if(fullPending||pending.size)schedule();};
+    },defer(key,render){
+      if(disposed)return true;
+      if(blocked()){pending.set(key,{key,render});return true;}
+      return false;
+    },run(key,render){
+      if(disposed)return Promise.resolve();
+      if(guard.defer(key,render))return Promise.resolve();
+      return withViewport(render);
+    }};
+    const start=event=>{composing=event.target;};
+    const end=()=>{composing=null;schedule();};
+    const down=()=>{pointer=true;};
+    const up=()=>{pointer=false;schedule();};
+    container.addEventListener('compositionstart',start,true);container.addEventListener('compositionend',end,true);
+    container.addEventListener('focusout',schedule,true);container.addEventListener('pointerdown',down,true);
+    doc.addEventListener('pointerup',up,true);doc.addEventListener('pointercancel',up,true);
+    if(typeof original==='function')component.render=refresh;
+    component.gtdRefreshGuard=guard;
+    const dispose=()=>{
+      if(disposed)return;disposed=true;window.clearTimeout(timer);pending.clear();
+      releaseViewport?.();
+      container.removeEventListener('compositionstart',start,true);container.removeEventListener('compositionend',end,true);
+      container.removeEventListener('focusout',schedule,true);container.removeEventListener('pointerdown',down,true);
+      doc.removeEventListener('pointerup',up,true);doc.removeEventListener('pointercancel',up,true);
+      if(component.render===refresh)component.render=original;
+      if(component.gtdRefreshGuard===guard)delete component.gtdRefreshGuard;
+    };
+    component.register(dispose);this.register(dispose);
+    return guard;
+  }
   orderedProjectPaths(paths) { return logic.orderProjectPaths(paths,this.data.projectOrder); }
   async moveProjectDisplay(source,target,side) {
     const paths=this.app.vault.getMarkdownFiles().filter(file=>file.path.startsWith(PROJECTS+'/')).sort((a,b)=>a.basename.localeCompare(b.basename,'zh-CN')).map(file=>file.path);
@@ -448,6 +518,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const state = this.inlineTaskEntries.get(key) || { key, scope, project: path, parentKey: parent?.key || '', draft: '', busy: false };
     if (!state.busy) { state.reference = parent?.reference || null; state.error = ''; }
     state.hidden=false;
+    state.ownerLeaf=this.app.workspace.activeLeaf?.id;
     this.inlineTaskEntries.set(key, state); this.inlineTaskFocusKey = key;
     return state;
   }
@@ -473,7 +544,7 @@ module.exports = class GtdQuickActions extends Plugin {
     const state = this.inlineTaskEntries.get(key);
     this.inlineTaskEntries.delete(key);
     if (this.inlineTaskFocusKey === key) this.inlineTaskFocusKey = '';
-    if (state) this.app.workspace.trigger('gtd-inline-task-entry', state.project);
+    if (state) this.app.workspace.trigger('gtd-inline-task-entry', state.project,{type:'hide',key});
   }
   async saveInlineTaskEntry(state) {
     if (state.busy || !state.draft.trim() || this.inlineTaskEntries.get(state.key) !== state) return;
@@ -483,7 +554,7 @@ module.exports = class GtdQuickActions extends Plugin {
     try {
       if (state.parentKey && !previous) throw new Error('父任务已变化，请重新点击加号');
       await this.addTask({ title: draft, project: state.project, parent: previous });
-      if (state.draft === draft) state.draft = '';
+      if (state.draft === draft) {state.draft = '';state.selectionStart=state.selectionEnd=0;}
       if (previous) {
         const selected = logic.retainedParent(await this.listParentTasks(state.project), previous);
         if (selected) state.reference = { line: selected.line, raw: selected.raw, version: selected.version };

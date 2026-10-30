@@ -1,7 +1,7 @@
 {
   "id": "gtd-quick-actions",
   "name": "GTD 快捷操作",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "minAppVersion": "1.8.7",
   "description": "收集箱移入、删除及撤销，项目完成与归档，多日安排和多层任务。",
   "author": "Local GTD workspace",
