@@ -39,6 +39,16 @@
   "sourcePersonalNotesIncluded": false,
   "files": [
     {
+      "path": ".gitattributes",
+      "bytes": 82,
+      "sha256": "15fd163b7b614ed4760f17123820c1f69568908ca1eefecc46e2fd415d4b4067"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 380,
+      "sha256": "7fcc3662375e90f7651bbe78e6ee4982f9c2073668d247f73ddf16a1b64647b3"
+    },
+    {
       "path": ".obsidian/app.json",
       "bytes": 145,
       "sha256": "d5f60c6e448abcc4e1105bb3cf0553e7ff185a31d6c57aa3531af47f936d7a57"
@@ -59,14 +69,14 @@
       "sha256": "4bb42f8cedb751206dde01f2ed3b7fe9ac9fd7db4c6092aa3ff33d6d0dc7599d"
     },
     {
-      "path": ".obsidian/plugins/dataview/data.json",
-      "bytes": 131,
-      "sha256": "1b4760a959c846804e61d1e1c08648329025940c5a5130f1cd9ca541a386c214"
-    },
-    {
       "path": ".obsidian/plugins/dataview/LICENSE.txt",
       "bytes": 1090,
       "sha256": "1ec87a5d525948eefe20385c933db9f0b0faf67491daa7075401386522bdc6cb"
+    },
+    {
+      "path": ".obsidian/plugins/dataview/data.json",
+      "bytes": 131,
+      "sha256": "1b4760a959c846804e61d1e1c08648329025940c5a5130f1cd9ca541a386c214"
     },
     {
       "path": ".obsidian/plugins/dataview/main.js",
@@ -144,14 +154,14 @@
       "sha256": "43b253a40f782a1a49b13d2c903049d02a60976a7e6204bd8a5a7d76fcf6d4a2"
     },
     {
-      "path": ".obsidian/plugins/tasks-calendar/data.json",
-      "bytes": 574,
-      "sha256": "3461bac592adf9c40bac6888f75a51f24bdd044645059b9e710666a0cc58f89e"
-    },
-    {
       "path": ".obsidian/plugins/tasks-calendar/LICENSE.txt",
       "bytes": 1091,
       "sha256": "ee6ef78fc71271b7097962e444184c991046fa2eff346afe99ed6934c64a3c2a"
+    },
+    {
+      "path": ".obsidian/plugins/tasks-calendar/data.json",
+      "bytes": 574,
+      "sha256": "3461bac592adf9c40bac6888f75a51f24bdd044645059b9e710666a0cc58f89e"
     },
     {
       "path": ".obsidian/plugins/tasks-calendar/main.js",
@@ -249,14 +259,54 @@
       "sha256": "04d420d6271d5456c527860f761e932b6443a5a773718d6af49641dcaa929a3d"
     },
     {
+      "path": "LICENSE",
+      "bytes": 1067,
+      "sha256": "7f3b8fe340a993ce2b8ad98329cfd057e8b715a19a6b257ca39c44439d83976e"
+    },
+    {
       "path": "README.md",
-      "bytes": 9217,
-      "sha256": "c075f86bea8c04afb46b250fe3607d4b9402b4685da73d5330a80c975b0e5910"
+      "bytes": 13802,
+      "sha256": "baf4ca7215cd0c9b209bd357a4cf058cd873fe50a16f5e46daafa324bfcc1d09"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
       "bytes": 2776,
       "sha256": "18d1b3fddbbf42d5589d74b528a452d40f76677026f3bb3951e486337ce0bec4"
+    },
+    {
+      "path": "docs/images/calendar-week.png",
+      "bytes": 61027,
+      "sha256": "4f74655dfe96def9133513253e80766db9b8aaab54ef0e17d0a65eab598a8fb5"
+    },
+    {
+      "path": "docs/images/completed-hidden.png",
+      "bytes": 71436,
+      "sha256": "fad1e3fbf1ab751d8b1bf658d42bbbfb1560d382504953bb4f90498b7d0a8eab"
+    },
+    {
+      "path": "docs/images/home-overview.png",
+      "bytes": 93843,
+      "sha256": "c17f5b552f0f70ba18f964e0f71cc93e1e346f1da8bd4bd4e789e9724cf96189"
+    },
+    {
+      "path": "docs/images/inbox-move.png",
+      "bytes": 19227,
+      "sha256": "422e6aa55d41cc1cc5cd790135b888b53f79a4dfd126787085899806ec910012"
+    },
+    {
+      "path": "docs/images/new-project.png",
+      "bytes": 22510,
+      "sha256": "0a1c5e07c3696a28010c33ceff4adbf01c0023c94f934dc7294fb5761425bc19"
+    },
+    {
+      "path": "docs/images/task-hierarchy.png",
+      "bytes": 83150,
+      "sha256": "a2c0caa528c64d85aa74fcbc721a838570cb2aee105bc25f094367d1ad2ea010"
+    },
+    {
+      "path": "docs/images/task-scheduling.png",
+      "bytes": 84142,
+      "sha256": "8f5a0d60c0d56856f7130c08fa95bb6eb861ba855667b1e31fcfc5505b8aff16"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -328,5 +378,6 @@
       "bytes": 1218,
       "sha256": "7c5054d6221949474e3a8fa501eb7b579aaf16b75b5492d2ea828eeb742ce076"
     }
-  ]
+  ],
+  "documentationUpdatedAt": "2026-10-30"
 }
