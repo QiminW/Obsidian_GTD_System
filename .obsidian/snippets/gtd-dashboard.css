@@ -673,6 +673,21 @@
 .gtd-project-progress .gtd-project-name-editor { display:inline-block;width:200px;max-width:100%;vertical-align:middle; }
 .gtd-project-progress .gtd-project-toggle { width:18px;justify-content:center;margin-right:2px;box-shadow:none !important;background:transparent !important; }
 .gtd-project-progress .gtd-name-cancel { height:auto;padding:0 3px;border:0;background:transparent;box-shadow:none;font-size:11px;color:var(--text-muted); }
+.gtd-project-progress .gtd-inline-task-line { position:relative; }
+.gtd-project-progress .gtd-inline-task-line::before {
+  content:"";
+  position:absolute;
+  left:-22px;
+  top:50%;
+  transform:translateY(-50%);
+  width:15px;
+  height:15px;
+  box-sizing:border-box;
+  border:1px solid var(--checkbox-border-color,var(--gtd-line));
+  border-radius:4px;
+  background:transparent;
+  pointer-events:none;
+}
 .gtd-project-progress .gtd-inline-task-line input {
   color:var(--text-normal);
   height: 30px;
