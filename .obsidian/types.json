@@ -1,0 +1,10 @@
+{
+  "types": {
+    "cssclasses": "multitext",
+    "type": "text",
+    "area": "text",
+    "status": "text",
+    "outcome": "text",
+    "deadline": "date"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "main": {
+    "id": "gtd-main",
+    "type": "split",
+    "direction": "vertical",
+    "children": [
+      {
+        "id": "gtd-tabs",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "gtd-home",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "00 GTD/首页.md",
+                "mode": "preview",
+                "source": false
+              },
+              "title": "首页"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "left": {
+    "id": "gtd-left",
+    "type": "split",
+    "direction": "horizontal",
+    "width": 240,
+    "children": [
+      {
+        "id": "gtd-file-tabs",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "gtd-files",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "title": "文件列表"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "right": {
+    "id": "gtd-right",
+    "type": "split",
+    "direction": "horizontal",
+    "width": 260,
+    "collapsed": true,
+    "children": [
+      {
+        "id": "gtd-info-tabs",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "gtd-outline",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "00 GTD/首页.md"
+              },
+              "title": "大纲"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "active": "gtd-home",
+  "lastOpenFiles": [
+    "00 GTD/首页.md",
+    "00 GTD/使用说明.md",
+    "README.md"
+  ]
+}

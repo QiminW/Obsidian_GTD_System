@@ -1,0 +1,20 @@
+{
+  "defaultView": "month",
+  "weekStartsOn": 1,
+  "showCompleted": true,
+  "showTaskSource": true,
+  "completedOpacity": 0.42,
+  "recordCompletionTime": true,
+  "forceAnimations": false,
+  "defaultQuery": "path includes 00 GTD/\npath does not include 00 GTD/00 工作区/04 模板/\npath does not include 00 GTD/00 工作区/99 归档/",
+  "datePreference": [
+    "scheduled",
+    "due",
+    "start"
+  ],
+  "undatedTasks": "hide",
+  "newTaskFile": "00 GTD/00 工作区/00 功能页面/收件箱.md",
+  "taskOrder": {},
+  "lastViewState": null,
+  "embeddedViewStates": {}
+}

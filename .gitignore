@@ -1,0 +1,17 @@
+# Local build artifacts and system files
+.release-artifacts/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.log
+__pycache__/
+*.py[cod]
+.trash/
+.obsidian/cache/
+
+# WebDAV account configuration remains private
+.obsidian/plugins/remotely-save/data.json
+.obsidian/plugins/remotely-save/data.json.*
+.obsidian/plugins/remotely-save/*.db
+.obsidian/plugins/remotely-save/*.db-*

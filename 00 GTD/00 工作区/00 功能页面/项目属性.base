@@ -1,0 +1,34 @@
+filters:
+  and:
+    - file.inFolder("00 GTD/00 工作区/01 项目")
+    - file.ext == "md"
+properties:
+  file.name:
+    displayName: 项目
+  note.area:
+    displayName: 领域
+  note.status:
+    displayName: 状态
+  note.outcome:
+    displayName: 完成标准
+  note.deadline:
+    displayName: 截止日期
+views:
+  - type: table
+    name: 全部项目
+    order:
+      - file.name
+      - area
+      - status
+      - outcome
+      - deadline
+  - type: table
+    name: 进行中的项目
+    filters:
+      and:
+        - note.status == "active"
+    order:
+      - file.name
+      - area
+      - outcome
+      - deadline

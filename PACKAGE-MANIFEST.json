@@ -1,0 +1,332 @@
+{
+  "name": "Obsidian GTD 工作台",
+  "version": "1.9.7",
+  "builtAt": "2026-10-29T18:07:49+08:00",
+  "minObsidianVersion": "1.13.1",
+  "testedDesktopVersion": "1.14.5",
+  "plugins": {
+    "dataview": {
+      "version": "0.5.68",
+      "minAppVersion": "0.13.11"
+    },
+    "obsidian-tasks-plugin": {
+      "version": "8.6.0",
+      "minAppVersion": "1.13.1"
+    },
+    "tasks-calendar": {
+      "version": "1.5.4",
+      "minAppVersion": "1.8.7"
+    },
+    "gtd-quick-actions": {
+      "version": "1.9.7",
+      "minAppVersion": "1.8.7"
+    },
+    "remotely-save": {
+      "version": "0.3.25",
+      "minAppVersion": "0.13.21"
+    }
+  },
+  "requiredPlugins": [
+    "dataview",
+    "obsidian-tasks-plugin",
+    "tasks-calendar",
+    "gtd-quick-actions"
+  ],
+  "optionalPlugins": [
+    "remotely-save"
+  ],
+  "webdavDataIncluded": false,
+  "sourcePersonalNotesIncluded": false,
+  "files": [
+    {
+      "path": ".obsidian/app.json",
+      "bytes": 145,
+      "sha256": "d5f60c6e448abcc4e1105bb3cf0553e7ff185a31d6c57aa3531af47f936d7a57"
+    },
+    {
+      "path": ".obsidian/appearance.json",
+      "bytes": 145,
+      "sha256": "c63c4306bfb1837b3b79888390ae259f6310bffd8a07450224986b9295b04168"
+    },
+    {
+      "path": ".obsidian/community-plugins.json",
+      "bytes": 87,
+      "sha256": "3d2133813ff1bddefeae889da5b8f1c5a964f095a3a867bb3cbc96c05664046a"
+    },
+    {
+      "path": ".obsidian/core-plugins.json",
+      "bytes": 505,
+      "sha256": "4bb42f8cedb751206dde01f2ed3b7fe9ac9fd7db4c6092aa3ff33d6d0dc7599d"
+    },
+    {
+      "path": ".obsidian/plugins/dataview/data.json",
+      "bytes": 131,
+      "sha256": "1b4760a959c846804e61d1e1c08648329025940c5a5130f1cd9ca541a386c214"
+    },
+    {
+      "path": ".obsidian/plugins/dataview/LICENSE.txt",
+      "bytes": 1090,
+      "sha256": "1ec87a5d525948eefe20385c933db9f0b0faf67491daa7075401386522bdc6cb"
+    },
+    {
+      "path": ".obsidian/plugins/dataview/main.js",
+      "bytes": 1302069,
+      "sha256": "bcdb7a7882051a30427a3fa370533c1052019591e7551bcc12611bb9a726bbb3"
+    },
+    {
+      "path": ".obsidian/plugins/dataview/manifest.json",
+      "bytes": 357,
+      "sha256": "9235db47112da81b85591c79ecb9ae2574e5e72207056e976472f90616286185"
+    },
+    {
+      "path": ".obsidian/plugins/dataview/styles.css",
+      "bytes": 2965,
+      "sha256": "3306dd9032e00f989ba7233a37fd255bc4d3f4340cee661762e952f3f6aa1de9"
+    },
+    {
+      "path": ".obsidian/plugins/gtd-quick-actions/data.json",
+      "bytes": 439,
+      "sha256": "47ad57eb0e75088de3ae28fa43e05043ad54ad7a401999f1f68555fe466f7893"
+    },
+    {
+      "path": ".obsidian/plugins/gtd-quick-actions/main.js",
+      "bytes": 83871,
+      "sha256": "5091f1990eb9a997ece1fe86126d337e245cf0757bbfa69d5b199d991414ec4a"
+    },
+    {
+      "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
+      "bytes": 291,
+      "sha256": "5bbff6386ae8536b4aaeba6b22beec13a3241dd925735654d12b23a0cad243f7"
+    },
+    {
+      "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
+      "bytes": 9103,
+      "sha256": "a79e0d2d63027a12ce4c6f2daedcd35aa4544775e3e671daf195fc1e999d4881"
+    },
+    {
+      "path": ".obsidian/plugins/obsidian-tasks-plugin/LICENSE.txt",
+      "bytes": 1125,
+      "sha256": "e617fd13b25b9ce465fbf6ae42622c1289ad5aff32c0156c8cbaf1753ce91f9e"
+    },
+    {
+      "path": ".obsidian/plugins/obsidian-tasks-plugin/main.js",
+      "bytes": 1051114,
+      "sha256": "132f19da42cafea7589e5230a774b045a0df2bb40db429e8ea2e0f6daf43b969"
+    },
+    {
+      "path": ".obsidian/plugins/obsidian-tasks-plugin/manifest.json",
+      "bytes": 518,
+      "sha256": "2efc88df9e973247360d486b420791c266c8824516919303b948d0192e159127"
+    },
+    {
+      "path": ".obsidian/plugins/obsidian-tasks-plugin/styles.css",
+      "bytes": 28060,
+      "sha256": "d70d8ebd41fc23bfd5d59873b1a93ed9554b154546a3e637bd4e042e62d1cf23"
+    },
+    {
+      "path": ".obsidian/plugins/remotely-save/LICENSE.txt",
+      "bytes": 11360,
+      "sha256": "cf90d659de5c1e6418267ab8043b756e65508ee5d8d50b29eb2d2fe444c2c3eb"
+    },
+    {
+      "path": ".obsidian/plugins/remotely-save/main.js",
+      "bytes": 2066413,
+      "sha256": "f46eec314f569c88f61cebd09d8778cb3f5ccddb15cac79f1a424e8cc0002997"
+    },
+    {
+      "path": ".obsidian/plugins/remotely-save/manifest.json",
+      "bytes": 330,
+      "sha256": "fed889e8056fa0c88f7b5d2dc45fec9c5123f324be5b4305feadbee76e376d36"
+    },
+    {
+      "path": ".obsidian/plugins/remotely-save/styles.css",
+      "bytes": 799,
+      "sha256": "43b253a40f782a1a49b13d2c903049d02a60976a7e6204bd8a5a7d76fcf6d4a2"
+    },
+    {
+      "path": ".obsidian/plugins/tasks-calendar/data.json",
+      "bytes": 574,
+      "sha256": "3461bac592adf9c40bac6888f75a51f24bdd044645059b9e710666a0cc58f89e"
+    },
+    {
+      "path": ".obsidian/plugins/tasks-calendar/LICENSE.txt",
+      "bytes": 1091,
+      "sha256": "ee6ef78fc71271b7097962e444184c991046fa2eff346afe99ed6934c64a3c2a"
+    },
+    {
+      "path": ".obsidian/plugins/tasks-calendar/main.js",
+      "bytes": 565468,
+      "sha256": "f59c772ce417fa101283588b361a1e433afe4237bfdb67edc64e918434277e69"
+    },
+    {
+      "path": ".obsidian/plugins/tasks-calendar/manifest.json",
+      "bytes": 257,
+      "sha256": "354c84c263e63320a2ff08b214d00d24b09b1528133af7ced1c7e87ecd42c8e2"
+    },
+    {
+      "path": ".obsidian/plugins/tasks-calendar/styles.css",
+      "bytes": 31300,
+      "sha256": "d3a9a247c2e5f0cb5861bb96321f2e4a21b5251708e0c17a66e8b9f60ff6e8cd"
+    },
+    {
+      "path": ".obsidian/snippets/gtd-dashboard.css",
+      "bytes": 29954,
+      "sha256": "2e170c02fa066959e292fea6aa52a3db06c12fa103ce957d1d83797fc8141d80"
+    },
+    {
+      "path": ".obsidian/templates.json",
+      "bytes": 103,
+      "sha256": "869e51c49d2664bc8e5ecad262f447ac87d2878c60187b0ed332b496de62409b"
+    },
+    {
+      "path": ".obsidian/types.json",
+      "bytes": 160,
+      "sha256": "247f2be8bc78ba05617b29d4cb21f7162058b20c2198b3744ca4e1f3872b18aa"
+    },
+    {
+      "path": ".obsidian/workspace.json",
+      "bytes": 1761,
+      "sha256": "f2ae7ced2a4148cfc0e70a7d28f8af5bd6ef500389f8fdba654f334e56a8639b"
+    },
+    {
+      "path": "00 GTD/00 工作区/00 功能页面/收件箱.md",
+      "bytes": 205,
+      "sha256": "37d17166a18ad48bf79917df459ec2eaea60db9574b1e03a3ac32b86a07a2798"
+    },
+    {
+      "path": "00 GTD/00 工作区/00 功能页面/项目属性.base",
+      "bytes": 624,
+      "sha256": "c675442948d7d0d530dd20334ee11f556c197746d183d238312a0d3317a729d2"
+    },
+    {
+      "path": "00 GTD/00 工作区/00 功能页面/项目总览.md",
+      "bytes": 222,
+      "sha256": "c7dd6c429ad5acaa3fb5139589278d6038a60bd5df125ff134429f9a79a96412"
+    },
+    {
+      "path": "00 GTD/00 工作区/01 项目/00 工作/示例项目 - 一周工作安排.md",
+      "bytes": 678,
+      "sha256": "ee45f2b77355ea6e1651164f4a16d10f87fc4801e41921f6503f582a7585d3dd"
+    },
+    {
+      "path": "00 GTD/00 工作区/01 项目/01 学习/示例项目 - 学习计划.md",
+      "bytes": 580,
+      "sha256": "e0e4d9e90c0da15af6ecb33b495ebb40e0e13a80bd6c35a7f1e4792d6ed30449"
+    },
+    {
+      "path": "00 GTD/00 工作区/02 领域/领域 - 学习.md",
+      "bytes": 254,
+      "sha256": "b8759ec6805ccca5b3e387938b3addb7f71dcd836ddf72ce9b358e1beccb10ca"
+    },
+    {
+      "path": "00 GTD/00 工作区/02 领域/领域 - 工作.md",
+      "bytes": 254,
+      "sha256": "897de31eca3f5ef6f00abe5a31575a509b09d94615cefa0b919bf39b4966ee43"
+    },
+    {
+      "path": "00 GTD/00 工作区/04 模板/项目模板.md",
+      "bytes": 334,
+      "sha256": "f4b4ebe449a7ea88b898d2e6d5c09f3dcbd14ebc7a1f99d55d6405ad85434f91"
+    },
+    {
+      "path": "00 GTD/00 工作区/05 系统视图/功能导航.js",
+      "bytes": 776,
+      "sha256": "192946ef6e3ea8ea4ed65230bd0274e7c17d5c125bd308edda632c085fe1fa44"
+    },
+    {
+      "path": "00 GTD/00 工作区/05 系统视图/项目进度.js",
+      "bytes": 32031,
+      "sha256": "d51e051125db75e0f3a258505193dbd70500176111c52ad38d22205cd870f6a7"
+    },
+    {
+      "path": "00 GTD/使用说明.md",
+      "bytes": 13435,
+      "sha256": "1ad129cb528f9bab1fefec59b8484412fd51fc413d84209ed2badc1e310f0561"
+    },
+    {
+      "path": "00 GTD/首页.md",
+      "bytes": 475,
+      "sha256": "04d420d6271d5456c527860f761e932b6443a5a773718d6af49641dcaa929a3d"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9217,
+      "sha256": "c075f86bea8c04afb46b250fe3607d4b9402b4685da73d5330a80c975b0e5910"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "bytes": 2776,
+      "sha256": "18d1b3fddbbf42d5589d74b528a452d40f76677026f3bb3951e486337ce0bec4"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
+      "bytes": 5621,
+      "sha256": "fcc466dc811ce147d77d03e1a38780b3c6944618e4403e0e9e41a2f56ace8130"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/completed-display.test.cjs",
+      "bytes": 4496,
+      "sha256": "16329fa2116cebd6c1581bb1aecce27cf36312cb9e9f1a44f797b2994ef8c814"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/inbox-move.test.cjs",
+      "bytes": 5109,
+      "sha256": "98604f5bce3bcc23322cfb68c487d4e1deea9b81f724baa392fc9328e37d138c"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/inline-edit.test.cjs",
+      "bytes": 3569,
+      "sha256": "3e989f2ecd13881aac3582e902af8329751557d7673c748b815b41bd292a7e80"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/inline-entry-state.test.cjs",
+      "bytes": 3527,
+      "sha256": "4aa1116f1b07c6bf9470dc184e55c22215a85ffe580e5b3f63a9444ca9158a4e"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/logic.cjs",
+      "bytes": 28674,
+      "sha256": "0f76c858493438e73cc7a6a05c27e8ab275bc161d45589cbe58cec2ca749f327"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/logic.test.cjs",
+      "bytes": 24487,
+      "sha256": "9049bbb22949333eafd081c848e891ca7eb2321e16daffbe477c2d6bec3ba5f9"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/main-body.js",
+      "bytes": 48856,
+      "sha256": "cb34104b015204e7ba74038ff913cfc7fa05e749f121fa3222b93884eed1bbd2"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/name-edit-state.test.cjs",
+      "bytes": 4238,
+      "sha256": "a73f0558bcfd836f4af2d7ca28cffa746d3b63e9ee85e6598b7bd370df8eae6c"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/styles.css",
+      "bytes": 9103,
+      "sha256": "a79e0d2d63027a12ce4c6f2daedcd35aa4544775e3e671daf195fc1e999d4881"
+    },
+    {
+      "path": "维护资料/README.md",
+      "bytes": 1559,
+      "sha256": "2ca99850b04e132bfb449d761b107ccb69906edc3dec3fdc991cf564c5c69a4a"
+    },
+    {
+      "path": "维护资料/底色来源.md",
+      "bytes": 1193,
+      "sha256": "5e89e934e1942eb07c4fc9f6f5170e6739531cc60a247020cf82a7a915d1ba32"
+    },
+    {
+      "path": "维护资料/构建GTD插件.py",
+      "bytes": 1086,
+      "sha256": "a87c942478c8385d83f5fea6f88bf3ab90002afb42d1bf02837d82594cdbc600"
+    },
+    {
+      "path": "维护资料/适配日历.py",
+      "bytes": 1218,
+      "sha256": "7c5054d6221949474e3a8fa501eb7b579aaf16b75b5492d2ea828eeb742ce076"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "theme": "obsidian",
+  "cssTheme": "",
+  "accentColor": "#3670f7",
+  "baseFontSize": 16,
+  "enabledCssSnippets": [
+    "gtd-dashboard"
+  ]
+}

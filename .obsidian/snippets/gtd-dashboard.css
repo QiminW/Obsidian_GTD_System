@@ -1,0 +1,846 @@
+/* GTD Paper + Compact: warm gray-brown accents, dense layout. CSS only. */
+/* Folder content + GTD dialogs. Sidebar, tabs and title bar keep their theme. */
+:is(
+  .gtd-dashboard,
+  .gtd-project-progress,
+  .gtd-action-modal,
+  .gtd-day-panel,
+  .workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content,
+  .modal:has(.gtd-action-modal)
+) {
+  color-scheme: light;
+  --color-base-00: #fffdf7;
+  --color-base-05: #f7f2e8;
+  --color-base-10: #f2ede2;
+  --color-base-20: #e5dac4;
+  --color-base-25: #d9cbb1;
+  --color-base-30: #c8b99b;
+  --color-base-35: #b0a083;
+  --color-base-40: #877b63;
+  --color-base-50: #696152;
+  --color-base-60: #514c40;
+  --color-base-70: #403c32;
+  --color-base-80: #454337;
+  --color-base-90: #3a382e;
+  --color-base-100: #26251f;
+  --accent-h: 28;
+  --accent-s: 26%;
+  --accent-l: 32%;
+  --color-accent: #68513d;
+  --color-accent-rgb: 104, 81, 61;
+  --interactive-accent: #68513d;
+  --interactive-accent-hover: #513c2b;
+  --interactive-accent-rgb: 104, 81, 61;
+  --interactive-normal: #f1ebdf;
+  --interactive-hover: #e8e1d4;
+  --background-primary: #f7f2e8;
+  --background-primary-alt: #f2ede2;
+  --background-secondary: #e5dac4;
+  --background-secondary-alt: #ded1b7;
+  --background-modifier-border: #b0a083;
+  --background-modifier-border-hover: #948265;
+  --background-modifier-border-focus: #68513d;
+  --background-modifier-hover: rgb(104 81 61 / .1);
+  --background-modifier-active-hover: rgb(104 81 61 / .18);
+  --background-modifier-form-field: #fffdf7;
+  --background-modifier-cover: rgb(48 47 40 / .24);
+  --background-modifier-box-shadow: rgb(65 57 42 / .08);
+  --background-modifier-error: #a64638;
+  --background-modifier-error-hover: rgb(166 70 56 / .1);
+  --text-normal: #26251f;
+  --text-muted: #514c40;
+  --text-faint: #696152;
+  --text-accent: #5d4734;
+  --text-accent-hover: #453222;
+  --text-on-accent: #ffffff;
+  --text-error: #a64638;
+  --text-selection: rgb(104 81 61 / .18);
+  --font-text-size: 14px;
+  --line-height-normal: 1.45;
+  --p-spacing: .5rem;
+  --heading-spacing: .8em;
+  --list-spacing: .05em;
+  --h1-size: 22px;
+  --h2-size: 15px;
+  --h3-size: 14px;
+  --h4-size: 13.5px;
+  --h5-size: 13px;
+  --h6-size: 13px;
+  --h1-weight: 650;
+  --h2-weight: 600;
+  --h3-weight: 600;
+  --h1-color: var(--text-normal);
+  --h2-color: var(--text-accent);
+  --h3-color: var(--text-accent);
+  --h4-color: var(--text-normal);
+  --h5-color: var(--text-normal);
+  --h6-color: var(--text-muted);
+  --inline-title-color: var(--text-normal);
+  --inline-title-size: 22px;
+  --caret-color: var(--text-normal);
+  --link-color: #5d4734;
+  --link-color-hover: #453222;
+  --link-external-color: #5d4734;
+  --link-external-color-hover: #453222;
+  --checkbox-color: #68513d;
+  --checkbox-color-hover: #513c2b;
+  --checkbox-marker-color: #ffffff;
+  --checkbox-background: transparent;
+  --checkbox-border-color: #877b63;
+  --checkbox-border-color-hover: #68513d;
+  --input-height: 28px;
+  --input-radius: 4px;
+  --button-radius: 4px;
+  --icon-color: #595243;
+  --icon-color-hover: #5d4734;
+  --icon-color-active: #5d4734;
+  --icon-color-focused: #5d4734;
+  --scrollbar-bg: rgb(92 86 69 / .13);
+  --scrollbar-thumb-bg: rgb(92 86 69 / .22);
+  --scrollbar-active-thumb-bg: rgb(104 81 61 / .35);
+  --modal-background: #f7f2e8;
+  --modal-border-color: #b0a083;
+  --menu-background: #fffdf7;
+  --code-background: #eee8dc;
+  --code-normal: #535146;
+  --code-comment: #696152;
+  --code-keyword: #67513d;
+  --code-function: #6c573e;
+  --code-string: #79613e;
+  --code-value: #8b5f3a;
+  --code-operator: #6b695d;
+  --code-property: #6a5a4a;
+  --code-tag: #67513d;
+  --code-important: #a64638;
+  --code-punctuation: #696152;
+  --metadata-label-text-color: var(--text-muted);
+  --metadata-input-text-color: var(--text-normal);
+  --table-border-color: #c8b99b;
+  --table-header-background: #e5dac4;
+  --bases-header-height: 30px;
+  --bases-table-font-size: 13px;
+  --bases-table-header-weight: 650;
+  --bases-table-header-color: #514c40;
+  --bases-table-header-background: #e5dac4;
+  --bases-table-header-background-hover: rgb(104 81 61 / .07);
+  --bases-table-group-background: #f7f2e8;
+  --bases-table-cell-background-active: #fffdf7;
+  --bases-table-cell-background-disabled: #f2ede2;
+  --bases-table-cell-background-selected: #e6dac8;
+  --bases-table-cell-shadow-active: 0 0 0 2px #b6a58f;
+  --bases-table-cell-shadow-focus: 0 0 0 2px #766049;
+  --bases-table-summary-background: #e5dac4;
+  --bases-table-summary-background-hover: rgb(104 81 61 / .07);
+  --bases-table-border-color: #c8b99b;
+  --bases-table-row-height: 26px;
+  --bases-group-heading-property-color: #514c40;
+  --bases-group-heading-value-size: 13px;
+  --bases-filter-input-background: #fcfaf5;
+  --bases-embed-border-color: #d8d1c3;
+  --bases-cards-background: #fcfaf5;
+  --bases-cards-cover-background: #f2ede2;
+  --bases-cards-shadow: 0 0 0 1px #d8d1c3;
+  --bases-cards-shadow-hover: 0 0 0 1px #b6a58f;
+  --bases-cards-radius: 6px;
+  --bases-cards-font-size: 13px;
+  --bases-kanban-column-background: #f2ede2;
+  --bases-kanban-card-background: #fcfaf5;
+  --bases-kanban-cover-background: #eee8dc;
+  --bases-kanban-card-shadow: 0 0 0 1px #d8d1c3;
+  --bases-kanban-card-shadow-hover: 0 0 0 1px #b6a58f;
+  --bases-kanban-card-shadow-focus: 0 0 0 2px #766049;
+  --bases-kanban-card-radius: 6px;
+  --gtd-line: #b0a083;
+  --gtd-line-soft: #c8b99b;
+  --gtd-surface: #f0e7d7;
+  --gtd-surface-raised: #e5dac4;
+  --gtd-accent-soft: rgb(104 81 61 / .14);
+  --gtd-accent-border: rgb(104 81 61 / .5);
+  color: var(--text-normal);
+}
+/* Obsidian's native breadcrumb gives CSS the folder path, including new pages. */
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content {
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.markdown-preview-view, .markdown-source-view, .cm-editor, .cm-scroller) {
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.cm-content, input, textarea) {
+  caret-color: var(--text-normal);
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.markdown-preview-view, .markdown-source-view .cm-scroller, .markdown-source-view .cm-content) {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-source-view .HyperMD-header {
+  padding-top: 6px;
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.metadata-property-key, .metadata-properties-heading) {
+  color: var(--text-muted);
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.metadata-property-value, .metadata-property-value input, .metadata-input-longtext, .multi-select-pill-content) {
+  color: var(--text-normal);
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-rendered table:not(.gtd-project-progress) {
+  border-color: var(--gtd-line);
+  font-size: 13px;
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-rendered table:not(.gtd-project-progress) :is(th, td) {
+  padding: 4px 8px;
+  border-color: var(--gtd-line-soft);
+}
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-rendered table:not(.gtd-project-progress) th {
+  background: var(--gtd-surface-raised);
+  color: var(--text-muted);
+}
+.modal:has(.gtd-action-modal) {
+  padding: 16px;
+  border-color: var(--gtd-line);
+  border-radius: 8px;
+  background: var(--modal-background);
+  color: var(--text-normal);
+}
+.modal:has(.gtd-action-modal) .modal-close-button {
+  color: var(--text-muted);
+}
+.gtd-dashboard.markdown-preview-view,
+.gtd-dashboard.markdown-source-view,
+.gtd-dashboard.markdown-source-view .cm-editor,
+.gtd-dashboard.markdown-source-view .cm-scroller,
+.gtd-action-modal,
+.gtd-day-panel {
+  background: var(--background-primary);
+}
+.gtd-dashboard.markdown-source-view {
+  --h1-size: 22px;
+  --h2-size: 15px;
+  --h1-color: var(--text-normal);
+  --h2-color: var(--text-accent);
+  --h1-weight: 650;
+  --h2-weight: 600;
+  --caret-color: var(--text-normal);
+}
+.gtd-dashboard.markdown-source-view .cm-content {
+  caret-color: var(--text-normal);
+}
+.gtd-dashboard.markdown-source-view .cm-cursor,
+.gtd-dashboard.markdown-source-view .cm-dropCursor {
+  border-left-color: var(--text-accent);
+}
+
+/* Page rhythm and navigation. */
+.gtd-dashboard.markdown-preview-view,
+.gtd-dashboard.markdown-source-view {
+  --gtd-page-gutter: clamp(24px, 3vw, 52px);
+}
+.gtd-dashboard.markdown-preview-view {
+  padding: 14px var(--gtd-page-gutter) 40px;
+}
+.gtd-dashboard.markdown-source-view.mod-cm6 .cm-scroller {
+  padding-inline: var(--gtd-page-gutter) !important;
+}
+.gtd-dashboard .metadata-container,
+.gtd-dashboard .inline-title {
+  display: none !important;
+}
+.gtd-dashboard.markdown-preview-view,
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-preview-view {
+  --file-line-width: 1360px;
+}
+.gtd-dashboard.markdown-preview-view .markdown-preview-sizer,
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-preview-view .markdown-preview-sizer {
+  max-width: 1360px;
+  margin-inline: auto;
+}
+.workspace-leaf-content[data-type="bases"]:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content > :is(.bases-header, .bases-search-row, .bases-error, .bases-view) {
+  width: calc(100% - 32px);
+  max-width: 1360px;
+  margin-inline: auto;
+}
+.gtd-dashboard h1 {
+  margin: 0 0 7px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.7px;
+  line-height: 1.35;
+}
+.gtd-dashboard h2:not(.tasks-calendar-title) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+  padding: 0;
+  border: 0;
+  color: var(--text-accent);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: .02em;
+}
+.gtd-dashboard h2:not(.tasks-calendar-title)::before {
+  content: "";
+  flex: 0 0 2px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--interactive-accent);
+}
+.gtd-dashboard .gtd-quick-actions {
+  gap: 7px;
+  margin: 3px 0 6px;
+}
+.gtd-dashboard .gtd-quick-actions button {
+  min-height: 27px;
+  padding-inline: 12px;
+  border: 0;
+  border-radius: 5px;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 550;
+}
+.gtd-dashboard .block-language-dataviewjs > p:first-child {
+  margin: 0 0 3px;
+  font-size: 0;
+}
+.gtd-dashboard .block-language-dataviewjs > p:first-child .internal-link {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 6px 3px 0;
+  padding: 2px 7px;
+  border: 1px solid var(--gtd-line-soft);
+  border-radius: 5px;
+  background: var(--gtd-surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-decoration: none;
+}
+.gtd-dashboard .block-language-dataviewjs > p:first-child .internal-link:hover {
+  border-color: var(--gtd-accent-border);
+  background: var(--gtd-accent-soft);
+  color: var(--text-accent);
+}
+.gtd-dashboard .block-language-dataviewjs > p + p {
+  margin: 0 0 3px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.gtd-dashboard .block-language-dataviewjs > p + p .internal-link {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.gtd-dashboard .block-language-dataviewjs > p + p .internal-link:hover {
+  color: var(--text-accent);
+}
+
+/* Inbox. */
+.gtd-dashboard .gtd-inbox {
+  max-height: 240px;
+  padding: 4px 10px;
+  border: 1px solid var(--gtd-line-soft);
+  border-radius: 6px;
+  background: #fffdf7;
+}
+.gtd-dashboard .gtd-inbox-row {
+  gap: 8px;
+  min-height: 27px;
+  padding-block: 2px;
+  border-bottom: 1px solid var(--gtd-line-soft);
+  font-size: 13px;
+}
+.gtd-dashboard .gtd-inbox-row:last-child { border-bottom: 0; }
+.gtd-dashboard .gtd-inbox-title { line-height: 1.5; }
+.gtd-dashboard .gtd-inbox-due {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.gtd-dashboard .gtd-inbox-move {
+  height: 24px;
+  padding-inline: 8px;
+  border: 1px solid var(--gtd-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 12px;
+}
+.gtd-dashboard .gtd-inbox-move:hover {
+  border-color: var(--gtd-accent-border);
+  background: var(--gtd-accent-soft);
+  color: var(--text-accent);
+}
+.gtd-dashboard .gtd-inbox-delete {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 17px;
+}
+.gtd-dashboard .gtd-inbox-delete:hover {
+  border-color: var(--background-modifier-error);
+  background: var(--background-modifier-error-hover);
+  color: var(--text-error);
+}
+.gtd-dashboard .gtd-task-empty {
+  padding-block: 6px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+/* A quiet table frame; horizontal dividers replace the full grid. */
+.gtd-project-progress {
+  margin: 0 !important;
+  width: 100%;
+  min-width: 820px;
+  border: 1px solid var(--gtd-line-soft) !important;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fffdf7;
+  font-size: 13px;
+}
+.gtd-project-progress th,
+.gtd-project-progress td {
+  border: 0 !important;
+  border-bottom: 1px solid var(--gtd-line-soft) !important;
+  vertical-align: middle;
+}
+.gtd-project-progress th {
+  padding: 5px 10px;
+  background: var(--gtd-surface-raised);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+}
+.gtd-project-progress th:first-child { width: 36%; }
+.gtd-project-progress tr[data-project-path] > td {
+  height: 32px;
+  padding: 3px 10px;
+}
+.gtd-project-progress tr[data-project-path] > td:first-child {
+  min-width: 235px;
+  padding-right: 78px;
+}
+.gtd-project-progress tbody > tr:last-child > td { border-bottom: 0 !important; }
+.gtd-project-progress tr[data-project-path]:hover > td {
+  background: var(--gtd-surface);
+}
+.gtd-project-progress tr.gtd-drop-before > td {
+  box-shadow: inset 0 2px var(--interactive-accent);
+}
+.gtd-project-progress tr.gtd-drop-after > td {
+  box-shadow: inset 0 -2px var(--interactive-accent);
+}
+.gtd-project-progress tr[data-project-path] > td:nth-child(2),
+.gtd-project-progress tr[data-project-path] > td:nth-child(5),
+.gtd-project-progress tr[data-project-path] > td:nth-child(6) {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.gtd-project-progress tr[data-project-path] > td:nth-child(5),
+.gtd-project-progress tr[data-project-path] > td:nth-child(6) { white-space: nowrap; }
+.gtd-project-progress .gtd-project-toggle {
+  gap: 5px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.gtd-project-progress .gtd-project-toggle:hover { color: var(--text-accent); }
+.gtd-project-progress .gtd-project-arrow { width: 11px; color: var(--text-faint); }
+.gtd-project-progress .gtd-project-source {
+  color: var(--text-faint);
+  font-size: 14px;
+  text-decoration: none;
+}
+.gtd-project-progress .gtd-project-source:hover { color: var(--text-accent); }
+.gtd-project-progress .gtd-project-status {
+  min-height: 23px;
+  padding: 1px 6px;
+  border: 1px solid var(--gtd-line-soft);
+  border-radius: 4px;
+  background: var(--gtd-surface);
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 12px;
+}
+.gtd-project-progress .gtd-project-status:hover {
+  border-color: var(--gtd-accent-border);
+  color: var(--text-accent);
+}
+.gtd-project-progress .gtd-progress-cell {
+  min-width: 132px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.gtd-project-progress progress {
+  width: 86px;
+  height: 7px;
+  margin-right: 9px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gtd-line-soft);
+  accent-color: var(--interactive-accent);
+  vertical-align: middle;
+}
+.gtd-project-progress progress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: var(--gtd-line-soft);
+}
+.gtd-project-progress progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: var(--interactive-accent);
+}
+.gtd-project-progress .gtd-project-detail > td {
+  padding: 4px 8px 5px !important;
+  background: var(--background-primary);
+}
+
+/* Soft row backgrounds: 32% Radix step 4 + 68% paper (#f7f2e8). */
+.gtd-project-progress .gtd-completed-visibility { color:var(--text-muted);border-radius:4px; }
+.gtd-project-progress .gtd-completed-visibility:hover { color:var(--text-accent);background:var(--gtd-accent-soft); }
+.gtd-project-progress li[data-task-color-level="0"] { --gtd-task-level-background:#f3eee4;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="1"] { --gtd-task-level-background:#ecf1ef;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="2"] { --gtd-task-level-background:#faf1d0;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="3"] { --gtd-task-level-background:#f3eeef;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="4"] { --gtd-task-level-background:#f7eced;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="5"] { --gtd-task-level-background:#f0efef;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="6"] { --gtd-task-level-background:#faecd8;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level="7"] { --gtd-task-level-background:#f3eee9;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress .gtd-task-list > li {
+  margin: 0 !important;
+  padding: 0;
+}
+.gtd-project-progress .gtd-task-list > li.gtd-inline-task-item {
+  padding-left: 66px !important;
+  padding-right: 4px !important;
+  border-radius:4px;
+  background:var(--gtd-task-level-background,transparent);
+}
+.gtd-project-progress .gtd-task-list .gtd-task-list {
+  margin-left: 6px !important;
+  padding-left: 9px !important;
+  border-left-color: var(--gtd-line-soft);
+}
+.gtd-project-progress li[data-task-color-level] > .gtd-task-branch > .gtd-task-list,
+.gtd-project-progress li[data-task-color-level] > .gtd-task-list { border-left-color:var(--gtd-task-child-line,var(--gtd-line-soft)); }
+.gtd-project-progress summary.gtd-task-row::before { color:var(--text-muted); }
+.gtd-project-progress .gtd-task-row {
+  color:var(--text-normal);
+  background:var(--gtd-task-level-background,transparent);
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  margin: 2px 0;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gtd-project-progress .gtd-task-row:hover { background:var(--gtd-task-level-background,var(--background-modifier-hover)); }
+.gtd-project-progress .gtd-task-leaf { padding-left: 24px; }
+.gtd-project-progress .gtd-task-row input[type=checkbox],
+.gtd-dashboard .gtd-inbox-row input[type=checkbox] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.gtd-project-progress .gtd-task-count {
+  padding-inline: 5px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.gtd-project-progress .gtd-task-action {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 16px;
+}
+.gtd-project-progress .gtd-task-action:hover {
+  border-color: var(--gtd-accent-border);
+  background: var(--gtd-accent-soft);
+  color: var(--text-accent);
+}
+.gtd-project-progress .gtd-task-delete:hover {
+  border-color: var(--background-modifier-error);
+  background: var(--background-modifier-error-hover);
+  color: var(--text-error);
+}
+.gtd-project-progress .gtd-header-add {
+  border-color: var(--gtd-accent-border);
+  background: var(--gtd-accent-soft);
+  color: var(--text-accent);
+}
+.gtd-project-progress .gtd-task-dates { gap: 5px; }
+.gtd-project-progress .gtd-task-day-button {
+  height: 24px;
+  min-width: 24px;
+  padding: 1px 4px;
+  border: 1px solid var(--gtd-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 12px;
+}
+.gtd-project-progress .gtd-task-day-button:hover {
+  border-color: var(--gtd-accent-border);
+  background: var(--gtd-accent-soft);
+  color: var(--text-accent);
+}
+.gtd-project-progress .gtd-task-day-button.is-active {
+  border-color: var(--interactive-accent);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+.gtd-project-progress .gtd-task-date {
+  gap: 5px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.gtd-project-progress .gtd-task-date input[type=date],
+.gtd-project-progress .gtd-project-deadline {
+  width: 112px;
+  height: 22px;
+  padding: 1px 5px;
+  border: 1px solid var(--gtd-line);
+  border-radius: 4px;
+  color-scheme: light;
+  background: var(--background-primary);
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.gtd-project-progress .gtd-task-name-editor input {
+  height:22px;
+  padding:0 2px !important;
+  border:0 !important;
+  border-bottom:1px solid var(--gtd-accent-border) !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  color:var(--text-normal);
+  box-shadow:none !important;
+}
+.gtd-project-progress button.gtd-task-title-edit,
+.gtd-project-progress button.gtd-project-name-edit {
+  appearance:none;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0;
+  box-shadow:none !important;
+  padding:0 !important;
+  height:auto;
+  min-height:0;
+  color:inherit;
+  text-align:left;
+  white-space:normal;
+  font:inherit;
+  cursor:text;
+}
+.gtd-project-progress button.gtd-task-title-edit:hover,
+.gtd-project-progress button.gtd-project-name-edit:hover { color:var(--text-accent);text-decoration:underline;text-underline-offset:3px; }
+.gtd-project-progress .gtd-project-name-slot { display:inline-block;max-width:calc(100% - 24px);vertical-align:middle;font-weight:600; }
+.gtd-project-progress .gtd-project-name-editor { display:inline-block;width:200px;max-width:100%;vertical-align:middle; }
+.gtd-project-progress .gtd-project-toggle { width:18px;justify-content:center;margin-right:2px;box-shadow:none !important;background:transparent !important; }
+.gtd-project-progress .gtd-name-cancel { height:auto;padding:0 3px;border:0;background:transparent;box-shadow:none;font-size:11px;color:var(--text-muted); }
+.gtd-project-progress .gtd-inline-task-line input {
+  color:var(--text-normal);
+  height: 30px;
+  border: 1px solid var(--gtd-accent-border);
+  border-radius: 5px;
+  background: var(--gtd-task-level-background,var(--background-primary)) !important;
+  box-shadow: none;
+  font-size: 13px;
+}
+.gtd-project-progress .gtd-inline-task-line button {
+  min-height: 26px;
+  border-radius: 4px;
+  box-shadow: none;
+  font-size: 12px;
+}
+.gtd-project-progress .gtd-drag-handle { color: var(--text-faint); opacity: .85; }
+.gtd-project-progress .gtd-drag-handle:hover { color: var(--text-muted); opacity: 1; }
+
+/* Keep the requested date-picker dimensions. */
+.gtd-day-panel {
+  width: 260px;
+  padding: 8px;
+  border-color: var(--gtd-line);
+  border-radius: 6px;
+  background: var(--gtd-surface-raised);
+  box-shadow: 0 6px 20px rgb(65 57 42 / .14);
+}
+.gtd-day-panel .gtd-day-panel-header { margin-bottom: 8px; }
+.gtd-day-panel .gtd-day-panel-header button {
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+.gtd-day-panel .gtd-day-panel-header button:hover { background: var(--background-modifier-hover); }
+.gtd-day-panel .gtd-day-grid button { border-radius: 5px; }
+
+/* Match the native calendar to the workspace. */
+.gtd-dashboard .block-language-tasks-calendar {
+  min-height: 360px;
+  height: auto;
+  border: 1px solid var(--gtd-line-soft);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.gtd-dashboard .tasks-calendar {
+  --tasks-calendar-border: var(--gtd-line-soft);
+  --tasks-calendar-accent: #68513d;
+  --tasks-calendar-today: rgb(104 81 61 / .035);
+  --tasks-calendar-completed-opacity: .72;
+}
+.gtd-dashboard .tasks-calendar-toolbar {
+  gap: 8px;
+  padding-block: 6px;
+  background: var(--gtd-surface);
+}
+.gtd-dashboard .tasks-calendar-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.gtd-dashboard .tasks-calendar-today-button {
+  min-height: 25px;
+  border-color: var(--gtd-line);
+  border-radius: 4px;
+  background: transparent;
+  font-size: 12px;
+}
+.gtd-dashboard .tasks-calendar-mode-switch {
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--gtd-line-soft);
+  border-radius: 5px;
+  background: var(--background-primary);
+}
+.gtd-dashboard .tasks-calendar-mode-switch button,
+.gtd-dashboard .tasks-calendar-mode-switch button:first-child,
+.gtd-dashboard .tasks-calendar-mode-switch button:last-child {
+  min-height: 23px;
+  margin: 0;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.gtd-dashboard .tasks-calendar-mode-switch button.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+.gtd-dashboard .tasks-calendar-search {
+  border-color: var(--gtd-line-soft);
+  border-radius: 6px;
+  background: var(--background-primary);
+  box-shadow: none;
+  font-size: 12px;
+}
+.gtd-dashboard .tasks-calendar-weekday {
+  padding-block: 4px;
+  background: var(--gtd-surface);
+  font-size: 11px;
+  font-weight: 500;
+}
+.gtd-dashboard .tasks-calendar-task {
+  --tasks-calendar-task-accent: #68513d !important;
+  --tasks-calendar-task-background: #f0e7d9 !important;
+  border-radius: 4px;
+  box-shadow: inset 2px 0 0 #68513d;
+  color: #453627;
+}
+/* Use the source deadline, never the projected dates of arranged occurrences. */
+:is(.gtd-dashboard, .workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content) .tasks-calendar-task[data-gtd-deadline="true"],
+.tasks-calendar-drag-overlay[data-gtd-deadline="true"] {
+  --tasks-calendar-task-accent: #a3433b !important;
+  --tasks-calendar-task-background: #f3d8d4 !important;
+  --text-muted: #85463e;
+  --text-normal: #702f29;
+  background-color: var(--tasks-calendar-task-background);
+  box-shadow: inset 2px 0 0 #a3433b;
+  color: #702f29;
+}
+.gtd-dashboard .tasks-calendar-day.is-outside { background: #eee9df; }
+.gtd-dashboard .tasks-calendar-content { height: 560px; min-height: 300px; }
+
+/* Custom GTD forms only. */
+.gtd-action-modal { padding: 4px; }
+.gtd-action-modal h2 { margin: 0 0 12px; color: var(--text-accent); font-size: 19px; font-weight: 650; }
+.gtd-action-modal .gtd-entry-form { gap: 10px; }
+.gtd-action-modal .gtd-form-fields { gap: 11px; }
+.gtd-action-modal .gtd-form-field { gap: 5px; color: var(--text-muted); font-size: 13px; }
+.gtd-action-modal .gtd-form-field input,
+.gtd-action-modal .gtd-form-field select {
+  min-height: 32px;
+  border: 1px solid var(--gtd-line);
+  border-radius: 5px;
+  background: var(--background-primary);
+  box-shadow: none;
+  color: var(--text-normal);
+}
+.gtd-action-modal .gtd-form-actions button { border-radius: 7px; box-shadow: none; font-size: 13px; }
+
+/* Keyboard focus stays visible; touch controls never depend on hover. */
+.gtd-dashboard button:focus-visible,
+.gtd-project-progress button:focus-visible,
+.gtd-project-progress input:focus-visible,
+.gtd-action-modal input:focus-visible,
+.gtd-action-modal select:focus-visible,
+.gtd-day-panel button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 900px) {
+  .gtd-dashboard.markdown-preview-view,
+  .gtd-dashboard.markdown-source-view { --gtd-page-gutter: 20px; }
+  .gtd-dashboard h1 { font-size: 22px; }
+  .gtd-dashboard h2:not(.tasks-calendar-title) { margin-top: 12px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gtd-dashboard .gtd-inbox-move,
+  .gtd-dashboard .gtd-inbox-delete,
+  .gtd-project-progress .gtd-task-action,
+  .gtd-project-progress .gtd-task-day-button,
+  .gtd-project-progress .gtd-project-status {
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+  }
+}
