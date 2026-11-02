@@ -1,7 +1,7 @@
 {
   "id": "gtd-quick-actions",
   "name": "GTD 快捷操作",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "minAppVersion": "1.8.7",
   "description": "首页键盘导航、局部同步、多层任务、日期安排、撤销及项目归档。",
   "author": "Local GTD workspace",

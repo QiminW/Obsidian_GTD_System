@@ -409,7 +409,8 @@ async function createProjectView(project) {
       const currentArrange=taskRow.querySelector('[data-gtd-task-arrange]');if(currentArrange){currentArrange.setAttribute('aria-expanded',String(!!panelState));currentArrange.classList.toggle('is-active',!!panelState||node.days.length>0);}
       keyboard.register(taskRow,{id:rowId,parent:parentId,label:'任务：'+node.title,expanded:()=>!!cached.branch?.open,
         toggle:cached.branch?value=>{cached.branch.open=value;plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+node.key,value);keyboard.refresh();}:null,
-        rename:()=>taskRow.querySelector('[data-gtd-task-rename]')?.click(),add:()=>taskRow.querySelector('[data-gtd-task-add]')?.click()});
+        rename:()=>taskRow.querySelector('[data-gtd-task-rename]')?.click(),add:()=>taskRow.querySelector('[data-gtd-task-add]')?.click(),
+        remove:()=>taskRow.querySelector('[data-gtd-task-delete]')?.click(),today:()=>taskRow.querySelector('[data-gtd-task-today]')?.click()});
       const wanted=visibleChildren.map(child=>addNode(childContainer,child,rowId));
       const entry=entries.find(state=>state.parentKey===node.key);
       if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});wanted.push(addEditor(childContainer,entry,node.completed||node.cancelled||entry.referenceStale));}
