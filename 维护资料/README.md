@@ -30,6 +30,8 @@ node --test
 
 `refresh-input.native.js` 和 `refresh-reading-mode.native.js` 是 Obsidian 内的输入与滚动回归脚本。前者检查组合输入、异步读取、连续提交、Esc 和并发高度释放；后者通过真实 Dataview 刷新检查查看模式中的输入、滚动及日历间距。使用专用演示库打开首页的查看模式，退出其他编辑后，通过 Obsidian CLI 的 `eval` 执行脚本。结果保存在 `window.__gtdRefreshInputTest` 和 `window.__realRefreshTest`；每次运行会创建并清理自己的示例项目。
 
+`readable-line-width.native.js` 仅在 `Obsidian-GTD-Demo` 演示库内运行，检查“限制行宽”开关对首页、项目笔记和普通笔记的影响，并验证窄窗口不会被强制撑到桌面宽度。结果保存在 `window.__gtdWidthCheck`。测试会恢复原有模式、配置、窗格和窗口状态，并清理自己创建的普通示例笔记。
+
 ## Tasks Calendar 截止日红底
 
 本包 Tasks Calendar 1.5.4 已完成适配。若重新安装了同版本上游运行文件，可在当前文件夹执行：
