@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.10.0",
-  "builtAt": "2026-11-02T09:49:41+08:00",
+  "version": "1.10.1",
+  "builtAt": "2026-11-02T10:03:21+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.10.0",
+      "version": "1.10.1",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,13 +100,13 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 105372,
-      "sha256": "605c98ecb574349ae67d993504f531df76d0642fdc30d08171422cb658f5e134"
+      "bytes": 105813,
+      "sha256": "c03daaf06835450f4f79dc71c626ab82be661d215477be5e1338d7f997a531c5"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 294,
-      "sha256": "35f7e46f939e16efc8eceb7aaf2bc10c8ece1cda67316088ece7dcd6b5775228"
+      "sha256": "19b87228cb1654b7ddcd042993fa7031b0bd18e274700761b9a8ab26e8a672f1"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
@@ -245,13 +245,13 @@
     },
     {
       "path": "00 GTD/00 工作区/05 系统视图/项目进度.js",
-      "bytes": 41357,
-      "sha256": "72d75ae15cc0e6bee1d34b888c0929e2f2ac9b88ca82e2ee46f403ecd37e1f06"
+      "bytes": 41439,
+      "sha256": "1d0f578fa09f74dfa399889906b4ed6603ce0e88d72f4230848a8cdb3144250c"
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 15898,
-      "sha256": "a622e98b6915a0a358e9d29ee3549ef02b5ee17053259a45603f090c6c7a0a68"
+      "bytes": 16191,
+      "sha256": "c74e8c6f0c64d03791f4ccaee5ab41b6c4c2fe0db675f97b0f57c44471bb43ac"
     },
     {
       "path": "00 GTD/首页.md",
@@ -265,8 +265,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14769,
-      "sha256": "9718b6a1dd3e8f3dbfd33b618366510556b9551355817d1cda977b1a68fef751"
+      "bytes": 14871,
+      "sha256": "9feff05ab3fc3c6b2dff5cb60595d775eb71d872ad74177d0437a1dc41d26533"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -315,8 +315,8 @@
     },
     {
       "path": "docs/superpowers/plans/2026-11-02-tree-keyboard.md",
-      "bytes": 2586,
-      "sha256": "4f17df889e4ae67a4832b95966d4e75dcdd5163136e472a0ddfe1e2ce1b231dc"
+      "bytes": 3049,
+      "sha256": "bc4dd2f7d301ff38cdf04ac031ebfc7c51ba041cebf9f584c3274d9a843e023e"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -355,8 +355,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/main-body.js",
-      "bytes": 63344,
-      "sha256": "530287ced856897339ca60232ecbeb7bd247c51c04ed03eb1f9e7bf3c25fb0e1"
+      "bytes": 63518,
+      "sha256": "322cf7f15ab3223b13aa3f2ee7a2c4bc64c6047c6d02e36ca1ee2c267667acb6"
     },
     {
       "path": "维护资料/GTD快捷操作源码/name-edit-state.test.cjs",
@@ -380,13 +380,13 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/tree-keyboard.cjs",
-      "bytes": 5417,
-      "sha256": "2eeb688237b0120843e6f1eff688688ad8203a1724c2b99373b56bbcda1decd9"
+      "bytes": 5681,
+      "sha256": "e90fea98dd316a46b2862cf93e3c29a66edf6a34b7969b939078fadefe2bc7df"
     },
     {
       "path": "维护资料/GTD快捷操作源码/tree-keyboard.test.cjs",
-      "bytes": 2412,
-      "sha256": "78ce350b6c97988c1b1035cbfbec45dd7741c8eba779b85aa3b9ccc632eb245b"
+      "bytes": 2625,
+      "sha256": "63547f1d9edb7f533765ae3027504ac976769afc5a4866810508f95e1ebf82a0"
     },
     {
       "path": "维护资料/GTD快捷操作源码/undo-history.cjs",
@@ -410,18 +410,18 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/界面验证/check.js",
-      "bytes": 14709,
-      "sha256": "03a8230d41437ba29daaae99e659821f645c835b375155574298dd4015c4958c"
+      "bytes": 17188,
+      "sha256": "b08e802e77b4346a51c4ba302538a5e70ddeeb5767d6c5b5f5b1cb71c4a7b829"
     },
     {
       "path": "维护资料/GTD快捷操作源码/界面验证/fixture.js",
       "bytes": 4913,
-      "sha256": "cd9e2809c9e7c0245429388abbd6d360d9eb4c7559fb639f80b879132ef81397"
+      "sha256": "f4acf341b7768651a5bc5ff8d4d9e90eee8083cf8ef734ccf8a4c4d2597a26c4"
     },
     {
       "path": "维护资料/README.md",
       "bytes": 3046,
-      "sha256": "05a33954b3c503919c32945172e3fddd573137485b43dda3f10207b31f04a735"
+      "sha256": "2163991f1c12265dced6630ec1434105e76b2544808d603e5fc4b0cd322e2815"
     },
     {
       "path": "维护资料/底色来源.md",

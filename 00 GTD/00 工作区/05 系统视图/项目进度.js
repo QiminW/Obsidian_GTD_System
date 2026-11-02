@@ -105,7 +105,7 @@ async function createProjectView(project) {
   row.addEventListener('drop',event=>{if(!plugin.draggedProject||plugin.draggedProject===path)return;event.preventDefault();event.stopPropagation();const source=plugin.draggedProject,side=dropSide(event,row);plugin.draggedProject=null;clearDropMarks();plugin.moveProjectDisplay(source,path,side).catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));});
   const toggle = title.createEl('button', { cls:'gtd-project-toggle', attr:{type:'button','aria-expanded':String(expanded),'aria-label':'展开或折叠项目：'+project.file.name} });
   const arrow = toggle.createSpan({ text:expanded?'▾':'▸', cls:'gtd-project-arrow' });
-  keyboard.register(row,{id:projectId,parent:null,label:'项目：'+project.file.name,expanded:()=>expanded,toggle:value=>setExpanded(value),rename:()=>projectNameSlot.querySelector('[data-gtd-project-rename]')?.click()});
+  keyboard.register(row,{id:projectId,parent:null,label:'项目：'+project.file.name,expanded:()=>expanded,toggle:value=>setExpanded(value),rename:()=>projectNameSlot.querySelector('[data-gtd-project-rename]')?.click(),add:()=>add.click()});
   const projectNameSlot=title.createSpan({cls:'gtd-project-name-slot'});
   let renderedName;
   function renderProjectName(){
@@ -409,7 +409,7 @@ async function createProjectView(project) {
       const currentArrange=taskRow.querySelector('[data-gtd-task-arrange]');if(currentArrange){currentArrange.setAttribute('aria-expanded',String(!!panelState));currentArrange.classList.toggle('is-active',!!panelState||node.days.length>0);}
       keyboard.register(taskRow,{id:rowId,parent:parentId,label:'任务：'+node.title,expanded:()=>!!cached.branch?.open,
         toggle:cached.branch?value=>{cached.branch.open=value;plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+node.key,value);keyboard.refresh();}:null,
-        rename:()=>taskRow.querySelector('[data-gtd-task-rename]')?.click()});
+        rename:()=>taskRow.querySelector('[data-gtd-task-rename]')?.click(),add:()=>taskRow.querySelector('[data-gtd-task-add]')?.click()});
       const wanted=visibleChildren.map(child=>addNode(childContainer,child,rowId));
       const entry=entries.find(state=>state.parentKey===node.key);
       if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});wanted.push(addEditor(childContainer,entry,node.completed||node.cancelled||entry.referenceStale));}

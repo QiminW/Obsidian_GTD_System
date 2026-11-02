@@ -265,7 +265,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.addCommand({ id: 'home', name: '返回首页', callback: () => this.openHome() });
     const schedule = () => {
       window.clearTimeout(this.navigationTimer);
-      this.navigationTimer = window.setTimeout(() => { this.installBoardNavigation(); this.installTaskCalendarBridge(); }, 80);
+      this.navigationTimer = window.setTimeout(() => { this.installBoardNavigation(); this.installTaskCalendarBridge();for(const controller of this.projectKeyboardControllers?.values()||[])controller.refresh(); }, 80);
     };
     this.registerEvent(this.app.workspace.on('layout-change', schedule));
     this.registerEvent(this.app.workspace.on('active-leaf-change', schedule));
@@ -403,13 +403,13 @@ module.exports = class GtdQuickActions extends Plugin {
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
   installProjectKeyboard(component,table,scope) {
     this.projectKeyboardStates||=new Map();this.projectKeyboardControllers||=new Map();
+    if(this.projectKeyboardControllers.has(table))return this.projectKeyboardControllers.get(table);
     const leaf=this.app.workspace.getLeavesOfType('markdown').find(item=>item.view.containerEl.contains(table))||this.app.workspace.activeLeaf;
     const key=JSON.stringify([scope,leaf?.id]);
-    this.projectKeyboardControllers.get(key)?.dispose();
     const state=this.projectKeyboardStates.get(key)||{};this.projectKeyboardStates.set(key,state);
-    const controller=TreeKeyboard.installTreeKeyboard(table,{state,isActive:()=>this.app.workspace.activeLeaf===leaf&&leaf?.view.file?.path===scope,onError:error=>new Notice(error.message||String(error))});
-    this.projectKeyboardControllers.set(key,controller);
-    component.register(()=>{controller.dispose();if(this.projectKeyboardControllers.get(key)===controller)this.projectKeyboardControllers.delete(key);});
+    const controller=TreeKeyboard.installTreeKeyboard(table,{state,isActive:()=>this.app.workspace.activeLeaf===leaf&&leaf?.view.file?.path===scope&&!!table.getClientRects().length,onError:error=>new Notice(error.message||String(error))});
+    this.projectKeyboardControllers.set(table,controller);
+    component.register(()=>{controller.dispose();if(this.projectKeyboardControllers.get(table)===controller)this.projectKeyboardControllers.delete(table);});
     this.register(()=>controller.dispose());return controller;
   }
   protectProjectView(component,container) {

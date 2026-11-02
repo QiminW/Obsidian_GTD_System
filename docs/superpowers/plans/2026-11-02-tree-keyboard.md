@@ -2,7 +2,7 @@
 
 > Use superpowers:executing-plans inline; the existing managed worktree isolates development from the distribution and live vault.
 
-**Goal:** Navigate visible project/task rows with Up/Down, toggle branches with Space, rename with Enter, and enlarge both disclosure arrows.
+**Goal:** Navigate visible project/task rows with Up/Down, toggle branches with Space, rename with Enter, add with the =/+ key, and enlarge both disclosure arrows.
 
 **Architecture:** A bundled tree-keyboard controller registers existing rows and their parents, delegates local keyboard events, preserves a single focus anchor per note/leaf, and restores focus after controlled renders without scrolling. Keyed project/task caches update changed headers while retaining input nodes and current source references. Dataview data updates call an incremental update callback rather than clearing the view. Navigation links also retain their nodes when unchanged. Real text/date/select controls retain native keys and IME behavior. Left/Right and Home/End follow visible tree order.
 
@@ -18,8 +18,10 @@
 
 ## Verification ledger
 
-- 122 source tests pass (116 existing and 6 navigation-decision tests).
-- 30 checks pass in a separate hidden Electron Chromium window with the actual view, bundle and CSS, using an in-memory example backend. No personal notes or main-window input are accessed.
+- 123 source tests pass (116 existing and 7 navigation-decision tests).
+- 37 checks pass in a separate hidden Electron Chromium window with the actual view, bundle and CSS, using an in-memory example backend. No personal notes or main-window input are accessed.
 - Regression checks include closed-details visibility, collapsed-parent entry, leaf entry reopening, native date-panel dismissal, pane ownership, pointerdown during data updates, input composition/caret preservation, continuous Enter, project ordering, larger arrows, wider indentation, outline alignment and stable navigation links.
+- Reading and editing views keep separate table controllers with shared note/leaf selection; hidden sibling views and switching between modes do not disable keyboard navigation.
+- The =/+ shortcut invokes the existing row plus button, including disabled-state rules. Project rows add top-level tasks; task rows add children and focus the input. Plain equals and Shift-plus are accepted, while editable fields and IME keep their native keys.
 - Independent review findings resolved; final review reports no remaining P1/P2.
 - The browser check generator and its fixture ship in `维护资料/GTD快捷操作源码/界面验证/`.

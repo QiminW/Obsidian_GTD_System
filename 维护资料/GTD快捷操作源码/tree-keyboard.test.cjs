@@ -10,6 +10,10 @@ test('collapsed descendants are absent from the visible navigation sequence',()=
 test('space toggles only branches and enter renames the current row',()=>{
  assert.deepEqual(treeKeyAction(rows,'a',' '),{type:'toggle',id:'a',expanded:false});assert.deepEqual(treeKeyAction(rows,'q',' '),{type:'toggle',id:'q',expanded:true});assert.deepEqual(treeKeyAction(rows,'b',' '),{type:'none'});assert.deepEqual(treeKeyAction(rows,'b','Enter'),{type:'rename',id:'b'});assert.deepEqual(treeKeyAction(rows,'p','Enter'),{type:'rename',id:'p'});
 });
+
+test('equals and plus add beneath the selected project or task, including a leaf',()=>{
+ for(const id of ['p','a','b'])for(const key of ['=','+'])assert.deepEqual(treeKeyAction(rows,id,key),{type:'add',id});
+});
 test('left collapses an expanded branch or moves to its visible parent',()=>{
  assert.deepEqual(treeKeyAction(rows,'a','ArrowLeft'),{type:'toggle',id:'a',expanded:false});assert.deepEqual(treeKeyAction(rows,'b','ArrowLeft'),{type:'focus',id:'a'});assert.deepEqual(treeKeyAction(rows,'q','ArrowLeft'),{type:'none'});
 });

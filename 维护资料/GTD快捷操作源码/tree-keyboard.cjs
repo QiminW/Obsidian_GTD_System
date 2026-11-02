@@ -7,6 +7,7 @@ function treeKeyAction(rows,id,key){
  if(key==='Home')return focus(rows[0]);
  if(key==='End')return focus(rows.at(-1));
  if(key==='Enter')return {type:'rename',id};
+ if(key==='='||key==='+')return {type:'add',id};
  if(key===' '||key==='Spacebar')return row.branch?toggle(!row.expanded):none;
  if(key==='ArrowLeft')return row.branch&&row.expanded?toggle(false):row.parent&&rows.some(item=>item.id===row.parent)?focus(rows.find(item=>item.id===row.parent)):none;
  if(key==='ArrowRight')return row.branch&&!row.expanded?toggle(true):row.branch&&rows[index+1]?.parent===id?focus(rows[index+1]):none;
@@ -52,31 +53,33 @@ function installTreeKeyboard(table,{state={},isActive=()=>true,onError=console.e
  const capture=()=>{const row=rowFor(doc.activeElement);if(row&&table.contains(doc.activeElement)){remember(row);state.restore=true;}};
  const focusin=event=>{
   if(table.contains(event.target)){remember(rowFor(event.target));state.restore=true;}
-  else if(event.target!==doc.body)state.restore=false;
+  else if(isActive()&&event.target!==doc.body)state.restore=false;
  };
  const pointer=event=>{
-  if(!table.contains(event.target)){state.restore=false;return;}
+  if(!table.contains(event.target)){if(isActive())state.restore=false;return;}
   const row=rowFor(event.target);remember(row);
   if(row&&!event.target.closest('button,input,textarea,select,a,summary,[contenteditable="true"]'))focus(row);
  };
  const keydown=event=>{
-  if(event.defaultPrevented||event.isComposing||event.keyCode===229||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey)return;
+  const addKey=event.key==='='||event.key==='+'||event.code==='Equal';
+  if(!isActive()||event.defaultPrevented||event.isComposing||event.keyCode===229||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey&&!addKey)return;
   const target=event.target,row=rowFor(target);if(!row||target.isContentEditable||target.closest('input,textarea,select,[data-gtd-name-editor],.gtd-inline-task-entry'))return;
   const navigation=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(event.key);
   if(target!==row.element&&!navigation)return;
-  const action=treeKeyAction(visible().map(model),row.id,event.key);
+  const action=treeKeyAction(visible().map(model),row.id,addKey?'=':event.key);
   if(action.type==='none'&&![' ','Spacebar','ArrowLeft','ArrowRight'].includes(event.key))return;
   event.preventDefault();event.stopPropagation();remember(row);state.restore=true;
   if(action.type==='focus')focus(visible().find(item=>item.id===action.id),true);
   else if(action.type==='toggle')Promise.resolve(row.toggle(action.expanded)).then(refresh).catch(onError);
   else if(action.type==='rename')Promise.resolve(row.rename()).catch(onError);
+  else if(action.type==='add')Promise.resolve(row.add?.()).catch(onError);
  };
  table.addEventListener('keydown',keydown);doc.addEventListener('focusin',focusin,true);doc.addEventListener('pointerdown',pointer,true);
  return {
   register(element,options){
    const row={...options,element};bindings.set(element,row);element.dataset.gtdTreeRow=row.id;element.tabIndex=-1;
    if(options.label)element.setAttribute('aria-label',options.label);
-   element.setAttribute('aria-keyshortcuts','ArrowUp ArrowDown Space Enter ArrowLeft ArrowRight Home End');
+   element.setAttribute('aria-keyshortcuts','ArrowUp ArrowDown Space Enter = Shift+= ArrowLeft ArrowRight Home End');
   },capture,refresh,finish(){initializing=false;refresh();},
   dispose(){if(disposed)return;disposed=true;win.cancelAnimationFrame(frame);table.removeEventListener('keydown',keydown);doc.removeEventListener('focusin',focusin,true);doc.removeEventListener('pointerdown',pointer,true);}
  };
