@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.10.2",
-  "builtAt": "2026-11-02T16:24:38+08:00",
+  "builtAt": "2026-11-02T13:40:06+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -180,8 +180,8 @@
     },
     {
       "path": ".obsidian/snippets/gtd-dashboard.css",
-      "bytes": 31108,
-      "sha256": "454e09cd0dc58b6301c9a3b6c57751ac750ddcd53b5b5fa18c35390f8eacdeda"
+      "bytes": 30638,
+      "sha256": "61c6aa65a29c01b0bf8c058c123179ae4c17777dc1ec1a4c47f6621aa82e74e3"
     },
     {
       "path": ".obsidian/templates.json",
@@ -250,8 +250,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 16991,
-      "sha256": "4ff6586aab84bee11e1825fff2837728201680ba24e03a3182e32349f3dfd957"
+      "bytes": 16569,
+      "sha256": "0ebb2f457263edbe6c913656a0aa7e32f11293631ee704eff0d526db01dfff30"
     },
     {
       "path": "00 GTD/首页.md",
@@ -330,8 +330,8 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 15393,
-      "sha256": "275b04cd1163fdd580030ab57febaee89e20e317d8659e5c2348b03d2bb5545e"
+      "bytes": 15015,
+      "sha256": "f385f180149d850b3e8b8d98accc36437eca4bacbef488fb5a24db5096187eed"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -377,11 +377,6 @@
       "path": "维护资料/GTD快捷操作源码/name-edit-state.test.cjs",
       "bytes": 4238,
       "sha256": "a73f0558bcfd836f4af2d7ca28cffa746d3b63e9ee85e6598b7bd370df8eae6c"
-    },
-    {
-      "path": "维护资料/GTD快捷操作源码/readable-line-width.native.js",
-      "bytes": 4884,
-      "sha256": "7fae1c1fe84ef8e1aa77ddbb74718f2d6c4f7b692ceed9b0d6e18e2cabf8ae8c"
     },
     {
       "path": "维护资料/GTD快捷操作源码/refresh-input.native.js",
@@ -440,8 +435,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 3732,
-      "sha256": "4169d68d42b9ce24b259b1306d835adc0b702507ae7d293df009d1b01e90e133"
+      "bytes": 3362,
+      "sha256": "2ea2a1b0465a5c1f7d99b595e534f5e7794cc5aec49ce1c0082c75e1237eecb6"
     },
     {
       "path": "维护资料/底色来源.md",

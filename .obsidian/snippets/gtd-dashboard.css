@@ -246,20 +246,11 @@
   display: none !important;
 }
 .gtd-dashboard.markdown-preview-view,
-.gtd-dashboard.markdown-source-view,
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.markdown-preview-view, .markdown-source-view) {
+.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-preview-view {
   --file-line-width: 1360px;
 }
 .gtd-dashboard.markdown-preview-view .markdown-preview-sizer,
 .workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-preview-view .markdown-preview-sizer {
-  max-width: 1360px;
-  margin-inline: auto;
-}
-/* Shared readableLineLength settings must not narrow the GTD live-preview widgets. */
-.gtd-dashboard.markdown-source-view.mod-cm6 .cm-sizer,
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-source-view.mod-cm6 .cm-sizer {
-  width: 100%;
-  min-width: 0;
   max-width: 1360px;
   margin-inline: auto;
 }
