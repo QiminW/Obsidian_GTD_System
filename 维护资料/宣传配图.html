@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Obsidian GTD 工作台 · 宣传配图</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#f6f2e9;color:#302b25;font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+.poster{position:relative;width:1080px;height:1440px;overflow:hidden;padding:68px 70px;background:#f6f2e9}
+.eyebrow{display:flex;justify-content:space-between;align-items:center;color:#796b5b;font-size:22px;font-weight:600;letter-spacing:2px}
+.mark{width:13px;height:13px;background:#80664d;display:inline-block;margin-right:14px;border-radius:50%}
+h1{font-size:88px;line-height:1.2;letter-spacing:-4px;margin:50px 0 27px;font-weight:800}
+h1 span{color:#80664d}.lead{font-size:31px;line-height:1.7;color:#6a6258;margin:0;letter-spacing:.5px}
+.frame{position:relative;border:1px solid #d3c6b4;border-radius:20px;background:#fffdf8;overflow:hidden;margin-top:38px;box-shadow:0 16px 40px #6e594813}
+.chrome{display:flex;align-items:center;gap:8px;padding:18px 23px;border-bottom:1px solid #e5dccd;font-size:19px;color:#8a7c6d;letter-spacing:1px;background:#fbf8f2}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#c8bba9}.chrome .label{margin-left:auto}
+.viewport{position:relative;overflow:hidden;height:544px;background:#f6f2e9}.viewport img{position:absolute;display:block;max-width:none;height:auto}
+.cover .viewport img{width:1320px;left:-5px;top:0}.cover .viewport{height:520px}
+.tasks .viewport img{width:2200px;left:-30px;top:-80px}.tasks .viewport{height:490px}
+.calendar .viewport img{width:2260px;left:-48px;top:-112px}.calendar .viewport{height:520px}
+.pills{display:flex;gap:14px;margin-top:35px}.pill{flex:1;border-top:1px solid #d5c9b9;padding-top:20px;font-size:24px;color:#756450;line-height:1.6}
+.pill b{display:block;font-size:27px;color:#43392f;font-weight:600}.aside{margin-top:27px;color:#756c61;font-size:24px;line-height:1.65}
+.footer{position:absolute;bottom:52px;left:70px;right:70px;display:flex;justify-content:space-between;padding-top:21px;border-top:1px solid #d9cebf;font-size:18px;color:#8a7d6c;letter-spacing:1px}
+.footer strong{color:#62513e;font-weight:500}.note{font-size:17px;color:#998c7a;text-align:right;margin-top:12px}
+.wide.poster{width:1800px;height:1000px;padding:65px 75px}.wide .eyebrow{font-size:24px}.wide .text{width:575px;position:absolute;left:75px;top:170px}.wide h1{font-size:76px;letter-spacing:-3px;line-height:1.22;margin:0 0 33px}.wide .lead{font-size:26px;line-height:1.8}.wide .frame{position:absolute;left:710px;top:212px;width:1015px;margin:0}.wide .viewport{height:460px}.wide .viewport img{width:1015px;left:0;top:0}.wide .pills{position:absolute;left:75px;right:75px;bottom:125px;gap:65px}.wide .pill{font-size:22px}.wide .pill b{display:inline;font-size:26px;margin-right:16px}.wide .footer{bottom:38px;left:75px;right:75px}.wide .note{position:absolute;right:75px;top:753px}
+</style>
+<main id="poster" class="poster"></main>
+<script>
+// All UI images are the repository's public demonstration examples.
+const query=new URLSearchParams(location.search),type=query.get('card')||'cover',wide=query.get('format')==='wide';
+const cards={
+ cover:{n:'01',title:'任务很多，<br><span>入口一个就够。</span>',lead:'把工作和学习，放回一个首页。<br>打开就能收集、拆解和安排。',image:'home-overview.png',alt:'通用演示首页中的收集箱与项目任务树',label:'OBSIDIAN GTD 工作台',pills:[['随手记','零散想法先收集'],['逐层拆','大项目拆成下一步'],['按天做','安排与截止分开看']]},
+ tasks:{n:'02',title:'大项目，<br><span>拆到能开始。</span>',lead:'从「完成工作周报」，<br>到「整理一张图表」。',image:'task-hierarchy.png',alt:'通用周报示例中的父任务、子任务和连续添加输入框',label:'多层任务 · 在首页展开',pills:[['原位展开','父任务和子任务一起看'],['继续往下拆','每一层都有添加入口'],['接着写下一项','输入框内 Enter 连续添加']]},
+ calendar:{n:'03',title:'今天做什么，<br><span>打开就知道。</span>',lead:'一个任务可以安排多天。<br>截止当天，用红底提醒。',image:'calendar-week.png',alt:'通用演示周日历中的多日安排与截止日红底',label:'日历 · 日 / 周 / 月',pills:[['今','加入今天推进'],['排','安排一个或多个日期'],['截止','标清最晚完成日期']]}
+};
+const c=cards[type]||cards.cover,root=document.getElementById('poster');root.classList.add(type);if(wide)root.classList.add('wide');
+root.innerHTML=`<div class="eyebrow"><div><i class="mark"></i>OBSIDIAN / 一页工作台</div><div>${c.n} — 03</div></div><div class="text"><h1>${c.title}</h1><p class="lead">${c.lead}</p></div><div class="frame"><div class="chrome"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="label">${c.label}</span></div><div class="viewport"><img src="../docs/images/${c.image}" alt="${c.alt}"></div></div><div class="note">通用演示案例 · 界面局部</div><div class="pills">${c.pills.map(([title,text])=>`<div class="pill"><b>${title}</b>${text}</div>`).join('')}</div><div class="footer"><strong>少切换页面，多推进一步。</strong><span>Obsidian GTD 工作台</span></div>`;
+</script>
+</html>
