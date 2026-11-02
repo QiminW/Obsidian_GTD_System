@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.10.2",
-  "builtAt": "2026-11-02T12:10:54+08:00",
+  "builtAt": "2026-11-02T13:40:06+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -45,8 +45,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 380,
-      "sha256": "7fcc3662375e90f7651bbe78e6ee4982f9c2073668d247f73ddf16a1b64647b3"
+      "bytes": 570,
+      "sha256": "c06b0a00c1f088c4d4e114d6c14038239d9767e6973c2f73b1dce30ab7d54a37"
     },
     {
       "path": ".obsidian/app.json",
@@ -265,8 +265,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 2502,
-      "sha256": "5edceed57ef32ed17de985d2738ceecd77cc4bfd8d1d776b065b354a505e7c2b"
+      "bytes": 2447,
+      "sha256": "f2dc0c6344382443ce37aba0e7d4154c1f60de456b8afc4677e5e9e241ade6cc"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -329,24 +329,9 @@
       "sha256": "d3887ab3e85af3653aae12ae97d89ce1b4855fc09567af6ce23969619f963533"
     },
     {
-      "path": "docs/superpowers/plans/2026-10-30-home-undo.md",
-      "bytes": 3497,
-      "sha256": "bd8b1c93b10ee4496c3f7a7d9eb82db050fa6a7b22a4ee5d80af3025c31d6062"
-    },
-    {
-      "path": "docs/superpowers/plans/2026-11-02-tree-keyboard.md",
-      "bytes": 3430,
-      "sha256": "b6358c2d6c802786b0a19dcbc4f89f474620495439b299c3ce8175fab18ee3a6"
-    },
-    {
       "path": "docs/安装与使用.md",
       "bytes": 15015,
       "sha256": "f385f180149d850b3e8b8d98accc36437eca4bacbef488fb5a24db5096187eed"
-    },
-    {
-      "path": "docs/小红书图文.md",
-      "bytes": 1264,
-      "sha256": "3dcfaecc72d58589f25d7c8cf145ecdadd931629b3a9e176d94053d06db7f4e4"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -450,13 +435,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 3848,
-      "sha256": "e624a0130eb1ffcc98432129caac95389a88dadb4068b40b0f2072a8081bb215"
-    },
-    {
-      "path": "维护资料/宣传配图.html",
-      "bytes": 5368,
-      "sha256": "0358701f0fc171b77725a072d7604b1c020edcdbefe29c657207dad62aaa5510"
+      "bytes": 3362,
+      "sha256": "2ea2a1b0465a5c1f7d99b595e534f5e7794cc5aec49ce1c0082c75e1237eecb6"
     },
     {
       "path": "维护资料/底色来源.md",

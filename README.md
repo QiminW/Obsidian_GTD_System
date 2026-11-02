@@ -36,7 +36,7 @@
 
 **四个必需插件和 CSS 已包含。** Dataview、Tasks、Tasks Calendar、GTD 快捷操作已随包提供。可选 WebDAV 同步插件也已附带，启用后填写自己的账号。
 
-[安装与图解教程](docs/安装与使用.md) · [完整使用说明](00%20GTD/使用说明.md) · [小红书文案与配图](docs/小红书图文.md)
+[安装与图解教程](docs/安装与使用.md) · [完整使用说明](00%20GTD/使用说明.md)
 
 <details>
 <summary>已有 Obsidian 库？</summary>

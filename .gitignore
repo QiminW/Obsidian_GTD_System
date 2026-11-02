@@ -15,3 +15,12 @@ __pycache__/
 .obsidian/plugins/remotely-save/data.json.*
 .obsidian/plugins/remotely-save/*.db
 .obsidian/plugins/remotely-save/*.db-*
+
+# Local promotion drafts and production sources
+*小红书*.md
+*宣传文案*.md
+*推广文案*.md
+/维护资料/宣传配图.html
+
+# Local implementation plans
+/docs/superpowers/
