@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.9.9",
-  "builtAt": "2026-10-30T17:36:14+08:00",
+  "version": "1.10.0",
+  "builtAt": "2026-11-02T09:49:41+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.9.9",
+      "version": "1.10.0",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,13 +100,13 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 98494,
-      "sha256": "936a87c95f9db09f474b5821d62ea93bb67ab8a0dc691aa8f69a225ae41612db"
+      "bytes": 105372,
+      "sha256": "605c98ecb574349ae67d993504f531df76d0642fdc30d08171422cb658f5e134"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
-      "bytes": 293,
-      "sha256": "cad03094438b18d48058bfa6ff6ee4053d8876204d9e28753a5790467fa032a1"
+      "bytes": 294,
+      "sha256": "35f7e46f939e16efc8eceb7aaf2bc10c8ece1cda67316088ece7dcd6b5775228"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
@@ -180,8 +180,8 @@
     },
     {
       "path": ".obsidian/snippets/gtd-dashboard.css",
-      "bytes": 30371,
-      "sha256": "14b5b32071dd2c4197cec1666545030820ad98c444813ef78a1515acbbcf4f25"
+      "bytes": 30638,
+      "sha256": "61c6aa65a29c01b0bf8c058c123179ae4c17777dc1ec1a4c47f6621aa82e74e3"
     },
     {
       "path": ".obsidian/templates.json",
@@ -240,18 +240,18 @@
     },
     {
       "path": "00 GTD/00 工作区/05 系统视图/功能导航.js",
-      "bytes": 776,
-      "sha256": "192946ef6e3ea8ea4ed65230bd0274e7c17d5c125bd308edda632c085fe1fa44"
+      "bytes": 1836,
+      "sha256": "8c443eebee970080135fb7f0e973badd1659b89009ed86c18ea321bba21d20ac"
     },
     {
       "path": "00 GTD/00 工作区/05 系统视图/项目进度.js",
-      "bytes": 32802,
-      "sha256": "4ddef0e73ba646da04ebbcc5484e3e8e6217ef7f9936a59ab0423de2947fe862"
+      "bytes": 41357,
+      "sha256": "72d75ae15cc0e6bee1d34b888c0929e2f2ac9b88ca82e2ee46f403ecd37e1f06"
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 14847,
-      "sha256": "7bdc4df41e5908ebede733731d63afaefd1a50bd14ea96f15a75de400b651468"
+      "bytes": 15898,
+      "sha256": "a622e98b6915a0a358e9d29ee3549ef02b5ee17053259a45603f090c6c7a0a68"
     },
     {
       "path": "00 GTD/首页.md",
@@ -265,8 +265,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14444,
-      "sha256": "e995114cb39789aadda0ca665e3d8834b8f22f4ad44a315d7ed1249461cb7cef"
+      "bytes": 14769,
+      "sha256": "9718b6a1dd3e8f3dbfd33b618366510556b9551355817d1cda977b1a68fef751"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -314,6 +314,11 @@
       "sha256": "bd8b1c93b10ee4496c3f7a7d9eb82db050fa6a7b22a4ee5d80af3025c31d6062"
     },
     {
+      "path": "docs/superpowers/plans/2026-11-02-tree-keyboard.md",
+      "bytes": 2586,
+      "sha256": "4f17df889e4ae67a4832b95966d4e75dcdd5163136e472a0ddfe1e2ce1b231dc"
+    },
+    {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
       "bytes": 5621,
       "sha256": "fcc466dc811ce147d77d03e1a38780b3c6944618e4403e0e9e41a2f56ace8130"
@@ -350,8 +355,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/main-body.js",
-      "bytes": 62060,
-      "sha256": "b96d44857044b68624fc7dca98b508454fe731b0aff2a7586b2b2329e9c6f821"
+      "bytes": 63344,
+      "sha256": "530287ced856897339ca60232ecbeb7bd247c51c04ed03eb1f9e7bf3c25fb0e1"
     },
     {
       "path": "维护资料/GTD快捷操作源码/name-edit-state.test.cjs",
@@ -360,18 +365,28 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/refresh-input.native.js",
-      "bytes": 9021,
-      "sha256": "7ce3ff1aacc32ea8e8f20c9b8242387ece97554ba845053cd26fdb305a81238f"
+      "bytes": 8996,
+      "sha256": "82eab3e866556b8d497d3dc4875392ae1ca302ec5efab1f2c142ae7904fc2770"
     },
     {
       "path": "维护资料/GTD快捷操作源码/refresh-reading-mode.native.js",
-      "bytes": 3727,
-      "sha256": "b65f260519fcf060009b0622f63a51bbf1dc85fea9d5bd1214bb44cffcc3aa9a"
+      "bytes": 3751,
+      "sha256": "d63768f0724f9827d50819b7681d56a44a2174eaf3be21dff95911a5d88d187c"
     },
     {
       "path": "维护资料/GTD快捷操作源码/styles.css",
       "bytes": 9103,
       "sha256": "a79e0d2d63027a12ce4c6f2daedcd35aa4544775e3e671daf195fc1e999d4881"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/tree-keyboard.cjs",
+      "bytes": 5417,
+      "sha256": "2eeb688237b0120843e6f1eff688688ad8203a1724c2b99373b56bbcda1decd9"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/tree-keyboard.test.cjs",
+      "bytes": 2412,
+      "sha256": "78ce350b6c97988c1b1035cbfbec45dd7741c8eba779b85aa3b9ccc632eb245b"
     },
     {
       "path": "维护资料/GTD快捷操作源码/undo-history.cjs",
@@ -389,9 +404,24 @@
       "sha256": "23b3b3b845708aeac32d6abb8e0666f27913718635afb856e3ba80eefbb97562"
     },
     {
+      "path": "维护资料/GTD快捷操作源码/界面验证/build.py",
+      "bytes": 2365,
+      "sha256": "e5ce8e93826e217a915b908648bc407776a6daed9c0366d2510525bcaccee45a"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/界面验证/check.js",
+      "bytes": 14709,
+      "sha256": "03a8230d41437ba29daaae99e659821f645c835b375155574298dd4015c4958c"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/界面验证/fixture.js",
+      "bytes": 4913,
+      "sha256": "cd9e2809c9e7c0245429388abbd6d360d9eb4c7559fb639f80b879132ef81397"
+    },
+    {
       "path": "维护资料/README.md",
-      "bytes": 2409,
-      "sha256": "5d9e6595194038f5130679b13643fd63fab0eae0bc74b84399240f4cb8f8b3c5"
+      "bytes": 3046,
+      "sha256": "05a33954b3c503919c32945172e3fddd573137485b43dda3f10207b31f04a735"
     },
     {
       "path": "维护资料/底色来源.md",
@@ -400,8 +430,8 @@
     },
     {
       "path": "维护资料/构建GTD插件.py",
-      "bytes": 1247,
-      "sha256": "d1a060f7b2674f1194e937f4642e58122e2ad306cf8cbfdb3ea2cfeec56bb984"
+      "bytes": 1418,
+      "sha256": "acc895c4adbbe82a194e6ea167742f888cb64aeb22edea6a8941500f915099ea"
     },
     {
       "path": "维护资料/适配日历.py",
@@ -409,5 +439,5 @@
       "sha256": "7c5054d6221949474e3a8fa501eb7b579aaf16b75b5492d2ea828eeb742ce076"
     }
   ],
-  "documentationUpdatedAt": "2026-10-30"
+  "documentationUpdatedAt": "2026-11-02"
 }

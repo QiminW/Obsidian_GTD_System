@@ -49,8 +49,8 @@
    check(input()===original,'LocalTaskRefreshAlsoKeepsCompositionInput');
    original.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true,data:'中文'}));
    await pause(80);check(input()===original&&renders===initialRenders,'CompositionEndDoesNotInterruptContinuedTyping');
-   focus(outside);await until(()=>renders===initialRenders+1&&input()!==original,'deferred refresh');await pause(100);
-   check(input().value==='正在连续输入的草稿'&&renders===initialRenders+1,'DeferredRefreshCoalescesAndKeepsDraft');
+   focus(outside);await component.render();await pause(100);
+   check(input()===original&&input().value==='正在连续输入的草稿'&&renders===initialRenders,'IncrementalUpdatesKeepInputAndDraftAfterBlur');
    check(Math.abs(host.scrollTop-top)<2,'DeferredRefreshPreservesScroll');
    check(document.activeElement===outside,'DeferredRefreshDoesNotStealFocus');
    check(root.style.minHeight==='','EarlyDataviewReturnStillReleasesHeightAfterViewFinishes');
@@ -70,7 +70,7 @@
    const target=root.querySelector('[data-task-key="block:refresh-child"] [data-gtd-task-rename]');
    target.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1}));const beforePointer=renders;
    await component.render();check(target.isConnected&&renders===beforePointer,'PointerActionIsNotDetachedMidClick');
-   target.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:1}));await until(()=>renders===beforePointer+1,'pointer released');
+   target.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:1}));await component.render();check(renders===beforePointer,'PointerReleaseDoesNotRebuildView');
    await until(()=>input()&&!input().disabled,'pointer refresh completed');focus(input());type('连续新增一');input().dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
    await until(async()=>/  - \[ \] 连续新增一/m.test(await app.vault.read(file))&&input()&&!input().disabled&&input().value==='','first add');
    type('连续新增二');input().dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
@@ -82,7 +82,7 @@
    const beforeEscape=renders;await component.render();
    input().dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
    await pause(60);check(!form()&&!p.inlineTaskEntries.has(cancelledKey),'EscapeImmediatelyClosesAndDiscardsDraft');
-   await until(()=>renders===beforeEscape+1,'escape releases pending refresh');check(true,'EscapeAlsoReleasesDeferredRefresh');
+   await component.render();check(renders===beforeEscape&&!form(),'EscapeKeepsIncrementalUpdatesWorking');
   }catch(error){window.__gtdRefreshInputTest.error=error.message;window.__gtdRefreshInputTest.diagnostic={renders,focused:document.activeElement?.outerHTML.slice(0,180),form:!!form(),entryCount:p.inlineTaskEntriesFor(scope,path).length};window.__gtdRefreshInputTest.stack=error.stack?.split('\n').slice(0,3);}
   finally{
    p.readProjectTaskTree=originalRead;

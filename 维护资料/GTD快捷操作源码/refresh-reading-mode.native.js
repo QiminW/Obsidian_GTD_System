@@ -22,7 +22,7 @@
    original.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true}));
    button=document.body.createEl('button',{text:'演示测试离开输入',attr:{type:'button'}});button.style.cssText='position:fixed;top:0;left:-10000px';button.focus({preventScroll:true});
    if(!document.hasFocus()){original.dispatchEvent(new FocusEvent('blur',{relatedTarget:button}));original.dispatchEvent(new FocusEvent('focusout',{bubbles:true,relatedTarget:button}));}
-   await until(()=>form()&&form().querySelector('input')!==original,'deferred real refresh');
+   await pause(200);check(form()?.querySelector('input')===original,'RealDataviewUpdateKeepsExistingInputAfterBlur');
    await until(()=>!form().closest('.block-language-dataviewjs').style.minHeight,'height released');await pause(200);
    check(form().querySelector('input').value==='正在输入中文示例','RealDataviewRefreshKeepsDraft');
    check(Math.abs(preview.scrollTop-before)<2,'RealDeferredRefreshKeepsScroll');

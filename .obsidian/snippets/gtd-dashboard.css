@@ -537,13 +537,15 @@
   background:var(--gtd-task-level-background,transparent);
 }
 .gtd-project-progress .gtd-task-list .gtd-task-list {
-  margin-left: 6px !important;
-  padding-left: 9px !important;
+  margin-left: 8px !important;
+  padding-left: 16px !important;
   border-left-color: var(--gtd-line-soft);
 }
 .gtd-project-progress li[data-task-color-level] > .gtd-task-branch > .gtd-task-list,
 .gtd-project-progress li[data-task-color-level] > .gtd-task-list { border-left-color:var(--gtd-task-child-line,var(--gtd-line-soft)); }
-.gtd-project-progress summary.gtd-task-row::before { color:var(--text-muted); }
+.gtd-project-progress summary.gtd-task-row::before { color:var(--text-muted);font-size:18px;line-height:1;text-align:center; }
+.gtd-project-progress .gtd-project-arrow { font-size:18px;line-height:1;text-align:center; }
+.gtd-project-progress [data-gtd-tree-row]:focus-visible { outline:1px solid var(--gtd-accent-border);outline-offset:-1px; }
 .gtd-project-progress .gtd-task-row {
   color:var(--text-normal);
   background:var(--gtd-task-level-background,transparent);

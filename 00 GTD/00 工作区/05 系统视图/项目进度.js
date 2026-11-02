@@ -3,10 +3,11 @@ if (!plugin?.readProjectTaskTree) throw new Error('请启用最新版本的 GTD 
 const refreshGuard=plugin.protectProjectView(dv.component,dv.container);
 const finishView=refreshGuard.begin();
 try {
-const indexedPages = dv.pages('"00 GTD/00 工作区/01 项目"')
-  .where(p => !input?.activeOnly || (p.status || 'active') === 'active').sort(p => p.file.name).array();
-const byPath=new Map(indexedPages.map(page=>[page.file.path,page]));
-const pages=plugin.orderedProjectPaths(indexedPages.map(page=>page.file.path)).map(path=>byPath.get(path));
+function readPages(){
+  const indexed=dv.pages('"00 GTD/00 工作区/01 项目"').where(p=>!input?.activeOnly||(p.status||'active')==='active').sort(p=>p.file.name).array();
+  const byPath=new Map(indexed.map(page=>[page.file.path,page]));
+  return plugin.orderedProjectPaths([...byPath.keys()]).map(path=>byPath.get(path));
+}
 const statuses = { active:'进行中', paused:'暂缓', done:'已完成' };
 const scope = dv.current().file.path;
 const visibilityKey=scope+'::show-completed';
@@ -22,6 +23,11 @@ visibilityButton.addEventListener('click',event=>{
   app.workspace.trigger('gtd-completed-visibility-changed',scope);
 });
 const table = dv.container.createEl('table', { cls:'gtd-project-progress' });
+const keyboard=plugin.installProjectKeyboard(dv.component,table,scope);
+const reconcile=(parent,elements)=>{
+  const keep=new Set(elements);for(const child of [...parent.children])if(!keep.has(child))child.remove();
+  let cursor=parent.firstElementChild;for(const element of elements){if(element===cursor)cursor=cursor.nextElementSibling;else parent.insertBefore(element,cursor);}
+};
 dv.component.registerEvent(app.workspace.on('gtd-completed-visibility-changed',changedScope=>{
   if(changedScope!==scope||!table.isConnected)return;
   showCompleted=plugin.projectTreeExpanded(visibilityKey,true);
@@ -43,9 +49,10 @@ for (const label of ['项目','领域','状态','进度','完成 / 总计','截�
 }
 const body = table.createEl('tbody');
 const projectRows=new Map();
+let orderedPaths=[];
 const clearDropMarks=()=>dv.container.querySelectorAll('.gtd-drop-before,.gtd-drop-after').forEach(element=>element.classList.remove('gtd-drop-before','gtd-drop-after'));
 const dropSide=(event,element)=>event.clientY<element.getBoundingClientRect().top+element.getBoundingClientRect().height/2?'before':'after';
-function reorderProjectRows(){for(const path of plugin.orderedProjectPaths([...projectRows.keys()])){const pair=projectRows.get(path);body.append(pair.row,pair.detail);}}
+function reorderProjectRows(){reconcile(body,plugin.orderedProjectPaths(orderedPaths.filter(path=>projectRows.has(path))).flatMap(path=>{const pair=projectRows.get(path);return [pair.row,pair.detail];}));keyboard.refresh();}
 dv.component.registerEvent(app.workspace.on('gtd-project-order-changed',reorderProjectRows));
 function renderNameInput(parent,state,kind,unavailable=false) {
   const focusKey=kind==='project'?'projectNameFocusKey':'taskTitleFocusKey';
@@ -82,8 +89,10 @@ function renderNameInput(parent,state,kind,unavailable=false) {
     if(!state.busy&&form.isConnected&&form.getClientRects().length&&plugin[focusKey]===state.key&&state.ownerLeaf===app.workspace.activeLeaf?.id&&app.workspace.activeLeaf?.view.file?.path===state.scope){name.focus({preventScroll:true});name.setSelectionRange(state.selectionStart??0,state.selectionEnd??name.value.length);}
   });
 }
-for (const project of pages) {
+async function createProjectView(project) {
   const path = project.file.path, projectState = scope+'::project:'+path;
+  const projectId=JSON.stringify([path,'project']);
+  const eventRefs=[],registerProjectEvent=ref=>{eventRefs.push(ref);dv.component.registerEvent(ref);};
   let expanded = plugin.projectTreeExpanded(projectState), busy = false, rendering = 0;
   const row = body.createEl('tr'); row.dataset.projectPath = path;
   const title = row.createEl('td');
@@ -96,17 +105,23 @@ for (const project of pages) {
   row.addEventListener('drop',event=>{if(!plugin.draggedProject||plugin.draggedProject===path)return;event.preventDefault();event.stopPropagation();const source=plugin.draggedProject,side=dropSide(event,row);plugin.draggedProject=null;clearDropMarks();plugin.moveProjectDisplay(source,path,side).catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));});
   const toggle = title.createEl('button', { cls:'gtd-project-toggle', attr:{type:'button','aria-expanded':String(expanded),'aria-label':'展开或折叠项目：'+project.file.name} });
   const arrow = toggle.createSpan({ text:expanded?'▾':'▸', cls:'gtd-project-arrow' });
+  keyboard.register(row,{id:projectId,parent:null,label:'项目：'+project.file.name,expanded:()=>expanded,toggle:value=>setExpanded(value),rename:()=>projectNameSlot.querySelector('[data-gtd-project-rename]')?.click()});
   const projectNameSlot=title.createSpan({cls:'gtd-project-name-slot'});
+  let renderedName;
   function renderProjectName(){
-    projectNameSlot.empty();
     const state=plugin.projectNameEdits.get(JSON.stringify([scope,path]));
-    if(state){renderNameInput(projectNameSlot,state,'project');return;}
+    const signature=JSON.stringify([project.file.name,state?.key,state?.busy,state?.error]);
+    if(signature===renderedName)return;
+    if(projectNameSlot.contains(document.activeElement)&&!state?.busy&&refreshGuard.defer(path,()=>pair.update(project)))return;
+    keyboard.capture();projectNameSlot.empty();renderedName=signature;
+    if(state){renderNameInput(projectNameSlot,state,'project');keyboard.refresh();return;}
     const name=projectNameSlot.createEl('button',{text:project.file.name,cls:'gtd-project-name-edit',attr:{type:'button',title:'点击修改项目名称','aria-label':'修改项目名称：'+project.file.name}});
     name.dataset.gtdProjectRename='true';
     name.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();plugin.beginProjectNameEdit(scope,path,project.file.name).catch(error=>projectNameSlot.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));});
+    keyboard.refresh();
   }
   renderProjectName();
-  dv.component.registerEvent(app.workspace.on('gtd-project-name-edit',changedPath=>{
+  registerProjectEvent(app.workspace.on('gtd-project-name-edit',changedPath=>{
     if(changedPath!==path||!row.isConnected)return;
     for(const form of projectNameSlot.querySelectorAll('form[data-gtd-project-name-editor]'))if(plugin.projectNameEdits.get(form.dataset.gtdProjectNameEditor)?.busy)form.querySelectorAll('input,button').forEach(control=>control.disabled=true);
     renderProjectName();
@@ -116,7 +131,7 @@ for (const project of pages) {
   const add = title.createEl('button', { text:'＋', cls:'gtd-task-action gtd-project-add', attr:{ type:'button', 'aria-label':'添加项目任务：'+project.file.name, title:'添加项目任务' } });
   add.dataset.gtdProjectAdd='true';add.disabled=project.status==='done';
   add.addEventListener('click',()=>openInline());
-  row.createEl('td', { text:String(project.area||'—') });
+  const areaCell=row.createEl('td', { text:String(project.area||'—') });
   const statusCell=row.createEl('td');
   const statusButton=statusCell.createEl('button',{text:(statuses[project.status]||project.status||'进行中')+' ▾',cls:'gtd-project-status',attr:{type:'button',title:'项目操作：完成、恢复或归档','aria-label':'项目操作：'+project.file.name}});
   statusButton.dataset.gtdProjectMenu='true';statusButton.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();plugin.showProjectMenu(path,event);});
@@ -137,12 +152,19 @@ for (const project of pages) {
   });
   const detail = body.createEl('tr', { cls:'gtd-project-detail' }); detail.hidden = !expanded; detail.dataset.treeFor = path;
   const tree = detail.createEl('td', { attr:{ colspan:'6' } });
-  projectRows.set(path,{row,detail});
+  const taskCache=new Map(),entryCache=new Map(),dayCache=new Map(),orphanCache=new Map();
+  const pair={row,detail,dispose(){for(const ref of eventRefs)app.workspace.offref(ref);taskCache.clear();entryCache.clear();dayCache.clear();orphanCache.clear();},update:async page=>{
+    project=page;areaCell.textContent=String(project.area||'—');statusButton.textContent=(statuses[project.status]||project.status||'进行中')+' ▾';add.disabled=project.status==='done';
+    const next=project.deadline?dv.date(project.deadline)?.toFormat('yyyy-MM-dd')||String(project.deadline):'';
+    if(document.activeElement!==deadlineInput){projectDeadline=next;deadlineInput.value=next;}
+    renderProjectName();await renderTree();
+  }};
+  projectRows.set(path,pair);
   async function openInline(parent=null) {
     try {
       plugin.beginInlineTaskEntry(scope,path,parent);
       expanded=true;detail.hidden=false;toggle.setAttribute('aria-expanded','true');arrow.textContent='▾';plugin.setProjectTreeExpanded(projectState,true);
-      if(parent)plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+parent.key,true);
+      if(parent){plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+parent.key,true);const branch=taskCache.get(parent.key)?.branch;if(branch)branch.open=true;}
       await renderTree();
     } catch(error){tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)});}
   }
@@ -152,6 +174,7 @@ for (const project of pages) {
     else {
       plugin.taskDayPanels.set(key,{month:plugin.taskDayPanels.get(key)?.month||window.moment().startOf('month').format('YYYY-MM-DD'),ownerLeaf:app.workspace.activeLeaf?.id});
       plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+node.key,true);
+      const branch=taskCache.get(node.key)?.branch;if(branch)branch.open=true;
     }
     await renderTree();
   }
@@ -169,22 +192,23 @@ for (const project of pages) {
     }
   }
   async function renderTree() {
-    return refreshGuard.run(path,renderTreeNow);
+    return refreshGuard.run(path,renderTreeNow,true);
   }
   async function renderTreeNow() {
     const ticket = ++rendering;
     const model = await plugin.readProjectTaskTree(path);
-    if (ticket!==rendering||!tree.isConnected||refreshGuard.defer(path,renderTreeNow)) return;
+    if (ticket!==rendering||!tree.isConnected) return;
     row.dataset.done=String(model.done);row.dataset.total=String(model.total);
     bar.value=model.total?Math.round(model.done/model.total*100):0;
     bar.setAttribute('aria-label',project.file.name+' '+bar.value+'%');
     percent.textContent=model.total?bar.value+'%':'—';count.textContent=model.done+' / '+model.total;
-    tree.empty();
     if (!expanded) return;
+    keyboard.capture();
     const entries=plugin.inlineTaskEntriesFor(scope,path),mounted=new Set();
     const titleEdits=plugin.taskTitleEditsFor(scope,path),mountedTitles=new Set();
-    if (!model.roots.length&&!entries.length) tree.createDiv({ cls:'gtd-task-empty',text:'暂无任务' });
-    const list = tree.createEl('ul', { cls:'gtd-task-list' });
+    let empty=tree.querySelector(':scope > .gtd-task-empty');if(!empty)empty=tree.createDiv({cls:'gtd-task-empty',text:'暂无任务'});empty.hidden=!!(model.roots.length||entries.length);
+    const list = tree.querySelector(':scope > ul.gtd-task-list')||tree.createEl('ul', { cls:'gtd-task-list' });
+    const seenTasks=new Set(),seenEntries=new Set(),seenDays=new Set();
     const display=model.completedDisplay;
     const visibleKeys=new Set(display.activeKeys);
     if(!showCompleted){
@@ -198,6 +222,13 @@ for (const project of pages) {
     }
     const isVisible=node=>showCompleted||visibleKeys.has(node.key);
     function addDayPanel(parent,node,state,anchor) {
+      seenDays.add(node.key);
+      const saved=dayCache.get(node.key);
+      if(saved&&saved.month===state.month&&saved.state===state){
+        for(const button of saved.item.querySelectorAll('[data-gtd-arrange-date]')){const selected=node.days.includes(button.dataset.gtdArrangeDate);button.setAttribute('aria-pressed',String(selected));button.classList.toggle('is-selected',selected);button.disabled=busy;}
+        return saved.item;
+      }
+      saved?.item.remove();
       const item=parent.createEl('li',{cls:'gtd-day-panel-item'}),panel=item.createDiv({cls:'gtd-day-panel'});
       panel.setAttribute('popover','auto');
       panel.dataset.gtdDayPanel=node.key;
@@ -220,7 +251,11 @@ for (const project of pages) {
         button.addEventListener('click',()=>writeTask(()=>plugin.toggleProjectTaskDay(path,node.reference,date)));
       }
       panel.addEventListener('toggle',event=>{
-        if(event.newState==='closed'&&panel.isConnected&&plugin.taskDayPanels.get(scope+'::days:'+path+'::'+node.key)===state){plugin.taskDayPanels.delete(scope+'::days:'+path+'::'+node.key);anchor.setAttribute('aria-expanded','false');anchor.classList.toggle('is-active',node.days.length>0);}
+        if(event.newState==='closed'&&panel.isConnected&&plugin.taskDayPanels.get(scope+'::days:'+path+'::'+node.key)===state){
+          plugin.taskDayPanels.delete(scope+'::days:'+path+'::'+node.key);dayCache.delete(node.key);
+          const currentAnchor=taskCache.get(node.key)?.row.querySelector('[data-gtd-task-arrange]')||anchor;
+          currentAnchor.setAttribute('aria-expanded','false');currentAnchor.classList.toggle('is-active',node.days.length>0);item.remove();
+        }
       });
       window.requestAnimationFrame(()=>{
         if(!panel.isConnected||!anchor.getClientRects().length||state.ownerLeaf!==app.workspace.activeLeaf?.id||!app.workspace.activeLeaf.view.containerEl.contains(anchor))return;
@@ -229,9 +264,20 @@ for (const project of pages) {
         panel.style.left=Math.max(8,Math.min(box.left,window.innerWidth-size.width-8))+'px';
         panel.style.top=Math.max(8,box.bottom+size.height+4<window.innerHeight?box.bottom+4:box.top-size.height-4)+'px';
       });
+      dayCache.set(node.key,{item,month:state.month,state});return item;
     }
     function addEditor(parent,state,orphaned=false) {
       mounted.add(state.key);
+      seenEntries.add(state.key);
+      const saved=entryCache.get(state.key);
+      const updateEntry=cache=>{
+        const input=cache.input,wasBusy=cache.busy;cache.busy=state.busy;cache.form.dataset.gtdOrphaned=String(!!orphaned);
+        if(document.activeElement!==input||wasBusy&&!state.busy){input.value=state.draft;if(wasBusy&&!state.busy)input.setSelectionRange(state.selectionStart??input.value.length,state.selectionEnd??input.value.length);}
+        input.disabled=false;input.readOnly=state.busy;cache.submit.disabled=state.busy||orphaned;
+        const error=orphaned?'父任务已变化，请保留输入内容并重新选择父任务':state.error;
+        let notice=cache.form.querySelector('.gtd-inline-error');if(error&&!notice)notice=cache.form.createDiv({cls:'gtd-inline-error gtd-form-error',attr:{role:'alert'}});if(notice){notice.textContent=error||'';notice.hidden=!error;}
+      };
+      if(saved){updateEntry(saved);return saved.item;}
       const item=parent.createEl('li',{cls:'gtd-inline-task-item'});
       const entryDepth=Number(parent.closest('li[data-task-depth]')?.dataset.taskDepth??-1)+1;
       item.dataset.taskColorLevel=String(entryDepth%8);
@@ -239,7 +285,7 @@ for (const project of pages) {
       form.dataset.parentKey=state.parentKey;form.dataset.projectPath=path;form.dataset.gtdInlineEntryKey=state.key;
       const line=form.createDiv({cls:'gtd-inline-task-line'});
       const input=line.createEl('input',{attr:{type:'text','aria-label':state.parentKey?'子任务名称':'任务名称',placeholder:state.parentKey?'输入子任务，Enter 添加':'输入任务，Enter 添加',autocomplete:'off'}});
-      input.value=state.draft;input.disabled=state.busy;
+      input.value=state.draft;input.readOnly=state.busy;
       const submit=line.createEl('button',{text:'添加',attr:{type:'submit'}});submit.disabled=state.busy||orphaned;
       const close=line.createEl('button',{text:'×',cls:'gtd-task-action',attr:{type:'button','aria-label':'收起任务输入框',title:'收起输入框'}});
       close.dataset.gtdInlineClose='true';close.addEventListener('click',()=>plugin.closeInlineTaskEntry(state.key));
@@ -250,36 +296,57 @@ for (const project of pages) {
       input.addEventListener('keydown',event=>{
         if(event.isComposing||event.keyCode===229)return;
         if(event.key==='Escape'){event.preventDefault();event.stopPropagation();input.blur();plugin.closeInlineTaskEntry(state.key);}
-        else if(event.key==='Enter'){event.preventDefault();event.stopPropagation();if(!orphaned)form.requestSubmit();}
+        else if(event.key==='Enter'){event.preventDefault();event.stopPropagation();if(form.dataset.gtdOrphaned!=='true')form.requestSubmit();}
       });
       form.addEventListener('submit',event=>{
-        event.preventDefault();if(orphaned||state.busy)return;
+        event.preventDefault();if(form.dataset.gtdOrphaned==='true'||state.busy)return;
         state.draft=input.value;plugin.inlineTaskFocusKey=state.key;
         if(!state.draft.trim())return;
-        input.disabled=true;submit.disabled=true;plugin.saveInlineTaskEntry(state);
+        input.readOnly=true;submit.disabled=true;plugin.saveInlineTaskEntry(state);
       });
       const error=orphaned?'父任务已变化，请保留输入内容并重新选择父任务':state.error;
       if(error)form.createDiv({cls:'gtd-inline-error gtd-form-error',text:error,attr:{role:'alert'}});
       window.requestAnimationFrame(()=>{
         if(!state.busy&&form.isConnected&&form.getClientRects().length&&plugin.inlineTaskFocusKey===state.key&&state.ownerLeaf===app.workspace.activeLeaf?.id&&app.workspace.activeLeaf?.view.file?.path===scope){input.focus({preventScroll:true});input.setSelectionRange(state.selectionStart??input.value.length,state.selectionEnd??input.value.length);}
       });
+      const cache={item,form,input,submit,busy:state.busy};entryCache.set(state.key,cache);updateEntry(cache);return item;
     }
     function addNameEditor(parent,state,orphaned=false) {
       mountedTitles.add(state.key);
       renderNameInput(parent,state,'task',orphaned||busy);
     }
-    function addNode(parent,node) {
+    function addNode(parent,fresh,parentId=projectId) {
+      seenTasks.add(fresh.key);
+      let cached=taskCache.get(fresh.key);
+      const node=cached?.node||fresh;if(cached)Object.assign(node,fresh);
       const visibleChildren=showCompleted?node.children:node.children.filter(isVisible);
-      const item = parent.createEl('li'); item.dataset.taskKey=node.key; item.dataset.taskDepth=String(node.depth);item.dataset.taskColorLevel=String(node.depth%8);
-      let taskRow, childContainer;
-      if (visibleChildren.length) {
-        const branch=item.createEl('details',{cls:'gtd-task-branch'});
-        const key=scope+'::task:'+path+'::'+node.key;
-        branch.open=plugin.projectTreeExpanded(key,true);
-        taskRow=branch.createEl('summary',{cls:'gtd-task-row'});
-        childContainer=branch.createEl('ul',{cls:'gtd-task-list'});
-        branch.addEventListener('toggle',()=>plugin.setProjectTreeExpanded(key,branch.open));
-      } else taskRow=item.createDiv({cls:'gtd-task-row gtd-task-leaf'});
+      const titleEdit=titleEdits.find(state=>state.taskKey===node.key);
+      const panelKey=scope+'::days:'+path+'::'+node.key,panelState=plugin.taskDayPanels.get(panelKey);
+      const signature=JSON.stringify([node.title,node.status,node.due,node.days,node.done,node.total,node.children.length,!!visibleChildren.length,titleEdit?.key,titleEdit?.busy,titleEdit?.error,project.status]);
+      const item=cached?.item||document.createElement('li');
+      item.dataset.taskKey=node.key;item.dataset.taskDepth=String(node.depth);item.dataset.taskColorLevel=String(node.depth%8);
+      let taskRow=cached?.row,childContainer=cached?.children,branch=cached?.branch;
+      if(childContainer&&childContainer.parentElement!==(branch||item))(branch||item).append(childContainer);
+      const changingStructure=!!branch!==!!visibleChildren.length;
+      const focused=document.activeElement,editing=focused?.matches?.('input,textarea,select')&&!focused.disabled;
+      const deferHeader=cached&&cached.signature!==signature&&(refreshGuard.isPointerWithin(taskRow)||changingStructure&&refreshGuard.isPointerWithin(item)||editing&&((taskRow.contains(focused)&&!titleEdit?.busy)||(changingStructure&&item.contains(focused))));
+      if(deferHeader)refreshGuard.defer(path,renderTreeNow);
+      if(!cached||cached.signature!==signature&&!deferHeader){
+        keyboard.capture();
+        taskRow?.remove();
+        if(changingStructure){
+          if(branch){if(childContainer)item.append(childContainer);branch.remove();branch=null;}
+          if(visibleChildren.length){branch=document.createElement('details');branch.className='gtd-task-branch';item.prepend(branch);if(childContainer)branch.append(childContainer);}
+        }
+        if(visibleChildren.length){
+          if(!branch){branch=document.createElement('details');branch.className='gtd-task-branch';item.prepend(branch);}
+          const foldKey=scope+'::task:'+path+'::'+node.key;
+          if(!cached||changingStructure)branch.open=plugin.projectTreeExpanded(foldKey,true);
+          if(!branch.dataset.gtdBound){branch.dataset.gtdBound='true';branch.addEventListener('toggle',()=>plugin.setProjectTreeExpanded(foldKey,branch.open));}
+          taskRow=branch.createEl('summary',{cls:'gtd-task-row'});branch.prepend(taskRow);
+          if(!childContainer)childContainer=branch.createEl('ul',{cls:'gtd-task-list'});
+        }else taskRow=item.createDiv({cls:'gtd-task-row gtd-task-leaf'});
+        if(!branch)item.prepend(taskRow);
       taskRow.classList.toggle('is-completed',node.completed);taskRow.classList.toggle('is-cancelled',node.cancelled);
       const grip=taskRow.createSpan({text:'⋮⋮',cls:'gtd-drag-handle',attr:{draggable:'true',title:'拖动调整同级任务顺序','aria-label':'拖动排序任务：'+node.title}});grip.dataset.gtdTaskDrag='true';
       grip.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();});
@@ -295,7 +362,6 @@ for (const project of pages) {
       checkbox.checked=node.completed;checkbox.disabled=busy||node.cancelled;
       checkbox.addEventListener('click',e=>e.stopPropagation());
       checkbox.addEventListener('change',()=>writeTask(()=>plugin.toggleProjectTask(path,node.reference)));
-      const titleEdit=titleEdits.find(state=>state.taskKey===node.key);
       if(titleEdit)addNameEditor(taskRow,titleEdit);
       else{
         const name=taskRow.createEl('button',{text:node.title||'未命名任务',cls:'gtd-task-title gtd-task-title-edit',attr:{type:'button',title:'点击修改任务名称','aria-label':'修改任务名称：'+(node.title||'未命名任务')}});
@@ -315,7 +381,6 @@ for (const project of pages) {
       today.dataset.gtdTaskToday='true';today.dataset.gtdTaskAction='today';today.dataset.unavailable=String(node.cancelled);today.disabled=busy||node.cancelled;
       today.classList.toggle('is-active',node.days.includes(plugin.todayDateKey()));
       today.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();writeTask(()=>plugin.toggleProjectTaskToday(path,node.reference));});
-      const panelKey=scope+'::days:'+path+'::'+node.key,panelState=plugin.taskDayPanels.get(panelKey);
       const arrange=dates.createEl('button',{text:'排',cls:'gtd-task-day-button',attr:{type:'button',title:node.days.length?'已安排 '+node.days.length+' 天':'安排多个日期','aria-label':'安排日期：'+node.title,'aria-expanded':String(!!panelState)}});
       arrange.dataset.gtdTaskArrange='true';arrange.dataset.gtdTaskAction='arrange';arrange.dataset.unavailable=String(node.cancelled);arrange.disabled=busy||node.cancelled;
       arrange.classList.toggle('is-active',!!panelState||node.days.length>0);
@@ -337,16 +402,37 @@ for (const project of pages) {
           plugin.showTaskDeletionUndo(receipt,async()=>{if(tree.isConnected)await renderTree();});
         });
       });
-      if(childContainer)visibleChildren.forEach(child=>addNode(childContainer,child));
+        cached={item,node,row:taskRow,branch,children:childContainer,signature};taskCache.set(node.key,cached);
+      }
+      if(titleEdit)mountedTitles.add(titleEdit.key);
+      const rowId=JSON.stringify([path,node.key]);
+      const currentArrange=taskRow.querySelector('[data-gtd-task-arrange]');if(currentArrange){currentArrange.setAttribute('aria-expanded',String(!!panelState));currentArrange.classList.toggle('is-active',!!panelState||node.days.length>0);}
+      keyboard.register(taskRow,{id:rowId,parent:parentId,label:'任务：'+node.title,expanded:()=>!!cached.branch?.open,
+        toggle:cached.branch?value=>{cached.branch.open=value;plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+node.key,value);keyboard.refresh();}:null,
+        rename:()=>taskRow.querySelector('[data-gtd-task-rename]')?.click()});
+      const wanted=visibleChildren.map(child=>addNode(childContainer,child,rowId));
       const entry=entries.find(state=>state.parentKey===node.key);
-      if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});addEditor(childContainer,entry,node.completed||node.cancelled||entry.referenceStale);}
-      if(panelState){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});addDayPanel(childContainer,node,panelState,arrange);}
+      if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});wanted.push(addEditor(childContainer,entry,node.completed||node.cancelled||entry.referenceStale));}
+      if(panelState){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});wanted.push(addDayPanel(childContainer,node,panelState,taskRow.querySelector('[data-gtd-task-arrange]')));}
+      if(childContainer)reconcile(childContainer,wanted);
+      cached.children=childContainer;
+      return item;
     }
-    model.roots.filter(isVisible).forEach(node=>addNode(list,node));
-    for(const entry of entries)if(!mounted.has(entry.key))addEditor(list,entry,!!entry.parentKey);
-    for(const state of titleEdits)if(!mountedTitles.has(state.key))addNameEditor(list.createEl('li',{cls:'gtd-inline-task-item'}),state,true);
+    const wanted=model.roots.filter(isVisible).map(node=>addNode(list,node));
+    for(const entry of entries)if(!mounted.has(entry.key))wanted.push(addEditor(list,entry,!!entry.parentKey));
+    for(const state of titleEdits)if(!mountedTitles.has(state.key)){
+      let orphan=orphanCache.get(state.key);
+      if(!orphan){orphan=document.createElement('li');orphan.className='gtd-inline-task-item';addNameEditor(orphan,state,true);orphanCache.set(state.key,orphan);}
+      wanted.push(orphan);
+    }
+    reconcile(list,wanted);
+    for(const key of taskCache.keys())if(!seenTasks.has(key))taskCache.delete(key);
+    for(const key of entryCache.keys())if(!seenEntries.has(key))entryCache.delete(key);
+    for(const key of dayCache.keys())if(!seenDays.has(key))dayCache.delete(key);
+    for(const key of orphanCache.keys())if(!titleEdits.some(state=>state.key===key))orphanCache.delete(key);
+    keyboard.refresh();
   }
-  dv.component.registerEvent(app.workspace.on('gtd-inline-task-entry',(changedPath,change)=>{
+  registerProjectEvent(app.workspace.on('gtd-inline-task-entry',(changedPath,change)=>{
     if(changedPath!==path||!tree.isConnected)return;
     if(change?.type==='hide'){
       for(const form of tree.querySelectorAll('form.gtd-inline-task-entry'))if(form.dataset.gtdInlineEntryKey===change.key){
@@ -356,24 +442,39 @@ for (const project of pages) {
           else if(list.parentElement===tree&&!tree.querySelector('.gtd-task-empty'))tree.createDiv({cls:'gtd-task-empty',text:'暂无任务'});
         }
       }
-      refreshGuard.resume();return;
+      for(const [key,cache]of entryCache)if(!cache.item.isConnected)entryCache.delete(key);
+      refreshGuard.resume();keyboard.refresh();return;
     }
     renderTree().catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));
   }));
-  dv.component.registerEvent(app.workspace.on('gtd-task-day-changed',()=>{if(tree.isConnected)renderTree();}));
-  dv.component.registerEvent(app.workspace.on('gtd-task-title-edit',changedPath=>{
+  registerProjectEvent(app.workspace.on('gtd-task-day-changed',()=>{if(tree.isConnected)renderTree();}));
+  registerProjectEvent(app.workspace.on('gtd-task-title-edit',changedPath=>{
     if(changedPath!==path||!tree.isConnected)return;
     for(const form of tree.querySelectorAll('form[data-gtd-task-title-editor]'))if(plugin.taskTitleEdits.get(form.dataset.gtdTaskTitleEditor)?.busy)form.querySelectorAll('input,button').forEach(control=>control.disabled=true);
     renderTree().catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));
   }));
-  toggle.addEventListener('click',async()=>{
-    expanded=!expanded;detail.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded));arrow.textContent=expanded?'▾':'▸';
-    plugin.setProjectTreeExpanded(projectState,expanded);
-    if(expanded)try{await renderTree();}catch(error){tree.textContent=error.message||String(error);}
-  });
+  async function setExpanded(value){
+    expanded=value;detail.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded));arrow.textContent=expanded?'▾':'▸';
+    row.setAttribute('aria-expanded',String(expanded));plugin.setProjectTreeExpanded(projectState,expanded);
+    if(expanded)await renderTree();keyboard.refresh();
+  }
+  toggle.addEventListener('click',()=>setExpanded(!expanded).catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)})));
   treeRenderers.set(path,renderTree);
   await renderTree();
 }
-reorderProjectRows();
-if(!pages.length){const cell=body.createEl('tr').createEl('td',{text:'暂无项目'});cell.colSpan=6;}
+let projectUpdate;
+async function updateProjects(){
+  if(projectUpdate)return projectUpdate;
+  projectUpdate=(async()=>{
+    const pages=readPages();orderedPaths=pages.map(page=>page.file.path);const paths=new Set(orderedPaths);
+    for(const [path,pair]of projectRows)if(!paths.has(path)){pair.dispose();pair.row.remove();pair.detail.remove();projectRows.delete(path);treeRenderers.delete(path);}
+    for(const page of pages){const pair=projectRows.get(page.file.path);if(pair)await pair.update(page);else await createProjectView(page);}
+    reorderProjectRows();
+    if(!pages.length&&!body.children.length){const cell=body.createEl('tr').createEl('td',{text:'暂无项目'});cell.colSpan=6;}
+    keyboard.finish();
+  })();
+  try{await projectUpdate;}finally{projectUpdate=null;}
+}
+refreshGuard.setUpdate(updateProjects);
+await updateProjects();
 } finally { finishView(); }
