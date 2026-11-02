@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.10.2",
-  "builtAt": "2026-11-02T12:05:56+08:00",
+  "builtAt": "2026-11-02T12:10:12+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -300,23 +300,23 @@
     },
     {
       "path": "docs/images/promo-01-cover.png",
-      "bytes": 130209,
-      "sha256": "27eea692a99542b6e833c626911a092c45c94d432abee7bde6e876f4566b2746"
+      "bytes": 130146,
+      "sha256": "ef117bdd409b76cc69d9b986333c4bf06be5db50b3118aa7ecd65ad5d197c719"
     },
     {
       "path": "docs/images/promo-02-tasks.png",
-      "bytes": 138607,
-      "sha256": "3ffffc9cc9688f2abd11d01a279b57ffda61189c44c4b713e17ce710050a83e6"
+      "bytes": 138635,
+      "sha256": "242084d51bb800419b1a3f7fb3020d89f740e6a7908c0319985f3d0d98fc9001"
     },
     {
       "path": "docs/images/promo-03-calendar.png",
-      "bytes": 180995,
-      "sha256": "8b69d2c7ba6b3da4414a43385e73c44f3f0bc7ca74888deee41942a76755bc5c"
+      "bytes": 180973,
+      "sha256": "6edac9cdf1301f96f5c01bb81efa9a0c56871f71a52b9d6bf65b2375655a8e67"
     },
     {
       "path": "docs/images/promo-hero.png",
-      "bytes": 159691,
-      "sha256": "34974aa6285e3b7be79329186d01f4e4b0424dce55e19cb7bb32a07989408915"
+      "bytes": 160151,
+      "sha256": "582df25ca5e06a58933a4b9712aaa65b4a3dfd232dfd2ea04d4ca40a6256b067"
     },
     {
       "path": "docs/images/task-hierarchy.png",
@@ -450,13 +450,13 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 3875,
-      "sha256": "a512769e4f7bed5a2deed8ae1e3bc3faa36ec1c59d83762637701ed5657395d7"
+      "bytes": 3851,
+      "sha256": "f076f424cce43db65a7f71d1e1c000abf262ff684c7e4f355f3f577c1e9dddb6"
     },
     {
       "path": "维护资料/宣传配图.html",
       "bytes": 5368,
-      "sha256": "121d5a0cae71a1dcd113ca1d7064f79b4137eb322b5b9572f774abfb5065bb87"
+      "sha256": "1cb787316487fea4e2c6f21ac38ddac8f6e457588fdbbc6c2ae52c7f227363d9"
     },
     {
       "path": "维护资料/底色来源.md",
