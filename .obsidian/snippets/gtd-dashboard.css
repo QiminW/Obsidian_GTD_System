@@ -817,34 +817,79 @@
   color: #702f29;
 }
 .gtd-dashboard .tasks-calendar-day.is-outside { background: #eee9df; }
-.gtd-dashboard .tasks-calendar-content { height: 560px; min-height: 300px; }
+.gtd-dashboard .gtd-calendar-height-toggle {
+  min-width: 26px;
+  height: 25px;
+  min-height: 25px;
+  padding: 2px 5px;
+  border: 1px solid var(--gtd-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1;
+}
+.gtd-dashboard .gtd-calendar-height-toggle[aria-pressed=true] {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
 
-/* Day view follows its task count; week/month keep their calendar frame. */
-.gtd-dashboard .block-language-tasks-calendar:has(.tasks-calendar-content.is-day) {
+/* Natural content height in all modes; one toggle restores a compact frame. */
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) {
   height: auto;
   min-height: 0;
 }
-.gtd-dashboard .tasks-calendar-content.is-day {
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-content {
   height: auto !important; /* Override any saved manual resize. */
   min-height: 0;
   overflow: visible;
   resize: none;
 }
-.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-grid {
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid {
   flex: none;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto;
+  grid-auto-rows: auto;
   overflow: visible;
 }
-.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-day {
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-day {
   height: auto;
   overflow: visible;
 }
-.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-overdue-tasks {
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-day {
+  min-height: 64px;
+}
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-overdue-tasks {
   height: auto !important;
   max-height: none !important;
 }
-.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-overdue-list { overflow: visible; }
-.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-overdue-resize { display: none; }
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-overdue-list { overflow: visible; }
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-overdue-resize { display: none; }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-content {
+  height: 360px !important;
+  min-height: 0;
+  overflow: hidden;
+  resize: none;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-content.is-month { overflow: auto; }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month {
+  flex: none;
+  grid-template-rows: auto;
+  grid-auto-rows: auto;
+  overflow: visible;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day {
+  height: auto;
+  min-height: 64px;
+  overflow: visible;
+}
+/* Month rows scroll as a whole, so the upstream "more" clipping is unnecessary. */
+.gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: grid !important; }
+.gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-more { display: none !important; }
+@container (max-width: 560px) {
+  .gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: block !important; }
+}
+.is-mobile .gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: block !important; }
 
 /* Custom GTD forms only. */
 .gtd-action-modal { padding: 4px; }

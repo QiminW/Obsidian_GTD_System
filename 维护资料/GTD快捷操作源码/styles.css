@@ -1,5 +1,7 @@
 .gtd-quick-actions { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 22px; }
 .gtd-quick-actions button { min-height:34px; padding-inline:16px; }
+.gtd-calendar-height-toggle { min-width:28px; height:28px; min-height:28px; padding:2px 5px; border:1px solid var(--background-modifier-border); background:var(--interactive-normal); color:var(--text-muted); box-shadow:none; font-size:13px; line-height:1; }
+.gtd-calendar-height-toggle[aria-pressed=true] { background:var(--interactive-accent); color:var(--text-on-accent); }
 .gtd-board-home { display:flex; gap:5px; padding-inline:8px; white-space:nowrap; font-size:var(--font-ui-small); }
 .gtd-board-home svg { width:16px; height:16px; }
 .gtd-entry-form { display:grid; gap:16px; }

@@ -242,6 +242,8 @@ class QuickProjectModal extends EntryModal {
 module.exports = class GtdQuickActions extends Plugin {
   async onload() {
     this.data = (await this.loadData()) || {};
+    this.calendarLayout = installCalendarLayout(this);
+    this.register(() => this.calendarLayout?.destroy());
     this.inlineTaskEntries = new Map();
     this.inlineTaskFocusKey = '';
     this.taskTitleEdits = new Map();
