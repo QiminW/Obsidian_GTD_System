@@ -6,6 +6,15 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     for (const [card, name] of entry.cardNames) if (card.getAttribute('aria-label') !== name) card.setAttribute('aria-label', name);
     entry.cardNames.clear();
   };
+  const projectOf = card => {
+    const project = card.dataset.gtdProject || card.querySelector('.tasks-calendar-task-source')?.textContent.trim();
+    if (project) return project;
+    // Compatibility for cards mounted before the updated calendar renderer loads.
+    const key = Object.keys(card).find(key => key.startsWith('__reactProps$'));
+    const children = key ? card[key]?.children : [];
+    const path = (Array.isArray(children) ? children : [children]).find(child => typeof child?.props?.sourcePath === 'string')?.props.sourcePath;
+    return path?.replace(/\.md$/i, '').split('/').pop();
+  };
   function sync() {
     if (disposed) return;
     const roots = new Set([...scope.querySelectorAll(selector)].filter(root => root.closest('.gtd-dashboard')));
@@ -35,13 +44,13 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(compact));
       if (button.parentElement !== controls) controls.insertBefore(button, controls.querySelector('.tasks-calendar-mode-switch'));
-      const cards = new Set(root.querySelectorAll('.tasks-calendar-grid:is(.is-day,.is-week) .tasks-calendar-task'));
+      const cards = new Set(root.querySelectorAll('.tasks-calendar-grid .tasks-calendar-task'));
       for (const card of entry.cardNames.keys()) if (!cards.has(card)) entry.cardNames.delete(card);
       for (const card of cards) {
-        const project = card.querySelector('.tasks-calendar-task-source')?.textContent.trim();
+        const project = projectOf(card);
         const name = card.querySelector('.tasks-calendar-task-title')?.textContent.trim();
         if (!project || !name) continue;
-        const label = name + '\n所属项目：' + project;
+        const label = '所属项目：' + project;
         entry.cardNames.set(card, name);
         if (card.getAttribute('aria-label') !== label) card.setAttribute('aria-label', label);
       }
@@ -52,7 +61,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     if (records.some(record => record.target.nodeType === 1 && record.target.closest(selector) && (record.type !== 'attributes' || record.target.matches('.tasks-calendar-task'))
       || [...record.addedNodes, ...record.removedNodes].some(containsCalendar))) sync();
   });
-  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label'] });
+  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project'] });
   sync();
   return {
     refresh: sync,

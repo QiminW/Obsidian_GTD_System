@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.10.4",
-  "builtAt": "2026-11-03T16:26:45+08:00",
+  "version": "1.10.5",
+  "builtAt": "2026-11-03T16:47:58+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.10.4",
+      "version": "1.10.5",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,13 +100,13 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 110331,
-      "sha256": "63440d2a25e585fda200e856d98fc5ee77c7a96dbaabf094e50baa2ad8998406"
+      "bytes": 110881,
+      "sha256": "cffb2bec2d1353421ee607318429496cb2b4e849b3e0ed42a77bfd0d8c09e254"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 285,
-      "sha256": "e92ff95672d4ded6d583656966b1270388e0158f6c3027f777ace523e9a1364c"
+      "sha256": "1e01b52925a1e05aadeceb2e792f0a87239c60e9b5a127bb8e4e7805322a8bc6"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
@@ -165,8 +165,8 @@
     },
     {
       "path": ".obsidian/plugins/tasks-calendar/main.js",
-      "bytes": 565468,
-      "sha256": "f59c772ce417fa101283588b361a1e433afe4237bfdb67edc64e918434277e69"
+      "bytes": 565596,
+      "sha256": "0356a34c2a72938ed1a0f7f1a78d905a47ef8720d7dd67e32779c82d6ed39e66"
     },
     {
       "path": ".obsidian/plugins/tasks-calendar/manifest.json",
@@ -250,8 +250,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 16980,
-      "sha256": "8c35af72822e6d90da77a4103c8979254654984b6108f7874646ffb6a7a01267"
+      "bytes": 16998,
+      "sha256": "e9039028a0f27073e2137f2d0b06372ebd29b904593625fa8bc1d803f19550b8"
     },
     {
       "path": "00 GTD/首页.md",
@@ -266,12 +266,12 @@
     {
       "path": "README.md",
       "bytes": 2447,
-      "sha256": "6ada267bb4d048715d4a684c629c677bc4b4b372826727a631a4c0ca802506dd"
+      "sha256": "10f78164624890a6171d905304f71fec248930a920e7ca850771bc085df12946"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
-      "bytes": 2776,
-      "sha256": "18d1b3fddbbf42d5589d74b528a452d40f76677026f3bb3951e486337ce0bec4"
+      "bytes": 2892,
+      "sha256": "5490fe5e524914c0364f7e319eeebd1818e69c38e55cce978afa8b9c70aee61c"
     },
     {
       "path": "docs/images/calendar-week.png",
@@ -330,8 +330,8 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 15386,
-      "sha256": "565fb231dfc012cc3af13c0f3a1d0a784cc3f5d145933c15c39071726a9cba68"
+      "bytes": 15407,
+      "sha256": "2dc4bf6510f53a62c566d89f4c716a6d1eb5862778df53f05aef9fe954794cd7"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -340,13 +340,13 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.cjs",
-      "bytes": 3700,
-      "sha256": "f40aa731668f2a2529eee95e5e738b8e51297b1451472c4418eefa76b8641b00"
+      "bytes": 4241,
+      "sha256": "a2d6121ff4b20430f1f4742580ad395b97d56d2412cf7a9e4c2acfc0372e0ebd"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.native.js",
-      "bytes": 11718,
-      "sha256": "9b97372c7cd6b11d8e21b82a9343dc5b10dd7998dc7d91a6b96b92a73d627a3c"
+      "bytes": 12864,
+      "sha256": "6ec33c105b7d4238de88e0a272a8eabb3589de77da5422ebf9cb6fa36b3a5e0e"
     },
     {
       "path": "维护资料/GTD快捷操作源码/completed-display.test.cjs",
@@ -445,8 +445,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 4114,
-      "sha256": "3d50e526184249b9a054e3dce881890f80a4631aec83201ab7e2d4f6ea1c6fdf"
+      "bytes": 4343,
+      "sha256": "4fedc13c556c3763c481c13a5aafe9ba68518f02eabfbab0c9cd639c4e7d80b5"
     },
     {
       "path": "维护资料/底色来源.md",
@@ -460,8 +460,8 @@
     },
     {
       "path": "维护资料/适配日历.py",
-      "bytes": 1218,
-      "sha256": "7c5054d6221949474e3a8fa501eb7b579aaf16b75b5492d2ea828eeb742ce076"
+      "bytes": 1498,
+      "sha256": "4f173bf4cc2d616cfffb2b8d6fe02fcfc0c45bbc274692fa10a95254a8fe18a8"
     }
   ],
   "documentationUpdatedAt": "2026-11-03"

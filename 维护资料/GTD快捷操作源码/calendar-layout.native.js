@@ -45,6 +45,7 @@
       list.replaceChildren();
       for (let j = 0; j < (i === 0 ? count : 0); j++) {
         const task = card.cloneNode(true); task.hidden = false;
+        task.dataset.gtdProject = '演示项目';
         task.querySelector('.tasks-calendar-task-title-content').textContent = j === 0 ? '验证任务：较长的任务名称应换行并且完整显示' : '演示任务 ' + (j + 1);
         list.append(task);
       }
@@ -91,11 +92,20 @@
       let projectLabel = renamedCard.querySelector('.tasks-calendar-task-source');
       if (!projectLabel) { projectLabel = document.createElement('button'); projectLabel.className = 'tasks-calendar-task-source'; renamedCard.append(projectLabel); }
       projectLabel.textContent = '项目改名演示';
+      renamedCard.dataset.gtdProject = '项目改名演示';
       renamedCard.querySelector('.tasks-calendar-task-title-content').textContent = '任务改名演示';
       await pause();
-      check('task and project renames update the hover label', renamedCard.getAttribute('aria-label') === '任务改名演示\n所属项目：项目改名演示');
+      check('task and project renames update the hover label', renamedCard.getAttribute('aria-label') === '所属项目：项目改名演示');
       renamedCard.setAttribute('aria-label', '任务改名演示'); await pause();
-      check('upstream tooltip reset retains project information', renamedCard.getAttribute('aria-label') === '任务改名演示\n所属项目：项目改名演示');
+      check('upstream tooltip reset retains project information', renamedCard.getAttribute('aria-label') === '所属项目：项目改名演示');
+      const duplicateCards = [...b.root.querySelectorAll('.tasks-calendar-task')].slice(0, 2);
+      duplicateCards.forEach((task, i) => {
+        task.querySelector('.tasks-calendar-task-title-content').textContent = '同名任务';
+        task.querySelector('.tasks-calendar-task-source')?.remove();
+        task.dataset.gtdProject = i === 0 ? '项目甲' : '项目乙';
+      });
+      await pause();
+      check('month cards with identical task names keep their exact projects without a source row', duplicateCards[0].getAttribute('aria-label') === '所属项目：项目甲' && duplicateCards[1].getAttribute('aria-label') === '所属项目：项目乙');
       const controls = a.root.querySelector('.tasks-calendar-controls');
       const replacement = controls.cloneNode(true); replacement.querySelector('.gtd-calendar-height-toggle').remove(); controls.replaceWith(replacement); await pause();
       check('React toolbar replacement restores one toggle and compact state', a.root.querySelectorAll('.gtd-calendar-height-toggle').length === 1 && a.root.querySelector('.gtd-calendar-height-toggle').getAttribute('aria-pressed') === 'true');
@@ -121,11 +131,11 @@
             const tasks = [...original.querySelectorAll('.tasks-calendar-day .tasks-calendar-task')];
             check(`live ${mode}/${compact}: native layout does not hide task cards`, tasks.every(t => getComputedStyle(t).display !== 'none'), { rendered: tasks.length, visible: tasks.filter(t => getComputedStyle(t).display !== 'none').length });
             check(`live ${mode}/${compact}: toolbar keeps one toggle`, original.querySelectorAll('.gtd-calendar-height-toggle').length === 1);
-            if (mode !== 'Month') {
-              const sourced = tasks.filter(t => t.querySelector('.tasks-calendar-task-source'));
-              check(`live ${mode}/${compact}: project is hidden on the card`, sourced.every(t => getComputedStyle(t.querySelector('.tasks-calendar-task-source')).display === 'none'));
-              check(`live ${mode}/${compact}: hover label includes the matching project`, sourced.every(t => t.getAttribute('aria-label').includes('所属项目：' + t.querySelector('.tasks-calendar-task-source').textContent.trim())));
-            }
+            const sourced = tasks.filter(t => t.querySelector('.tasks-calendar-task-source'));
+            check(`live ${mode}/${compact}: project is hidden on the card`, sourced.every(t => getComputedStyle(t.querySelector('.tasks-calendar-task-source')).display === 'none'));
+            const expected = new Map([['确认本周重点','示例项目 - 工作周报'],['完成需求沟通','示例项目 - 工作周报'],['编写周报初稿','示例项目 - 工作周报'],['整理核心概念','示例项目 - 课程学习'],['完成章节练习','示例项目 - 课程学习']]);
+            const known = tasks.filter(t => expected.has(t.querySelector('.tasks-calendar-task-title').textContent.trim()));
+            check(`live ${mode}/${compact}: tooltip is the exact project rather than the task name`, known.length > 0 && known.every(t => t.getAttribute('aria-label') === '所属项目：' + expected.get(t.querySelector('.tasks-calendar-task-title').textContent.trim())));
             if (mode === 'Month') {
               const days = [...original.querySelectorAll('.tasks-calendar-day')];
               check(`live month/${compact}: cells do not clip cards`, days.every(d => d.scrollHeight <= d.clientHeight + 1));
