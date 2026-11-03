@@ -44,7 +44,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(compact));
       if (button.parentElement !== controls) controls.insertBefore(button, controls.querySelector('.tasks-calendar-mode-switch'));
-      const cards = new Set(root.querySelectorAll('.tasks-calendar-grid .tasks-calendar-task'));
+      const cards = new Set(root.querySelectorAll('.tasks-calendar-task'));
       for (const card of entry.cardNames.keys()) if (!cards.has(card)) entry.cardNames.delete(card);
       for (const card of cards) {
         const project = projectOf(card);

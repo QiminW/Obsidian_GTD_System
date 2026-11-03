@@ -106,6 +106,21 @@
       });
       await pause();
       check('month cards with identical task names keep their exact projects without a source row', duplicateCards[0].getAttribute('aria-label') === '所属项目：项目甲' && duplicateCards[1].getAttribute('aria-label') === '所属项目：项目乙');
+      let overdue = a.root.querySelector('.tasks-calendar-overdue-list');
+      if (!overdue) {
+        const section = document.createElement('section'); section.className = 'tasks-calendar-overdue-tasks';
+        overdue = document.createElement('div'); overdue.className = 'tasks-calendar-task-list tasks-calendar-overdue-list';
+        section.append(overdue); a.content.append(section);
+      }
+      const overdueCard = card.cloneNode(true); overdueCard.hidden = false; overdueCard.dataset.gtdProject = '逾期项目';
+      overdueCard.querySelector('.tasks-calendar-task-title-content').textContent = '逾期任务';
+      const overdueMeta = document.createElement('span'); overdueMeta.className = 'tasks-calendar-overdue-meta';
+      overdueMeta.textContent = '1 day ago · 2026-11-02 · 00 GTD/项目/逾期项目'; overdueCard.append(overdueMeta); overdue.replaceChildren(overdueCard);
+      await pause();
+      check('overdue cards show their exact project on hover', overdueCard.getAttribute('aria-label') === '所属项目：逾期项目');
+      check('overdue cards hide the second metadata line and retain their task name', getComputedStyle(overdueMeta).display === 'none' && overdueCard.querySelector('.tasks-calendar-task-title').offsetHeight > 0);
+      overdueCard.dataset.gtdProject = '逾期项目改名'; await pause();
+      check('overdue project renames update the tooltip', overdueCard.getAttribute('aria-label') === '所属项目：逾期项目改名');
       const controls = a.root.querySelector('.tasks-calendar-controls');
       const replacement = controls.cloneNode(true); replacement.querySelector('.gtd-calendar-height-toggle').remove(); controls.replaceWith(replacement); await pause();
       check('React toolbar replacement restores one toggle and compact state', a.root.querySelectorAll('.gtd-calendar-height-toggle').length === 1 && a.root.querySelector('.gtd-calendar-height-toggle').getAttribute('aria-pressed') === 'true');
@@ -128,11 +143,12 @@
             const toggle = original.querySelector('.gtd-calendar-height-toggle');
             if ((toggle.getAttribute('aria-pressed') === 'true') !== compact) toggle.click();
             await pause();
-            const tasks = [...original.querySelectorAll('.tasks-calendar-day .tasks-calendar-task')];
+            const tasks = [...original.querySelectorAll('.tasks-calendar-task')];
             check(`live ${mode}/${compact}: native layout does not hide task cards`, tasks.every(t => getComputedStyle(t).display !== 'none'), { rendered: tasks.length, visible: tasks.filter(t => getComputedStyle(t).display !== 'none').length });
             check(`live ${mode}/${compact}: toolbar keeps one toggle`, original.querySelectorAll('.gtd-calendar-height-toggle').length === 1);
             const sourced = tasks.filter(t => t.querySelector('.tasks-calendar-task-source'));
             check(`live ${mode}/${compact}: project is hidden on the card`, sourced.every(t => getComputedStyle(t.querySelector('.tasks-calendar-task-source')).display === 'none'));
+            check(`live ${mode}/${compact}: overdue metadata is hidden`, [...original.querySelectorAll('.tasks-calendar-overdue-meta')].every(m => getComputedStyle(m).display === 'none'));
             const expected = new Map([['确认本周重点','示例项目 - 工作周报'],['完成需求沟通','示例项目 - 工作周报'],['编写周报初稿','示例项目 - 工作周报'],['整理核心概念','示例项目 - 课程学习'],['完成章节练习','示例项目 - 课程学习']]);
             const known = tasks.filter(t => expected.has(t.querySelector('.tasks-calendar-task-title').textContent.trim()));
             check(`live ${mode}/${compact}: tooltip is the exact project rather than the task name`, known.length > 0 && known.every(t => t.getAttribute('aria-label') === '所属项目：' + expected.get(t.querySelector('.tasks-calendar-task-title').textContent.trim())));
