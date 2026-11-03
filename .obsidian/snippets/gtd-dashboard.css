@@ -819,6 +819,33 @@
 .gtd-dashboard .tasks-calendar-day.is-outside { background: #eee9df; }
 .gtd-dashboard .tasks-calendar-content { height: 560px; min-height: 300px; }
 
+/* Day view follows its task count; week/month keep their calendar frame. */
+.gtd-dashboard .block-language-tasks-calendar:has(.tasks-calendar-content.is-day) {
+  height: auto;
+  min-height: 0;
+}
+.gtd-dashboard .tasks-calendar-content.is-day {
+  height: auto !important; /* Override any saved manual resize. */
+  min-height: 0;
+  overflow: visible;
+  resize: none;
+}
+.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-grid {
+  flex: none;
+  grid-template-rows: auto auto;
+  overflow: visible;
+}
+.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-day {
+  height: auto;
+  overflow: visible;
+}
+.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-overdue-tasks {
+  height: auto !important;
+  max-height: none !important;
+}
+.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-overdue-list { overflow: visible; }
+.gtd-dashboard .tasks-calendar-content.is-day .tasks-calendar-overdue-resize { display: none; }
+
 /* Custom GTD forms only. */
 .gtd-action-modal { padding: 4px; }
 .gtd-action-modal h2 { margin: 0 0 12px; color: var(--text-accent); font-size: 19px; font-weight: 650; }
