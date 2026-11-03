@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.10.3 的逻辑、Obsidian 接口、日历桥接、日历高度切换、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.10.4 的逻辑、Obsidian 接口、日历桥接、日历高度切换、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -32,7 +32,7 @@ node --test
 
 ## Tasks Calendar 截止日红底
 
-`calendar-layout.cjs` 只在 GTD 页面为日历工具栏加入高度切换按钮，保留任务 DOM 和输入状态。`calendarCompact` 保存显示偏好，卸载时移除按钮并断开观察器。
+`calendar-layout.cjs` 在 GTD 页面为日历工具栏加入高度切换按钮，并将日、周卡片的项目名称放入悬浮提示，保留任务 DOM 和输入状态。`calendarCompact` 保存显示偏好；卸载时恢复任务提示、移除按钮并断开观察器。
 
 `calendar-layout.native.js` 在专用 `Obsidian-GTD-Demo` 演示库运行，验证日／周／月在宽屏、窄屏、密集任务、工具栏重建及插件重新安装后的高度、滚动和偏好保留。通过 Obsidian CLI 的 `eval` 执行；源码在另一个目录时，先将 `window.__gtdCalendarSourceRoot` 设为包含 `维护资料` 的仓库根目录。结果保存在 `window.__gtdCalendarLayoutTest`，临时界面会自动清理。
 

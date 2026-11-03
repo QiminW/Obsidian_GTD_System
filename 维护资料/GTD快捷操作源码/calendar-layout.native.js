@@ -87,6 +87,15 @@
       check('compact preference applies to all GTD calendars', b.root.classList.contains('gtd-calendar-compact'));
       check('unrelated plugin data survives preference save', saved.at(-1).unrelated === 'preserve');
       check('non-GTD calendar is untouched', !outside.root.querySelector('.gtd-calendar-height-toggle') && !outside.root.classList.contains('gtd-calendar-compact'));
+      const renamedCard = a.root.querySelector('.tasks-calendar-task');
+      let projectLabel = renamedCard.querySelector('.tasks-calendar-task-source');
+      if (!projectLabel) { projectLabel = document.createElement('button'); projectLabel.className = 'tasks-calendar-task-source'; renamedCard.append(projectLabel); }
+      projectLabel.textContent = '项目改名演示';
+      renamedCard.querySelector('.tasks-calendar-task-title-content').textContent = '任务改名演示';
+      await pause();
+      check('task and project renames update the hover label', renamedCard.getAttribute('aria-label') === '任务改名演示\n所属项目：项目改名演示');
+      renamedCard.setAttribute('aria-label', '任务改名演示'); await pause();
+      check('upstream tooltip reset retains project information', renamedCard.getAttribute('aria-label') === '任务改名演示\n所属项目：项目改名演示');
       const controls = a.root.querySelector('.tasks-calendar-controls');
       const replacement = controls.cloneNode(true); replacement.querySelector('.gtd-calendar-height-toggle').remove(); controls.replaceWith(replacement); await pause();
       check('React toolbar replacement restores one toggle and compact state', a.root.querySelectorAll('.gtd-calendar-height-toggle').length === 1 && a.root.querySelector('.gtd-calendar-height-toggle').getAttribute('aria-pressed') === 'true');
@@ -94,6 +103,7 @@
       check('reinstall retains saved compact preference', a.root.classList.contains('gtd-calendar-compact') && a.root.querySelectorAll('.gtd-calendar-height-toggle').length === 1);
       controller.destroy(); controller = null;
       check('unload removes controls and layout state', !host.querySelector('.gtd-calendar-height-toggle,.gtd-calendar-compact'));
+      check('unload restores the original task tooltip', renamedCard.getAttribute('aria-label') === '任务改名演示');
     }
     if (typeof install === 'function') {
       const previousCompact = livePlugin.data.calendarCompact;
@@ -111,6 +121,11 @@
             const tasks = [...original.querySelectorAll('.tasks-calendar-day .tasks-calendar-task')];
             check(`live ${mode}/${compact}: native layout does not hide task cards`, tasks.every(t => getComputedStyle(t).display !== 'none'), { rendered: tasks.length, visible: tasks.filter(t => getComputedStyle(t).display !== 'none').length });
             check(`live ${mode}/${compact}: toolbar keeps one toggle`, original.querySelectorAll('.gtd-calendar-height-toggle').length === 1);
+            if (mode !== 'Month') {
+              const sourced = tasks.filter(t => t.querySelector('.tasks-calendar-task-source'));
+              check(`live ${mode}/${compact}: project is hidden on the card`, sourced.every(t => getComputedStyle(t.querySelector('.tasks-calendar-task-source')).display === 'none'));
+              check(`live ${mode}/${compact}: hover label includes the matching project`, sourced.every(t => t.getAttribute('aria-label').includes('所属项目：' + t.querySelector('.tasks-calendar-task-source').textContent.trim())));
+            }
             if (mode === 'Month') {
               const days = [...original.querySelectorAll('.tasks-calendar-day')];
               check(`live month/${compact}: cells do not clip cards`, days.every(d => d.scrollHeight <= d.clientHeight + 1));

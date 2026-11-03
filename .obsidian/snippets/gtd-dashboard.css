@@ -805,6 +805,7 @@
   box-shadow: inset 2px 0 0 #68513d;
   color: #453627;
 }
+.gtd-dashboard .tasks-calendar-grid:is(.is-day,.is-week) .tasks-calendar-task-source { display: none; }
 /* Use the source deadline, never the projected dates of arranged occurrences. */
 :is(.gtd-dashboard, .workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content) .tasks-calendar-task[data-gtd-deadline="true"],
 .tasks-calendar-drag-overlay[data-gtd-deadline="true"] {
