@@ -856,10 +856,11 @@
 }
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-day {
   height: auto;
+  min-height: 160px;
   overflow: visible;
 }
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-day {
-  min-height: 64px;
+  min-height: 112px;
 }
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-overdue-tasks {
   height: auto !important;
@@ -885,10 +886,10 @@
 }
 .gtd-dashboard .gtd-calendar-compact .tasks-calendar-day {
   height: auto;
-  min-height: 112px;
+  min-height: 160px;
   overflow: hidden;
 }
-.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day { min-height: 42px; }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day { min-height: 112px; }
 .gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day:has(.tasks-calendar-task) {
   height: 112px;
   min-height: 112px;

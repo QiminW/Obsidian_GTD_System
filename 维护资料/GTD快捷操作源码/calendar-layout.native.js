@@ -64,6 +64,11 @@
     for (const width of [1200, 390]) for (const mode of ['day', 'week', 'month']) {
       const sparse = fixture(mode, 0, width), dense = fixture(mode, 60, width);
       await pause();
+      const minimumDayHeight = mode === 'month' ? 112 : 160;
+      check(`${mode}/${width}: empty expanded dates retain a useful minimum height`, sparse.days.every(day => day.clientHeight >= minimumDayHeight - 2), sparse.days.map(day => day.clientHeight));
+      sparse.root.querySelector('.gtd-calendar-height-toggle').click(); await pause();
+      check(`${mode}/${width}: empty compact dates retain a useful minimum height`, sparse.days.every(day => day.clientHeight >= minimumDayHeight - 2), sparse.days.map(day => day.clientHeight));
+      sparse.root.querySelector('.gtd-calendar-height-toggle').click(); await pause();
       check(`${mode}/${width}: height follows workload and overrides saved height`, dense.content.offsetHeight > sparse.content.offsetHeight + 250, { sparse: sparse.content.offsetHeight, dense: dense.content.offsetHeight });
       check(`${mode}/${width}: expanded tasks are not clipped`, dense.days.every(d => d.scrollHeight <= d.clientHeight + 1), dense.days.map(d => [d.clientHeight, d.scrollHeight]));
       const button = dense.root.querySelector('.gtd-calendar-height-toggle');
