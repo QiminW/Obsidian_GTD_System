@@ -873,25 +873,13 @@
   overflow: hidden;
   resize: none;
 }
-.gtd-dashboard .gtd-calendar-compact .tasks-calendar-content.is-month { overflow: auto; }
-.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month {
-  flex: none;
-  grid-template-rows: auto;
-  grid-auto-rows: auto;
-  overflow: visible;
-}
-.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day {
-  height: auto;
-  min-height: 64px;
-  overflow: visible;
-}
-/* Month rows scroll as a whole, so the upstream "more" clipping is unnecessary. */
-.gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: grid !important; }
-.gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-more { display: none !important; }
+/* Expanded months show every task; compact months use the native "more" button. */
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: grid !important; }
+.gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-more { display: none !important; }
 @container (max-width: 560px) {
-  .gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: block !important; }
+  .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: block !important; }
 }
-.is-mobile .gtd-dashboard .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: block !important; }
+.is-mobile .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: block !important; }
 
 /* Custom GTD forms only. */
 .gtd-action-modal { padding: 4px; }

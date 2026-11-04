@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.10.6",
-  "builtAt": "2026-11-03T16:51:57+08:00",
+  "builtAt": "2026-11-04T15:45:39+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -180,8 +180,8 @@
     },
     {
       "path": ".obsidian/snippets/gtd-dashboard.css",
-      "bytes": 33609,
-      "sha256": "d1b975e7ab9eec2a7b96574008d9bb0dc8b231ee64f34e5ef900edcafd15bdbe"
+      "bytes": 33433,
+      "sha256": "cfd57b4b99d071914ec15c163703f66790a189ee4c940e7dfd3f89077269391c"
     },
     {
       "path": ".obsidian/templates.json",
@@ -250,8 +250,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 17086,
-      "sha256": "7b7d6eb2667ab057a17d442e1344abb6aca5c2373ebe1eca71a9697b7223761a"
+      "bytes": 17185,
+      "sha256": "989051e80926cd63913c8c531570cadf48d52ecf3777c3db031958e3976f6c52"
     },
     {
       "path": "00 GTD/首页.md",
@@ -266,7 +266,7 @@
     {
       "path": "README.md",
       "bytes": 2447,
-      "sha256": "9a4600ec88964bf4cd721ffbbe32d40fd4cee0fec32487a0fe6b55924230b78b"
+      "sha256": "89e09bde59174d72d5705e57a3fc6b248ca14718d0fe086761fb412506f48d07"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -330,8 +330,8 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 15487,
-      "sha256": "5c54f5985bdffb5e41fe6b6605262676fb3b88435981bf284da6296dd92c070d"
+      "bytes": 15589,
+      "sha256": "8752a1afed1b92ec837a8f4c45a07130bba4406ae765e65b7f38034a2a0f1d45"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -345,8 +345,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.native.js",
-      "bytes": 14518,
-      "sha256": "1a016ae9a519047b2ba8b950ca200775c0d5dc65011db5e369b317f6ec29f5c2"
+      "bytes": 15795,
+      "sha256": "adfdcab283ed32b876824da34cb3b32d92007a14f26298373c2311bc5d9d387b"
     },
     {
       "path": "维护资料/GTD快捷操作源码/completed-display.test.cjs",
@@ -464,5 +464,5 @@
       "sha256": "4f173bf4cc2d616cfffb2b8d6fe02fcfc0c45bbc274692fa10a95254a8fe18a8"
     }
   ],
-  "documentationUpdatedAt": "2026-11-03"
+  "documentationUpdatedAt": "2026-11-04"
 }
