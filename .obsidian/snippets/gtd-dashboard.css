@@ -867,12 +867,39 @@
 }
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-overdue-list { overflow: visible; }
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-overdue-resize { display: none; }
-.gtd-dashboard .gtd-calendar-compact .tasks-calendar-content {
-  height: 360px !important;
+.gtd-dashboard .gtd-calendar-compact {
+  height: auto;
   min-height: 0;
-  overflow: hidden;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-content {
+  height: auto !important;
+  min-height: 0;
+  overflow: visible;
   resize: none;
 }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid {
+  flex: none;
+  grid-template-rows: auto;
+  grid-auto-rows: auto;
+  overflow: visible;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-day {
+  height: auto;
+  min-height: 112px;
+  overflow: hidden;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day { min-height: 42px; }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-grid.is-month .tasks-calendar-day:has(.tasks-calendar-task) {
+  height: 112px;
+  min-height: 112px;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-task[data-gtd-compact-hidden] { display: none !important; }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-overdue-tasks {
+  height: auto !important;
+  max-height: none !important;
+}
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-overdue-list { overflow: visible; }
+.gtd-dashboard .gtd-calendar-compact .tasks-calendar-overdue-resize { display: none; }
 /* Expanded months show every task; compact months use the native "more" button. */
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-task[hidden] { display: grid !important; }
 .gtd-dashboard .block-language-tasks-calendar:not(.gtd-calendar-compact) .tasks-calendar-grid.is-month .tasks-calendar-more { display: none !important; }

@@ -70,20 +70,25 @@
       check(`${mode}/${width}: exactly one compact toggle`, dense.root.querySelectorAll('.gtd-calendar-height-toggle').length === 1);
       if (button) {
         const task = dense.root.querySelector('.tasks-calendar-day .tasks-calendar-task');
+        const expandedHeight = dense.content.offsetHeight;
         let more, hiddenTask;
         if (mode === 'month') {
-          hiddenTask = dense.days[0].querySelector('.tasks-calendar-task:last-child'); hiddenTask.hidden = true;
-          more = document.createElement('button'); more.className = 'tasks-calendar-more'; more.textContent = '+1 more';
+          const monthTasks = [...dense.days[0].querySelectorAll('.tasks-calendar-task')];
+          monthTasks.slice(1).forEach(t => { t.hidden = true; }); hiddenTask = monthTasks.at(-1);
+          more = document.createElement('button'); more.className = 'tasks-calendar-more'; more.textContent = '+59 more';
           dense.days[0].querySelector('.tasks-calendar-task-list').append(more);
         }
         button.click(); await pause();
-        check(`${mode}/${width}: compact bounds height`, dense.content.offsetHeight <= 400 && dense.content.offsetHeight >= 180, dense.content.offsetHeight);
+        check(`${mode}/${width}: compact reduces height and keeps a minimum day height`, dense.content.offsetHeight < expandedHeight && dense.days[0].clientHeight >= 96, dense.content.offsetHeight);
         if (mode === 'month') {
           check(`${mode}/${width}: compact restores hidden overflow and the more button`, getComputedStyle(hiddenTask).display === 'none' && getComputedStyle(more).display !== 'none');
         } else {
-          const scrollable = [dense.content, dense.grid, ...dense.days].find(e => /auto|scroll/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight + 10);
-          check(`${mode}/${width}: compact content scrolls internally`, !!scrollable);
+          const visible = [...dense.days[0].querySelectorAll('.tasks-calendar-task')].filter(t => getComputedStyle(t).display !== 'none');
+          const moreButton = dense.days[0].querySelector('[data-gtd-compact-more]');
+          check(`${mode}/${width}: compact shows three tasks and a more entry`, visible.length === 3 && !!moreButton && moreButton.offsetHeight > 0, visible.length);
         }
+        check(`${mode}/${width}: compact has no internal scrollbar`, ![dense.content, dense.grid, ...dense.days].some(e => /auto|scroll/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight + 1));
+        check(`${mode}/${width}: compact retains at least one visible task`, [...dense.days[0].querySelectorAll('.tasks-calendar-task')].some(t => getComputedStyle(t).display !== 'none' && t.getBoundingClientRect().bottom <= dense.days[0].getBoundingClientRect().bottom + 1));
         check(`${mode}/${width}: preference persisted without losing other settings`, saved.at(-1)?.calendarCompact === true && button.getAttribute('aria-pressed') === 'true');
         button.click(); await pause();
         check(`${mode}/${width}: expand restores content without replacing task DOM`, dense.content.offsetHeight > 600 && dense.root.querySelector('.tasks-calendar-day .tasks-calendar-task') === task);
@@ -155,10 +160,13 @@
             if ((toggle.getAttribute('aria-pressed') === 'true') !== compact) toggle.click();
             await pause();
             const tasks = [...original.querySelectorAll('.tasks-calendar-task')];
-            if (mode === 'Month' && compact) {
+            if (compact) {
               const hidden = tasks.filter(t => getComputedStyle(t).display === 'none');
               const more = [...original.querySelectorAll('.tasks-calendar-more')].filter(b => !b.hidden && getComputedStyle(b).display !== 'none');
-              check('live compact month: overflow is summarized by more', hidden.length > 0 && more.length > 0, { hidden: hidden.length, more: more.length });
+              check(`live compact ${mode}: overflow is summarized by more`, hidden.length === 0 || more.length > 0, { hidden: hidden.length, more: more.length });
+              const occupied = [...original.querySelectorAll('.tasks-calendar-day')].filter(d => d.querySelector('.tasks-calendar-task'));
+              check(`live compact ${mode}: each occupied date keeps a visible task`, occupied.every(d => [...d.querySelectorAll('.tasks-calendar-task')].some(t => getComputedStyle(t).display !== 'none' && t.getBoundingClientRect().bottom <= d.getBoundingClientRect().bottom + 1)));
+              check(`live compact ${mode}: no internal scrollbars`, ![...original.querySelectorAll('.tasks-calendar-content,.tasks-calendar-grid,.tasks-calendar-day,.tasks-calendar-overdue-list')].some(e => /auto|scroll/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight + 1));
             } else check(`live ${mode}/${compact}: native layout does not hide task cards`, tasks.every(t => getComputedStyle(t).display !== 'none'), { rendered: tasks.length, visible: tasks.filter(t => getComputedStyle(t).display !== 'none').length });
             check(`live ${mode}/${compact}: toolbar keeps one toggle`, original.querySelectorAll('.gtd-calendar-height-toggle').length === 1);
             const sourced = tasks.filter(t => t.querySelector('.tasks-calendar-task-source'));
