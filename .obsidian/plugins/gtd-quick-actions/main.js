@@ -225,6 +225,16 @@ function replaceProjectTask(content, reference, replacement, inheritFields = [])
     if (index >= 0) for (let next = index + 1; next < tasks.length && tasks[next].line < end; next++) children.push(tasks[next]);
     result = fillTaskDateRows(result, children, after, active);
   }
+  if (['x','X'].includes(status(reference.raw)) && status(replacement) !== undefined && !['x','X'].includes(status(replacement))) {
+    const tasks = operationTaskTree(content, reference.raw), target = tasks.find(task => task.line === reference.line);
+    // Use the source block boundaries: ordinary list siblings are not task ancestors.
+    const ancestors = target ? tasks.filter(task => task.line < target.line && task.width < target.width && target.line < taskBlockEnd(rows, task) && ['x','X'].includes(task.status)) : [];
+    for (const task of ancestors.reverse()) {
+      const raw = writeTaskRawDate(task.raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[)[xX](\])/, '$1 $2'), '✅', '');
+      const start = offsets[task.line];
+      result = result.slice(0, start) + raw + result.slice(start + task.raw.length);
+    }
+  }
   return result;
 }
 function rawTaskDates(raw) {

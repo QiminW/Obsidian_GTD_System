@@ -58,6 +58,26 @@
    target.querySelector('input[type=checkbox]').click();await until(async()=> (await node(name)).completed,name+' completed');await until(()=>history.pending===0,'save finished');await pause(100);
   }
   taskRow('父任务').querySelector('input[type=checkbox]').click();await until(async()=> (await node('父任务')).completed,'parent completed');check('homepage allows completion once every descendant is checked',(await node('父任务')).completed);
+  await until(()=>history.pending===0,'parent save finished');await pause(150);
+  const completedSource=await app.vault.read(file),completedHistory=history.entries.length;
+  taskRow('孙任务').querySelector('input[type=checkbox]').click();
+  await until(async()=> !(await node('父任务')).completed&&!(await node('自定子任务')).completed&&!(await node('孙任务')).completed,'homepage ancestor reopening');
+  check('homepage reopens every completed ancestor',(await model()).filter(n=>['父任务','自定子任务','孙任务'].includes(n.title)).every(n=>!n.completed&&!/✅\s*\d{4}-\d{2}-\d{2}/u.test(n.raw)));
+  check('homepage keeps sibling branches completed',['空白子任务','新子任务'].every(name=>(logic.projectTaskTree(completedSource).roots[0].children.find(n=>n.title===name)).completed)&&(await node('空白子任务')).completed&&(await node('新子任务')).completed);
+  check('reopening preserves independent dates',(await node('自定子任务')).due==='2026-11-15'&&JSON.stringify((await node('孙任务')).days)==='["2026-11-08"]');
+  await until(()=>!taskRow('父任务').querySelector('input[type=checkbox]').checked&&!taskRow('自定子任务').querySelector('input[type=checkbox]').checked,'ancestor checkbox updates');
+  check('ancestor checkbox views update without reloading',!taskRow('父任务').querySelector('input[type=checkbox]').checked);
+  check('homepage reopening records one undo operation',history.entries.length===completedHistory+1);
+  await history.undo();check('one undo restores all homepage completion records',await app.vault.read(file)===completedSource);
+  const calendarGrandchild=await until(async()=>{
+   const source=await app.vault.read(file);
+   return store.getTasks().find(t=>{const canonical=t._gtdSourceTask||t;if(t.path!==path||!canonical.raw?.includes('^grand'))return false;try{logic.calendarTaskReference(source,canonical);return true}catch{return false}});
+  },'calendar grandchild current');
+  await calendar.toggleTask(calendarGrandchild);
+  await until(async()=> !(await node('父任务')).completed&&!(await node('自定子任务')).completed&&!(await node('孙任务')).completed,'calendar ancestor reopening');
+  check('calendar reopens all ancestors while retaining sibling completion',(await node('空白子任务')).completed&&(await node('新子任务')).completed);
+  check('calendar reopening records one undo operation',history.entries.length===completedHistory+1);
+  await history.undo();check('one undo restores all calendar completion records',await app.vault.read(file)===completedSource);
   await history.undo();check('undoing parent completion keeps every child completed',(await model()).slice(1).every(n=>n.completed)&&!(await node('父任务')).completed);
  }catch(error){results.push({name:error.stack,pass:false})}finally{
   if(file&&app.vault.getAbstractFileByPath(path))await app.vault.delete(file);

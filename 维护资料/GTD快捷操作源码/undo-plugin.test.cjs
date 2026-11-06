@@ -49,6 +49,16 @@ test('inheriting a parent deadline is one undoable operation preserving each chi
  await p.undoHistory.undo();assert.equal(file.text,original);
 });
 
+test('reopening a child and all completed ancestors is a single undoable operation',async()=>{
+ const original='## 任务\r\n- [x] Root ✅ 2026-11-05 ^first\r\n  - [x] Parent ✅ 2026-11-06 ^parent\n    - [x] Child ✅ 2026-11-06 ^child\r\n    - [x] Sibling ✅ 2026-11-06 ^sibling\r\n';const {p,file}=setup(original);
+ p.app.plugins.plugins['obsidian-tasks-plugin'].apiV1.executeToggleTaskDoneCommand=raw=>raw.replace('[x]','[ ]').replace(/ ✅ \d{4}-\d{2}-\d{2}/,'');
+ await p.toggleProjectTask(PATH,ref(file.text,'block:child'));
+ assert.equal((file.text.match(/\[ \]/g)||[]).length,3);
+ assert.match(file.text,/\[x\] Sibling ✅ 2026-11-06/);
+ assert.equal(p.undoHistory.entries.length,1);
+ await p.undoHistory.undo();assert.equal(file.text,original);
+});
+
 test('inheriting multiple-day plans is one undoable operation',async()=>{
  const original='## 任务\n- [ ] Parent ^first\n  - [ ] Empty\n  - [ ] <!-- gtd-days: 2026-11-09 --> Own\n';const {p,file}=setup(original);
  await p.toggleProjectTaskDay(PATH,ref(file.text),'2026-11-06');assert.equal((file.text.match(/gtd-days: 2026-11-06/g)||[]).length,2);

@@ -1,6 +1,38 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const logic=require('./logic.cjs');
 const root=source=>logic.projectTaskTree(source).roots[0];
+const at=(source,line)=>logic.calendarTaskReferences(source,source.split(/\r?\n/).map((raw,line)=>({line,raw})).filter(task=>/^[\s>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\]/.test(task.raw))).get(line);
+
+test('reopening a descendant reopens every completed ancestor and clears only their completion dates',()=>{
+ const source='- [X] <!-- gtd-days: 2026-11-06,2026-11-08 --> Root 📅 2026-11-20 ✅ 2026-11-05 ^root\r\n  Parent notes\n  - [x] Parent ⏳ 2026-11-07 ✅ 2026-11-06 ^parent\r\n    - [x] Child ✅ 2026-11-06 ^child\n    - [x] Sibling ✅ 2026-11-06 ^sibling\r\n- [x] Other ✅ 2026-11-04 ^other\n';
+ const expected=source.replace('- [X]','- [ ]').replace('Root 📅 2026-11-20 ✅ 2026-11-05','Root 📅 2026-11-20').replace('Parent ⏳ 2026-11-07 ✅ 2026-11-06','Parent ⏳ 2026-11-07').replace('  - [x] Parent','  - [ ] Parent').replace('    - [x] Child ✅ 2026-11-06','    - [ ] Child');
+ assert.equal(logic.replaceProjectTask(source,at(source,3),'    - [ ] Child ^child'),expected);
+});
+
+test('reopening continues above an unfinished intermediate ancestor without changing its status',()=>{
+ const source='- [x] Root ✅ 2026-11-05\n  - [/] In progress\n    - [x] Child ✅ 2026-11-06\n';
+ assert.equal(logic.replaceProjectTask(source,at(source,2),'    - [ ] Child'),'- [ ] Root\n  - [/] In progress\n    - [ ] Child\n');
+});
+
+test('unrelated tasks under ordinary list siblings do not reopen a false parent',()=>{
+ const source='- [x] Root ✅ 2026-11-05\n  - [x] Branch ✅ 2026-11-05\n  - Supporting note\n    - [x] Child ✅ 2026-11-06\n';
+ assert.equal(logic.replaceProjectTask(source,at(source,3),'    - [ ] Child'),'- [ ] Root\n  - [x] Branch ✅ 2026-11-05\n  - Supporting note\n    - [ ] Child\n');
+});
+
+test('quoted calendar descendants reopen only ancestors in the same quote block',()=>{
+ const source='> - [x] Unrelated ✅ 2026-11-05\n\nNormal text\n> - [X] Root ✅ 2026-11-05\n>   1. [x] Parent ✅ 2026-11-06\n>     * [x] Child ✅ 2026-11-06\n';
+ assert.equal(logic.replaceProjectTask(source,at(source,5),'>     * [ ] Child'),source.replace('> - [X] Root ✅ 2026-11-05','> - [ ] Root').replace('>   1. [x] Parent ✅ 2026-11-06','>   1. [ ] Parent').replace('>     * [x] Child ✅ 2026-11-06','>     * [ ] Child'));
+});
+
+test('completed task name or date edits do not reopen ancestors',()=>{
+ const source='- [x] Root ✅ 2026-11-05\n  - [x] Child ✅ 2026-11-06\n';
+ assert.equal(logic.replaceProjectTask(source,at(source,1),'  - [x] Renamed 📅 2026-11-20 ✅ 2026-11-06'),source.replace('Child','Renamed 📅 2026-11-20'));
+});
+
+test('reopening does not cross headings or treat fenced checkboxes as ancestors',()=>{
+ const source='- [x] Previous ✅ 2026-11-05\n## Next\n```md\n- [x] Example ✅ 2026-11-05\n```\n  - [x] Child ✅ 2026-11-06\n';
+ assert.equal(logic.replaceProjectTask(source,at(source,5),'  - [ ] Child'),source.replace('  - [x] Child ✅ 2026-11-06','  - [ ] Child'));
+});
 
 test('a parent cannot be completed while a direct child is unfinished',()=>{
  const source='## 任务\r\n- [ ] Parent ^parent\r\n  - [ ] Child ^child\r\n';
