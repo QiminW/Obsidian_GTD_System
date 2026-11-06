@@ -34,7 +34,7 @@ dv.component.registerEvent(app.workspace.on('gtd-completed-visibility-changed',c
   plugin.renderTaskVisibilityButton(visibilityButton,showCompleted);
   for(const panel of dv.container.querySelectorAll('.gtd-day-panel:popover-open'))panel.hidePopover();
   for(const key of plugin.taskDayPanels.keys())if(key.startsWith(scope+'::days:'))plugin.taskDayPanels.delete(key);
-  for(const render of treeRenderers.values())render().catch(error=>dv.container.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));
+  for(const render of treeRenderers.values())render().catch(error=>plugin.showTaskActionError(error));
 }));
 const head = table.createEl('thead').createEl('tr');
 for (const label of ['项目','领域','状态','进度','完成 / 总计','截止日期']) {
@@ -102,7 +102,7 @@ async function createProjectView(project) {
   projectGrip.addEventListener('dragend',()=>{plugin.draggedProject=null;clearDropMarks();});
   row.addEventListener('dragover',event=>{if(!plugin.draggedProject||plugin.draggedProject===path)return;event.preventDefault();event.stopPropagation();clearDropMarks();row.classList.add('gtd-drop-'+dropSide(event,row));event.dataTransfer.dropEffect='move';});
   row.addEventListener('dragleave',event=>{if(!row.contains(event.relatedTarget))row.classList.remove('gtd-drop-before','gtd-drop-after');});
-  row.addEventListener('drop',event=>{if(!plugin.draggedProject||plugin.draggedProject===path)return;event.preventDefault();event.stopPropagation();const source=plugin.draggedProject,side=dropSide(event,row);plugin.draggedProject=null;clearDropMarks();plugin.moveProjectDisplay(source,path,side).catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));});
+  row.addEventListener('drop',event=>{if(!plugin.draggedProject||plugin.draggedProject===path)return;event.preventDefault();event.stopPropagation();const source=plugin.draggedProject,side=dropSide(event,row);plugin.draggedProject=null;clearDropMarks();plugin.moveProjectDisplay(source,path,side).catch(error=>plugin.showTaskActionError(error));});
   const toggle = title.createEl('button', { cls:'gtd-project-toggle', attr:{type:'button','aria-expanded':String(expanded),'aria-label':'展开或折叠项目：'+project.file.name} });
   const arrow = toggle.createSpan({ text:expanded?'▾':'▸', cls:'gtd-project-arrow' });
   keyboard.register(row,{id:projectId,parent:null,label:'项目：'+project.file.name,expanded:()=>expanded,toggle:value=>setExpanded(value),rename:()=>projectNameSlot.querySelector('[data-gtd-project-rename]')?.click(),add:()=>add.click()});
@@ -117,7 +117,7 @@ async function createProjectView(project) {
     if(state){renderNameInput(projectNameSlot,state,'project');keyboard.refresh();return;}
     const name=projectNameSlot.createEl('button',{text:project.file.name,cls:'gtd-project-name-edit',attr:{type:'button',title:'点击修改项目名称','aria-label':'修改项目名称：'+project.file.name}});
     name.dataset.gtdProjectRename='true';
-    name.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();plugin.beginProjectNameEdit(scope,path,project.file.name).catch(error=>projectNameSlot.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));});
+    name.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();plugin.beginProjectNameEdit(scope,path,project.file.name).catch(error=>plugin.showTaskActionError(error));});
     keyboard.refresh();
   }
   renderProjectName();
@@ -166,7 +166,7 @@ async function createProjectView(project) {
       expanded=true;detail.hidden=false;toggle.setAttribute('aria-expanded','true');arrow.textContent='▾';plugin.setProjectTreeExpanded(projectState,true);
       if(parent){plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+parent.key,true);const branch=taskCache.get(parent.key)?.branch;if(branch)branch.open=true;}
       await renderTree();
-    } catch(error){tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)});}
+    } catch(error){plugin.showTaskActionError(error);}
   }
   async function toggleDayPanel(node) {
     const key=scope+'::days:'+path+'::'+node.key;
@@ -180,11 +180,12 @@ async function createProjectView(project) {
   }
   async function writeTask(operation) {
     if(busy)return;busy=true;
+    plugin.clearTaskActionNotice();
     tree.querySelectorAll('[data-gtd-task-checkbox], [data-gtd-task-action], [data-gtd-task-date], [data-gtd-task-name-input]').forEach(control=>control.disabled=true);
     try { await operation();await renderTree(); }
     catch(error) {
       try { await renderTree(); } catch (_) {}
-      if(tree.isConnected)tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)});
+      if(tree.isConnected)plugin.showTaskActionError(error);
     }
     finally {
       busy=false;
@@ -450,20 +451,20 @@ async function createProjectView(project) {
       for(const [key,cache]of entryCache)if(!cache.item.isConnected)entryCache.delete(key);
       refreshGuard.resume();keyboard.refresh();return;
     }
-    renderTree().catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));
+    renderTree().catch(error=>plugin.showTaskActionError(error));
   }));
   registerProjectEvent(app.workspace.on('gtd-task-day-changed',()=>{if(tree.isConnected)renderTree();}));
   registerProjectEvent(app.workspace.on('gtd-task-title-edit',changedPath=>{
     if(changedPath!==path||!tree.isConnected)return;
     for(const form of tree.querySelectorAll('form[data-gtd-task-title-editor]'))if(plugin.taskTitleEdits.get(form.dataset.gtdTaskTitleEditor)?.busy)form.querySelectorAll('input,button').forEach(control=>control.disabled=true);
-    renderTree().catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)}));
+    renderTree().catch(error=>plugin.showTaskActionError(error));
   }));
   async function setExpanded(value){
     expanded=value;detail.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded));arrow.textContent=expanded?'▾':'▸';
     row.setAttribute('aria-expanded',String(expanded));plugin.setProjectTreeExpanded(projectState,expanded);
     if(expanded)await renderTree();keyboard.refresh();
   }
-  toggle.addEventListener('click',()=>setExpanded(!expanded).catch(error=>tree.createDiv({cls:'gtd-form-error',text:error.message||String(error)})));
+  toggle.addEventListener('click',()=>setExpanded(!expanded).catch(error=>plugin.showTaskActionError(error)));
   treeRenderers.set(path,renderTree);
   await renderTree();
 }

@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.11.1 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.11.2 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -25,6 +25,8 @@ node --test
 `undo-history.cjs` 保存当前会话最近 30 次写入事务；`undo-history.test.cjs` 检查顺序、并发、冲突及多步补偿，`undo-plugin.test.cjs` 检查真实插件方法的保存边界和快捷键路由。修改笔记的方法应通过 `processGtdChange` 捕获原文，不要用操作之前的异步读取代替实际写入时的快照。改名撤销还需恢复折叠状态及子任务草稿的引用。
 
 `tree-keyboard.cjs` 管理可见行导航和焦点。项目进度通过 `protectProjectView.setUpdate` 接管后续数据同步，按键与输入框事件保留在稳定的节点上；更新缓存节点时必须同步其源任务引用，涉及正在编辑或点击的控件时推迟结构替换。
+
+项目操作失败使用 `showTaskActionError` 的单条临时提醒，约 4 秒后自动关闭；下一次任务写入通过 `clearTaskActionNotice` 立即清除。不要再向任务树追加持久错误行。输入框内用于修正未保存内容的错误仍保留在对应表单中。
 
 运行 `python GTD快捷操作源码/界面验证/build.py` 可生成独立 HTML，使用内存中的演示项目验证键盘、局部更新、连续添加、日期面板和缩进。用浏览器打开输出文件即可查看 JSON 结果；该验证不读取个人笔记，也不操作当前 Obsidian 输入框。
 

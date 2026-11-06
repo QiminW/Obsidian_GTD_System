@@ -20,13 +20,21 @@
   if(project().querySelector('.gtd-project-toggle').getAttribute('aria-expanded')!=='true')project().querySelector('.gtd-project-toggle').click();
   await until(()=>taskRow('父任务'),'parent visible');
   for(const branch of project().nextElementSibling.querySelectorAll('details'))branch.open=true;
-  taskRow('父任务').querySelector('input[type=checkbox]').click();
-  await until(()=>[...project().nextElementSibling.querySelectorAll('.gtd-form-error')].some(e=>e.textContent.includes('子任务未完成')),'completion warning');
+  for(let attempt=0;attempt<3;attempt++){
+   taskRow('父任务').querySelector('input[type=checkbox]').click();
+   await until(()=>!taskRow('父任务').querySelector('input[type=checkbox]').disabled,'completion check finished');
+  }
   check('blocked homepage completion leaves source unchanged',await app.vault.read(file)===initial);
   check('blocked checkbox returns to unchecked',!taskRow('父任务').querySelector('input[type=checkbox]').checked);
   check('blocked completion does not add undo history',history.entries.length===entries.length);
+  const warnings=()=>[...document.querySelectorAll('.notice')].filter(e=>e.textContent.includes('子任务未完成')&&!e.classList.contains('is-hidden'));
+  check('repeated rejected completion leaves no inline error rows',![...project().nextElementSibling.querySelectorAll('.gtd-form-error')].some(e=>e.textContent.includes('子任务未完成')));
+  check('repeated rejection shows a single transient notice',warnings().length===1);
+  await until(()=>warnings().length===0,'completion notice expires');check('completion notice automatically disappears',warnings().length===0);
+  taskRow('父任务').querySelector('input[type=checkbox]').click();await until(()=>!taskRow('父任务').querySelector('input[type=checkbox]').disabled,'new completion warning');
   let input=taskRow('父任务').querySelector('input[type=date]');input.value='2026-11-20';input.dispatchEvent(new Event('change',{bubbles:true}));
   await until(async()=> (await node('空白子任务')).due==='2026-11-20','deadline inheritance');
+  await until(()=>warnings().length===0,'next operation dismisses notice');check('next task operation clears the previous completion warning',warnings().length===0);
   check('independent child deadline stays unchanged',(await node('自定子任务')).due==='2026-11-15');
   check('grandchild inherits its nearest dated parent',(await node('孙任务')).due==='2026-11-15');
   await history.undo();await until(async()=>await app.vault.read(file)===initial,'deadline undo');check('one undo restores the whole date propagation',await app.vault.read(file)===initial);

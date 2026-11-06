@@ -1132,6 +1132,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.projectNameFocusKey = '';
     this.nameEditRequest = 0;
     this.taskDayPanels = new Map();
+    this.register(() => this.clearTaskActionNotice());
     this.currentDayKey = this.todayDateKey();
     this.registerMarkdownCodeBlockProcessor('gtd-inbox',(_source,element,context)=>context.addChild(new InboxView(this,element)));
     this.registerMarkdownCodeBlockProcessor('gtd-actions', (_source, element) => {
@@ -1596,6 +1597,18 @@ module.exports = class GtdQuickActions extends Plugin {
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     const model=logic.projectTaskTree(await this.app.vault.read(file));
     return {...model,completedDisplay:logic.partitionCompletedTasks(model.roots)};
+  }
+  clearTaskActionNotice() {
+    if(this.taskActionNotice){
+      // Dismiss immediately so rapid retries cannot overlap fading notices.
+      this.taskActionNotice.hide();
+      this.taskActionNotice.containerEl.remove();
+    }
+    this.taskActionNotice=null;
+  }
+  showTaskActionError(error) {
+    this.clearTaskActionNotice();
+    this.taskActionNotice=new Notice(error.message||String(error),4000);
   }
   renderTaskVisibilityButton(button,showCompleted) {
     setIcon(button,showCompleted?'eye':'eye-off');
