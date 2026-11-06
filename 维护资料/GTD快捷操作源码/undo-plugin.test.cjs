@@ -13,6 +13,19 @@ function setup(content='## 任务\n- [ ] First ^first\n- [ ] Second ^second\n'){
  return {p,file,inbox,files,notices,events,vault,File};
 }
 const ref=(text,key='block:first')=>{const flatten=nodes=>nodes.flatMap(n=>[n,...flatten(n.children)]);return flatten(logic.projectTaskTree(text).roots).find(n=>n.key===key).reference;};
+test('saved task snapshots provide current references for the next action without a display reread',async()=>{
+ const {p,file,events,vault}=setup(),read=vault.read;vault.read=async()=>{throw Error('Unexpected display read')};
+ await p.toggleProjectTask(PATH,ref(file.text));
+ const first=events.find(e=>Array.isArray(e)&&e[0]==='gtd-project-tasks-changed');assert.ok(first);
+ assert.equal(first[1],PATH);assert.equal(first[2].roots[0].completed,true);assert.equal(first[2].roots[1].reference.version,ref(file.text,'block:second').version);
+ await p.updateProjectTaskDate(PATH,first[2].roots[1].reference,'due','2026-11-20');assert.match(file.text,/Second 📅 2026-11-20/);
+ vault.read=read;await p.undoHistory.undo();const latest=events.filter(e=>Array.isArray(e)&&e[0]==='gtd-project-tasks-changed').at(-1);
+ assert.equal(latest[2].roots[1].due,'');assert.equal(latest[2].roots[0].completed,true);
+});
+test('rejected task writes do not publish a successful task snapshot',async()=>{
+ const {p,file,events}=setup('- [ ] Parent ^first\n  - [ ] Child\n');await assert.rejects(p.toggleProjectTask(PATH,ref(file.text)),/未完成/);
+ assert.equal(events.filter(e=>Array.isArray(e)&&e[0]==='gtd-project-tasks-changed').length,0);
+});
 test('adding a child is undoable and preserves the exact original note',async()=>{
  const original='## 任务\r\n- [ ] Parent ^first\r\n\t- [ ] Existing\n\r\n## 资料\r\nKeep';const {p,file}=setup(original);
  await p.addTask({project:PATH,title:'Added',parent:ref(file.text)});assert.match(file.text,/Added/);await p.undoHistory.undo();assert.equal(file.text,original);

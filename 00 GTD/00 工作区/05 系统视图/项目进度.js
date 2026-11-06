@@ -182,22 +182,22 @@ async function createProjectView(project) {
     if(busy)return;busy=true;
     plugin.clearTaskActionNotice();
     tree.querySelectorAll('[data-gtd-task-checkbox], [data-gtd-task-action], [data-gtd-task-date], [data-gtd-task-name-input]').forEach(control=>control.disabled=true);
-    try { await operation();await renderTree(); }
+    try { await operation(); }
     catch(error) {
-      try { await renderTree(); } catch (_) {}
       if(tree.isConnected)plugin.showTaskActionError(error);
     }
     finally {
       busy=false;
       tree.querySelectorAll('[data-gtd-task-checkbox], [data-gtd-task-action], [data-gtd-task-date], [data-gtd-task-name-input]').forEach(control=>control.disabled=control.dataset.unavailable==='true');
     }
+    try { await renderTree(); } catch(error) { if(tree.isConnected)plugin.showTaskActionError(error); }
   }
   async function renderTree() {
     return refreshGuard.run(path,renderTreeNow,true);
   }
-  async function renderTreeNow() {
+  async function renderTreeNow(savedModel) {
     const ticket = ++rendering;
-    const model = await plugin.readProjectTaskTree(path);
+    const model = savedModel || await plugin.readProjectTaskTree(path);
     if (ticket!==rendering||!tree.isConnected) return;
     row.dataset.done=String(model.done);row.dataset.total=String(model.total);
     bar.value=model.total?Math.round(model.done/model.total*100):0;
@@ -439,6 +439,10 @@ async function createProjectView(project) {
     for(const key of orphanCache.keys())if(!titleEdits.some(state=>state.key===key))orphanCache.delete(key);
     keyboard.refresh();
   }
+  registerProjectEvent(app.workspace.on('gtd-project-tasks-changed',(changedPath,model)=>{
+    if(changedPath!==path||!tree.isConnected)return;
+    refreshGuard.run(path,()=>renderTreeNow(model),true).catch(error=>plugin.showTaskActionError(error));
+  }));
   registerProjectEvent(app.workspace.on('gtd-inline-task-entry',(changedPath,change)=>{
     if(changedPath!==path||!tree.isConnected)return;
     if(change?.type==='hide'){

@@ -1225,6 +1225,7 @@ module.exports = class GtdQuickActions extends Plugin {
       });
       if(remapName)this.remapTaskNameState(path,logic.projectTaskTree(expected),logic.projectTaskTree(next));
       else this.rebaseInlineTaskReferences(path,expected,next);
+      this.publishProjectTaskTree(path,next);
     };
     this.undoHistory?.record({check:()=>this.assertUndoFile(file,path,after),undo:()=>write(after,before),redo:()=>write(before,after)});
   }
@@ -1233,6 +1234,14 @@ module.exports = class GtdQuickActions extends Plugin {
     await this.app.vault.process(file,current=>{before=current;after=transform(current);return after;});
     this.recordUndoContent(file,path,before,after,remapName);
     if(!remapName&&before!==after)this.rebaseInlineTaskReferences(path,before,after);
+    if(before!==after)this.publishProjectTaskTree(path,after);
+  }
+  publishProjectTaskTree(path,content) {
+    if(!path.startsWith(PROJECTS+'/'))return;
+    try{
+      const model=logic.projectTaskTree(content);
+      this.app.workspace.trigger('gtd-project-tasks-changed',path,{...model,completedDisplay:logic.partitionCompletedTasks(model.roots)});
+    }catch(error){console.error('GTD：同步已保存任务视图失败',error);}
   }
   rebaseInlineTaskReferences(path,before,after) {
     const flatten=nodes=>nodes.flatMap(node=>[node,...flatten(node.children)]),oldNodes=flatten(logic.projectTaskTree(before).roots),next=flatten(logic.projectTaskTree(after).roots);
