@@ -361,7 +361,10 @@ async function createProjectView(project) {
       checkbox.dataset.unavailable=String(node.cancelled);
       checkbox.checked=node.completed;checkbox.disabled=busy||node.cancelled;
       checkbox.addEventListener('click',e=>e.stopPropagation());
-      checkbox.addEventListener('change',()=>writeTask(()=>plugin.toggleProjectTask(path,node.reference)));
+      checkbox.addEventListener('change',()=>writeTask(async()=>{
+        try { await plugin.toggleProjectTask(path,node.reference); }
+        catch(error) { checkbox.checked=node.completed;throw error; }
+      }));
       if(titleEdit)addNameEditor(taskRow,titleEdit);
       else{
         const name=taskRow.createEl('button',{text:node.title||'未命名任务',cls:'gtd-task-title gtd-task-title-edit',attr:{type:'button',title:'点击修改任务名称','aria-label':'修改任务名称：'+(node.title||'未命名任务')}});
@@ -404,6 +407,7 @@ async function createProjectView(project) {
       });
         cached={item,node,row:taskRow,branch,children:childContainer,signature};taskCache.set(node.key,cached);
       }
+      const currentCheckbox=taskRow.querySelector('[data-gtd-task-checkbox]');if(currentCheckbox)currentCheckbox.checked=node.completed;
       if(titleEdit)mountedTitles.add(titleEdit.key);
       const rowId=JSON.stringify([path,node.key]);
       const currentArrange=taskRow.querySelector('[data-gtd-task-arrange]');if(currentArrange){currentArrange.setAttribute('aria-expanded',String(!!panelState));currentArrange.classList.toggle('is-active',!!panelState||node.days.length>0);}

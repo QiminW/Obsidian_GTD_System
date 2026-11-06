@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.10.8 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.11.0 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -51,3 +51,5 @@ python 适配日历.py
 ## WebDAV 插件
 
 Remotely Save 仅打包运行文件和许可证，没有 `data.json` 或任何同步账号、服务器及历史数据。启用后由使用者自行配置。
+
+父子规则：`logic.cjs` 在替换父任务完成状态前检查所有后代；截止日期与日程采用逐字段补空白，保留独立设置，新建和移入的子树也继承最近的上级日期。日期传播与父任务修改在同一次笔记写入中完成，支持整体撤销。`parent-completion.test.cjs`、`parent-dates.test.cjs` 和 `parent-policy.native.js` 覆盖规则、撤销以及演示库实际控件。

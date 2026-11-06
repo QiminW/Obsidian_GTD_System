@@ -30,6 +30,30 @@ test('completion, deletion and same-level ordering restore whole subtrees',async
 test('today and multiple-day arrangement changes are undoable',async()=>{
  const {p,file}=setup();const before=file.text;await p.toggleProjectTaskDay(PATH,ref(file.text),'2026-11-03');assert.match(file.text,/gtd-days/);await p.undoHistory.undo();assert.equal(file.text,before);
 });
+
+test('rejecting completion of an unfinished parent leaves the note and undo history intact',async()=>{
+ const original='## 任务\n- [ ] Parent ^first\n  - [ ] Child ^child\n';const {p,file}=setup(original);
+ await assert.rejects(p.toggleProjectTask(PATH,ref(file.text)),/子任务.*未完成/);
+ assert.equal(file.text,original);assert.equal(await p.undoHistory.undo(),null);
+});
+
+test('a parent completes after its children and undo restores only that parent checkbox',async()=>{
+ const original='## 任务\r\n- [ ] Parent ^first\r\n  - [x] Child ✅ 2026-11-06 ^child\r\n';const {p,file}=setup(original);
+ await p.toggleProjectTask(PATH,ref(file.text));assert.match(file.text,/- \[x\] Parent/);
+ await p.undoHistory.undo();assert.equal(file.text,original);
+});
+
+test('inheriting a parent deadline is one undoable operation preserving each child date',async()=>{
+ const original='## 任务\n- [ ] Parent ^first\n  - [ ] Empty\n  - [ ] Own 📅 2026-11-08\n';const {p,file}=setup(original);
+ await p.updateProjectTaskDate(PATH,ref(file.text),'due','2026-11-12');assert.equal((file.text.match(/📅 2026-11-12/g)||[]).length,2);
+ await p.undoHistory.undo();assert.equal(file.text,original);
+});
+
+test('inheriting multiple-day plans is one undoable operation',async()=>{
+ const original='## 任务\n- [ ] Parent ^first\n  - [ ] Empty\n  - [ ] <!-- gtd-days: 2026-11-09 --> Own\n';const {p,file}=setup(original);
+ await p.toggleProjectTaskDay(PATH,ref(file.text),'2026-11-06');assert.equal((file.text.match(/gtd-days: 2026-11-06/g)||[]).length,2);
+ await p.undoHistory.undo();assert.equal(file.text,original);
+});
 test('project metadata undo restores original formatting and surrounding content',async()=>{
  const original='---\r\n{"status":"active","deadline":"2026-11-01","custom":"keep"}\r\n---\r\n## 任务\r\n- [ ] First ^first\r\n';const {p,file}=setup(original);
  await p.updateProjectDeadline(PATH,'2026-12-01','2026-11-01');const dated=file.text;await p.setProjectStatus(PATH,'done');await p.undoHistory.undo();assert.equal(file.text,dated);await p.undoHistory.undo();assert.equal(file.text,original);

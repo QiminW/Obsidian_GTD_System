@@ -88,6 +88,7 @@ function insertSubtask(content, taskLine, reference) {
   const all = taskTree(content);
   const parent = all.find(task => task.line === reference?.line && task.raw === reference?.raw);
   if (!parent || ['x', 'X', '-', '_'].includes(parent.status)) throw new Error('父任务已变化，请重新选择父任务');
+  taskLine = fillTaskDateRows(taskLine, taskTree(taskLine), ancestorTaskDates(content, all, parent));
   let end = parent.line + 1;
   while (end < rows.length) {
     if (rows[end].trim()) {
@@ -162,15 +163,111 @@ function partitionCompletedTasks(roots) {
   roots.forEach(node => collect(node, []));
   return { activeKeys, groups, count };
 }
-function replaceProjectTask(content, reference, replacement) {
+function quoteTaskRow(raw) {
+  let depth = 0, match;
+  while ((match = /^[ \t]*>[ \t]?/.exec(raw))) { depth++; raw = raw.slice(match[0].length); }
+  return { depth, raw };
+}
+function operationTaskTree(content, raw) {
+  const depth = quoteTaskRow(raw).depth;
+  if (!depth) return taskTree(content);
+  const rows = content.split(/\r?\n/);
+  const normalized = rows.map(row => {
+    const quote = quoteTaskRow(row);
+    return quote.depth === depth ? quote.raw : row.trim() ? '# Quote boundary' : '';
+  }).join('\n');
+  return taskTree(normalized).map(task => ({ ...task, raw: rows[task.line] }));
+}
+function taskBlockEnd(rows, task) {
+  const depth = quoteTaskRow(task.raw).depth;
+  let end = task.line + 1;
+  for (; end < rows.length; end++) {
+    let raw = rows[end];
+    if (!raw.trim()) continue;
+    if (depth) {
+      const quote = quoteTaskRow(raw);
+      if (quote.depth !== depth) break;
+      raw = quote.raw;
+    }
+    if (raw.trim() && /^[ \t]*/.exec(raw)[0].replace(/\t/g, '    ').length <= task.width) break;
+  }
+  return end;
+}
+function replaceProjectTask(content, reference, replacement, inheritFields = []) {
   if (!reference || reference.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请在刷新后重新勾选');
   const rows = content.split(/\r?\n/);
   if (rows[reference.line] !== reference.raw) throw new Error('任务位置已变化，请刷新后重新勾选');
+  const status = raw => /^[ \t>]*(?:[-*+]|\d+[.)])\s+\[([^\]])\]/.exec(raw)?.[1];
+  if (['x','X'].includes(status(replacement)) && !['x','X'].includes(status(reference.raw))) {
+    const tasks = operationTaskTree(content, reference.raw), index = tasks.findIndex(task => task.line === reference.line && task.raw === reference.raw);
+    let unfinished = 0;
+    const end = index >= 0 ? taskBlockEnd(rows, tasks[index]) : reference.line + 1;
+    if (index >= 0) for (let next = index + 1; next < tasks.length && tasks[next].line < end; next++) {
+      if (!['x','X'].includes(tasks[next].status)) unfinished++;
+    }
+    if (unfinished) throw new Error('还有 ' + unfinished + ' 项子任务未完成，请先完成子任务');
+  }
   const offsets = [0];
   for (const delimiter of content.matchAll(/\r?\n/g)) offsets.push(delimiter.index + delimiter[0].length);
   const offset = offsets[reference.line], suffix = content.slice(offset + reference.raw.length);
   const eol = suffix.startsWith('\r\n') ? '\r\n' : '\n';
-  return content.slice(0, offset) + replacement.split(/\r?\n/).join(eol) + suffix;
+  let result = content.slice(0, offset) + replacement.split(/\r?\n/).join(eol) + suffix;
+  const before = rawTaskDates(reference.raw), after = rawTaskDates(replacement.split(/\r?\n/)[0]);
+  const fields = new Set(inheritFields);
+  if (before.due !== after.due) fields.add('due');
+  if (JSON.stringify(before.days) !== JSON.stringify(after.days)) fields.add('days');
+  const active = [...fields].filter(field => field === 'due' ? !!after.due : after.days.length > 0);
+  if (active.length) {
+    const tasks = operationTaskTree(result, replacement.split(/\r?\n/)[0]), index = tasks.findIndex(task => task.line === reference.line);
+    const children = [];
+    const end = index >= 0 ? taskBlockEnd(result.split(/\r?\n/), tasks[index]) : reference.line + 1;
+    if (index >= 0) for (let next = index + 1; next < tasks.length && tasks[next].line < end; next++) children.push(tasks[next]);
+    result = fillTaskDateRows(result, children, after, active);
+  }
+  return result;
+}
+function rawTaskDates(raw) {
+  return { due: /📅\s*(\d{4}-\d{2}-\d{2})/.exec(raw)?.[1] || '', days: taskDays(raw) };
+}
+function ancestorTaskDates(content, tasks, task) {
+  const byLine = new Map(tasks.map(node => [node.line, node])), chain = [], rows = content.split(/\r?\n/);
+  for (let node = task; node; node = byLine.get(node.parentLine)) if (node === task || task.line < taskBlockEnd(rows, node)) chain.unshift(node);
+  const dates = { due: '', days: [] };
+  for (const node of chain) {
+    const own = rawTaskDates(node.raw);
+    if (own.due) dates.due = own.due;
+    if (own.days.length) dates.days = own.days;
+  }
+  return dates;
+}
+function writeTaskRawDate(raw, symbol, date) {
+  const pattern = new RegExp('[ \\t]+' + symbol + '[ \\t]*\\d{4}-\\d{2}-\\d{2}', 'u');
+  if (pattern.test(raw)) raw = raw.replace(pattern, date ? ' ' + symbol + ' ' + date : '');
+  else if (date) {
+    const block = /(\s+\^[\w-]+)\s*$/.exec(raw);
+    raw = block ? raw.slice(0, block.index).trimEnd() + ' ' + symbol + ' ' + date + block[1] : raw.trimEnd() + ' ' + symbol + ' ' + date;
+  }
+  return /\]$/.test(raw) ? raw + ' ' : raw;
+}
+function fillTaskDateRows(content, tasks, inherited, fields = ['due','days']) {
+  if (!tasks.length) return content;
+  const stack = [{ depth: -1, end: Infinity, ...inherited }], changes = [], offsets = [0], rows = content.split(/\r?\n/);
+  for (const delimiter of content.matchAll(/\r?\n/g)) offsets.push(delimiter.index + delimiter[0].length);
+  for (const task of tasks) {
+    while (stack.length > 1 && (stack.at(-1).depth >= task.depth || stack.at(-1).end <= task.line)) stack.pop();
+    const parent = stack.at(-1), own = rawTaskDates(task.raw);
+    let raw = task.raw;
+    if (fields.includes('due') && !own.due && parent.due) {
+      own.due = dateValue(parent.due, '截止日期'); raw = writeTaskRawDate(raw, '📅', own.due);
+    }
+    if (fields.includes('days') && !own.days.length && parent.days.length) {
+      own.days = parent.days; raw = setTaskDays(raw, own.days);
+    }
+    stack.push({ depth: task.depth, end: taskBlockEnd(rows, task), ...own });
+    if (raw !== task.raw) changes.push({ offset: offsets[task.line], before: task.raw, raw });
+  }
+  for (const change of changes.reverse()) content = content.slice(0, change.offset) + change.raw + content.slice(change.offset + change.before.length);
+  return content;
 }
 function taskNameParts(raw) {
   const prefix=/^([ \t]*(?:[-*+]|\d+[.)])\s+\[[^\]]\][ \t]+)(.*)$/.exec(raw);
@@ -229,7 +326,7 @@ function setProjectTaskDay(content, reference, date, enabled) {
   const add = enabled === undefined ? !days.has(date) : enabled;
   if (add) days.add(date); else days.delete(date);
   const raw = reference.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu, '');
-  return replaceProjectTask(content, reference, setTaskDays(raw, [...days]));
+  return replaceProjectTask(content, reference, setTaskDays(raw, [...days]), ['days']);
 }
 function migrateTaskDays(content) {
   const offsets = [0];
@@ -377,6 +474,8 @@ function prepareInboxMove(source, reference, target, parent = null) {
     if (parent.version !== taskSourceVersion(target)) throw new Error('项目内容已变化，请重新选择父任务');
     const node = all.find(item => item.line === parent.line && item.raw === parent.raw);
     if (!node || ['x','X','-','_'].includes(node.status)) throw new Error('父任务已变化或已完成，请重新选择');
+    const captured = block.join('\n');
+    block.splice(0, block.length, ...fillTaskDateRows(captured, taskTree(captured), ancestorTaskDates(target, all, node)).split('\n'));
     end = node.line + 1;
     while (end < rows.length && (!rows[end].trim() || /^[ \t]*/.exec(rows[end])[0].replace(/\t/g,'    ').length > node.width)) end++;
     const child = all.find(item => item.parentLine === node.line);
@@ -418,18 +517,7 @@ function updateProjectTaskDate(content, reference, field, value) {
   if (!symbol) throw new Error('未知日期字段');
   const date = dateValue(value, field === 'scheduled' ? '计划日期' : '截止日期');
   if (!taskTree(content).some(task => task.line === reference.line && task.raw === reference.raw)&&!(reference.nativeCalendar&&content.split(/\r?\n/)[reference.line]===reference.raw&&/^[\s\t>]*(?:[-*+]|\d+[.)])\s+\[(.)\]\s*(.*)$/u.test(reference.raw))) throw new Error('任务位置已变化，请刷新后重新设置日期');
-  const pattern = new RegExp('[ \\t]+' + symbol + '[ \\t]*\\d{4}-\\d{2}-\\d{2}', 'u');
-  let raw = reference.raw;
-  if (pattern.test(raw)) raw = raw.replace(pattern, date ? ' ' + symbol + ' ' + date : '');
-  else if (date) {
-    const block = /(\s+\^[\w-]+)\s*$/.exec(raw);
-    raw = block ? raw.slice(0, block.index).trimEnd() + ' ' + symbol + ' ' + date + block[1] : raw.trimEnd() + ' ' + symbol + ' ' + date;
-  }
-  if (/\]$/.test(raw)) raw += ' ';
-  const offsets = [0];
-  for (const delimiter of content.matchAll(/\r?\n/g)) offsets.push(delimiter.index + delimiter[0].length);
-  const offset = offsets[reference.line];
-  return content.slice(0, offset) + raw + content.slice(offset + reference.raw.length);
+  return replaceProjectTask(content, reference, writeTaskRawDate(reference.raw, symbol, date), [field === 'due' ? 'due' : 'days']);
 }
 function nextAreaFolder(value, folders) {
   const name = validateProjectName(value);

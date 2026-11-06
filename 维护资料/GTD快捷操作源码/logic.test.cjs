@@ -70,7 +70,7 @@ test('splitting a leaf uses indentation without adding a status tag and preserve
   const insert=feature('insertSubtask');
   const raw='  - [ ] 阅读 📅 2026-11-01 ^reading';
   const source='- [ ] 学习 #gtd/group\n'+raw+'\n\n## 资料\n';
-  assert.equal(insert(source,'- [ ] 第一节 ⏳ 2026-10-29',{line:1,raw}),'- [ ] 学习 #gtd/group\n  - [ ] 阅读 📅 2026-11-01 ^reading\n    - [ ] 第一节 ⏳ 2026-10-29\n\n## 资料\n');
+  assert.equal(insert(source,'- [ ] 第一节 ⏳ 2026-10-29',{line:1,raw}),'- [ ] 学习 #gtd/group\n  - [ ] 阅读 📅 2026-11-01 ^reading\n    - [ ] 第一节 ⏳ 2026-10-29 📅 2026-11-01\n\n## 资料\n');
 });
 test('a deeper child uses the current tab indentation and line endings', () => {
   const insert=feature('insertSubtask');
@@ -140,13 +140,13 @@ test('a stale checkbox cannot overwrite another task after an outside edit', () 
   const source='- [ ] 原任务\n';const ref=feature('projectTaskTree')(source).roots[0].reference;
   assert.throws(()=>feature('replaceProjectTask')('- [ ] 其他任务\n',ref,'- [x] 原任务'));
 });
-test('completing a parent does not modify children or inflate leaf progress', () => {
-  const source='- [ ] 分组 #gtd/group\n  - [ ] 具体行动\n';
+test('completing a parent with finished children preserves their completion and leaf progress', () => {
+  const source='- [ ] 分组 #gtd/group\n  - [x] 具体行动\n';
   const tree=feature('projectTaskTree')(source);
   const after=logic.projectTaskTree(feature('replaceProjectTask')(source,tree.roots[0].reference,'- [x] 分组 #gtd/group ✅ 2026-10-28'));
   assert.equal(after.roots[0].completed,true);
-  assert.equal(after.roots[0].children[0].completed,false);
-  assert.equal(after.total,1);assert.equal(after.done,0);
+  assert.equal(after.roots[0].children[0].completed,true);
+  assert.equal(after.total,1);assert.equal(after.done,1);
 });
 
 test('deleting a parent removes its descendants and indented notes without consuming siblings or sections', () => {
