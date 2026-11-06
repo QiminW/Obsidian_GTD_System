@@ -9,7 +9,7 @@
  const history=p.undoHistory,entries=history.entries.slice(),lastProject=p.data.lastProject;
  const w=window.electron.remote.getCurrentWindow();w.webContents.setBackgroundThrottling(false);w.showInactive();w.moveTop();
  const path='00 GTD/00 工作区/01 项目/00 工作/__父子规则验证_'+Date.now()+'.md';let file;
- const initial='---\ntype: gtd-project\narea: 工作\nstatus: active\n---\n## 任务\n- [ ] <!-- gtd-days: 2026-11-06 --> 父任务 ^parent\n  - [ ] 空白子任务 ^empty\n  - [ ] <!-- gtd-days: 2026-11-08 --> 自定子任务 📅 2026-11-15 ^own\n    - [ ] 孙任务 ^grand\n';
+ const initial='---\ntype: gtd-project\narea: 工作\nstatus: active\n---\n## 任务\n- [ ] <!-- gtd-days: 2026-11-06 --> 父任务 ^parent\n  - [ ] 空白子任务 ^empty\n  - [ ] <!-- gtd-days: 2026-11-08 --> 自定子任务 📅 2026-11-15 ^own\n    - [ ] 孙任务 ^grand\n    - [ ] 另一孙任务 ^grand2\n';
  const model=async()=>flatten(logic.projectTaskTree(await app.vault.read(file)).roots);
  const node=async name=>(await model()).find(n=>n.title===name);
  const project=()=>[...document.querySelectorAll('tr[data-project-path]')].find(e=>visible(e)&&e.dataset.projectPath===path);
@@ -27,6 +27,7 @@
   check('blocked homepage completion leaves source unchanged',await app.vault.read(file)===initial);
   check('blocked checkbox returns to unchecked',!taskRow('父任务').querySelector('input[type=checkbox]').checked);
   check('blocked completion does not add undo history',history.entries.length===entries.length);
+  check('parent row counts its direct children only',taskRow('父任务').querySelector('.gtd-task-count')?.textContent==='0/2');
   const warnings=()=>[...document.querySelectorAll('.notice')].filter(e=>e.textContent.includes('子任务未完成')&&!e.classList.contains('is-hidden'));
   check('repeated rejected completion leaves no inline error rows',![...project().nextElementSibling.querySelectorAll('.gtd-form-error')].some(e=>e.textContent.includes('子任务未完成')));
   check('repeated rejection shows a single transient notice',warnings().length===1);
@@ -47,12 +48,23 @@
   check('grandchild inherits the nearest independent plan',JSON.stringify((await node('孙任务')).days)==='["2026-11-08"]');
   document.querySelectorAll('.gtd-day-panel').forEach(e=>e.hidePopover?.());
   const calendar=app.plugins.plugins['tasks-calendar'],store=calendar.taskStore;
-  const parentCard=await until(()=>store.getTasks().find(t=>t.path===path&&t._gtdSourceTask?.raw?.includes('^parent')&&t._gtdSourceTask?._gtdReference),'calendar source indexed');
-  const before=await app.vault.read(file);try{await calendar.toggleTask(parentCard)}catch{}
+  const sourceCard=async key=>{
+   const indexed=store.tasksByPath.get(path)||[],text=await app.vault.read(file),refs=logic.calendarTaskReferences(text,indexed),task=indexed.find(t=>t.raw.includes('^'+key));
+   return task&&refs?logic.calendarTaskInstances([{...task,_gtdReference:refs.get(task.line)}])[0]:null;
+  };
+  const parentCard=await until(()=>sourceCard('parent'),'calendar source indexed');
+  const visibleCards=store.getTasks().filter(t=>t.path===path);
+  check('calendar shows leaf tasks only',visibleCards.length>0&&visibleCards.every(t=>!/(?:\^parent|\^own)\s*$/.test((t._gtdSourceTask||t).raw)));
+  const before=await app.vault.read(file);
+  for(let attempt=0;attempt<3;attempt++)check('calendar returns false for rejected completion '+attempt,await calendar.toggleTask(parentCard)===false);
   check('calendar cannot bypass the parent completion guard',await app.vault.read(file)===before);
-  const fresh=await until(()=>store.getTasks().find(t=>t.path===path&&t._gtdSourceTask?.raw?.includes('^parent')&&t._gtdSourceTask?._gtdReference),'calendar reference refreshed');
+  check('calendar rejection shares a single transient notice',warnings().length===1&&p.taskActionNotice?.containerEl===warnings()[0]);
+  await until(()=>warnings().length===0,'calendar notice expires');check('calendar warning automatically disappears',warnings().length===0);
+  await calendar.toggleTask(parentCard);
+  const fresh=await until(()=>sourceCard('parent'),'calendar reference refreshed');
   await store.replaceTask(fresh,fresh._gtdSourceTask.raw.replace(' ^parent',' 📅 2026-11-20 ^parent'));
   await until(async()=> (await node('空白子任务')).due==='2026-11-20','calendar date inheritance');
+  check('next calendar write dismisses the previous warning',warnings().length===0);
   check('calendar date editor fills child dates without overwriting independent ones',(await node('自定子任务')).due==='2026-11-15');
   await until(()=>taskRow('父任务').querySelector('input[type=date]').value==='2026-11-20','homepage date refreshed');
   taskRow('父任务').querySelector('button[title="添加子任务"]').click();
@@ -61,11 +73,12 @@
   check('new child inherits the deadline',(await node('新子任务')).due==='2026-11-20');
   check('new child inherits multi-day planning',(await node('新子任务')).days.length===2);
   entry.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
-  for(const name of ['孙任务','自定子任务','空白子任务','新子任务']){
+  for(const name of ['孙任务','另一孙任务','自定子任务','空白子任务','新子任务']){
    let target=taskRow(name);if(!target)target=await until(()=>[...project().nextElementSibling.querySelectorAll('.gtd-task-row')].find(e=>e.querySelector('.gtd-task-title')?.textContent===name),'child checkbox');
    target.querySelector('input[type=checkbox]').click();await until(async()=> (await node(name)).completed,name+' completed');await until(()=>history.pending===0,'save finished');await pause(100);
   }
   taskRow('父任务').querySelector('input[type=checkbox]').click();await until(async()=> (await node('父任务')).completed,'parent completed');check('homepage allows completion once every descendant is checked',(await node('父任务')).completed);
+  await until(()=>taskRow('父任务').querySelector('.gtd-task-count')?.textContent==='3/3','direct child completion counts updated');check('direct child counter updates when an intermediate task is completed',taskRow('父任务').querySelector('.gtd-task-count').textContent==='3/3');
   await until(()=>history.pending===0,'parent save finished');await pause(150);
   const completedSource=await app.vault.read(file),completedHistory=history.entries.length;
   taskRow('孙任务').querySelector('input[type=checkbox]').click();

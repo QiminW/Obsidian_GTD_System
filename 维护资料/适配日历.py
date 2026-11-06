@@ -19,6 +19,17 @@ for index,variable in enumerate(['r','o']):
  for values in attributes.values():
   attribute=values[index]
   if attribute not in patched:patched=patched.replace(before,before+attribute,1)
+for action,variable,task in [('update','r','n'),('edit','r','n'),('delete','r','n'),('reschedule','i','n'),('create','a','{path:r}'),('open','a','n')]:
+ before=f'new ke.Notice(`Could not {action} task: ${{No({variable})}}`)'.encode()
+ after=f'(this._gtdTaskError?this._gtdTaskError({task},{variable},`Could not {action} task: ${{No({variable})}}`):'.encode()+before+b')'
+ if patched.count(after)==1:continue
+ if patched.count(before)!=1:raise SystemExit('任务提醒结构与配套版本不符，未写入文件')
+ patched=patched.replace(before,after,1)
+before=b'new ke.Notice(`Task file not found: ${n.path}`)'
+after=b'(this._gtdTaskError?this._gtdTaskError(n,new Error(`Task file not found: ${n.path}`),`Task file not found: ${n.path}`):'+before+b')'
+if patched.count(after)!=1:
+ if patched.count(before)!=1:raise SystemExit('任务来源提醒结构与配套版本不符，未写入文件')
+ patched=patched.replace(before,after,1)
 if patched==content:
  print('已完成日历卡片适配，无需重复处理。');sys.exit(0)
 path.write_bytes(patched)

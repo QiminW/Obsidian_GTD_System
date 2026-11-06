@@ -320,10 +320,11 @@ async function createProjectView(project) {
       seenTasks.add(fresh.key);
       let cached=taskCache.get(fresh.key);
       const node=cached?.node||fresh;if(cached)Object.assign(node,fresh);
+      const childDone=node.children.filter(child=>child.completed).length;
       const visibleChildren=showCompleted?node.children:node.children.filter(isVisible);
       const titleEdit=titleEdits.find(state=>state.taskKey===node.key);
       const panelKey=scope+'::days:'+path+'::'+node.key,panelState=plugin.taskDayPanels.get(panelKey);
-      const signature=JSON.stringify([node.title,node.status,node.due,node.days,node.done,node.total,node.children.length,!!visibleChildren.length,titleEdit?.key,titleEdit?.busy,titleEdit?.error,project.status]);
+      const signature=JSON.stringify([node.title,node.status,node.due,node.days,node.done,node.total,node.children.length,childDone,!!visibleChildren.length,titleEdit?.key,titleEdit?.busy,titleEdit?.error,project.status]);
       const item=cached?.item||document.createElement('li');
       item.dataset.taskKey=node.key;item.dataset.taskDepth=String(node.depth);item.dataset.taskColorLevel=String(node.depth%8);
       let taskRow=cached?.row,childContainer=cached?.children,branch=cached?.branch;
@@ -372,7 +373,7 @@ async function createProjectView(project) {
         name.dataset.gtdTaskAction='rename';name.dataset.gtdTaskRename='true';name.disabled=busy;
         name.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(!busy)plugin.beginTaskTitleEdit(scope,path,node);});
       }
-      if(node.children.length)taskRow.createSpan({text:node.done+'/'+node.total,cls:'gtd-task-count'});
+      if(node.children.length)taskRow.createSpan({text:childDone+'/'+node.children.length,cls:'gtd-task-count',attr:{title:'直接子任务：已完成 '+childDone+' 项，共 '+node.children.length+' 项'}});
       const dates=taskRow.createSpan({cls:'gtd-task-dates'});
       for(const [field,label] of [['due','截止']]) {
         const wrap=dates.createEl('label',{cls:'gtd-task-date'});wrap.createSpan({text:label});

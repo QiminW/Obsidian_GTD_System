@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.11.2 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.12.0 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -28,6 +28,8 @@ node --test
 
 项目操作失败使用 `showTaskActionError` 的单条临时提醒，约 4 秒后自动关闭；下一次任务写入通过 `clearTaskActionNotice` 立即清除。不要再向任务树追加持久错误行。输入框内用于修正未保存内容的错误仍保留在对应表单中。
 
+父任务行的计数直接读取 `children` 的完成状态；项目整体进度继续使用末级统计。日历桥接在建立完整源引用后通过 `calendarLeafTasks` 排除非末级任务，避免削减索引后破坏安全写回。普通列表、引用和代码块边界遵守源笔记结构；父任务日期与原笔记内容保持不变。`calendar-leaves.test.cjs` 检查筛选与日期继承，`calendar-feedback.test.cjs` 使用本包日历的真实方法片段验证提醒回调及卸载恢复。
+
 运行 `python GTD快捷操作源码/界面验证/build.py` 可生成独立 HTML，使用内存中的演示项目验证键盘、局部更新、连续添加、日期面板和缩进。用浏览器打开输出文件即可查看 JSON 结果；该验证不读取个人笔记，也不操作当前 Obsidian 输入框。
 
 `refresh-input.native.js` 和 `refresh-reading-mode.native.js` 是 Obsidian 内的输入与滚动回归脚本。前者检查组合输入、异步读取、连续提交、Esc 和并发高度释放；后者通过真实 Dataview 刷新检查查看模式中的输入、滚动及日历间距。使用专用演示库打开首页的查看模式，退出其他编辑后，通过 Obsidian CLI 的 `eval` 执行脚本。结果保存在 `window.__gtdRefreshInputTest` 和 `window.__realRefreshTest`；每次运行会创建并清理自己的示例项目。
@@ -46,7 +48,7 @@ node --test
 python 适配日历.py
 ```
 
-脚本只为普通卡片和拖动预览卡片增加 GTD 截止日属性与源项目名称属性。项目名称直接取自该任务的源文件，不通过任务名称匹配。它会检查版本、代码位置和重复适配，遇到不匹配的文件时停止。完成后在 Obsidian 中先关闭 GTD 快捷操作，再重新启用 Tasks Calendar 和 GTD 快捷操作。
+脚本为普通卡片和拖动预览卡片增加 GTD 截止日属性与源项目名称属性，并在原有失败处理处加入可选 `_gtdTaskError` 回调。项目名称直接取自该任务的源文件，不通过任务名称匹配。日历桥接安装时接管 GTD 提醒，卸载时恢复原回调；GTD 外的任务保留原提醒。脚本会检查版本、代码位置和重复适配，遇到不匹配的文件时停止。完成后在 Obsidian 中先关闭 GTD 快捷操作，再重新启用 Tasks Calendar 和 GTD 快捷操作。
 
 其他版本需先检查其卡片渲染结构，再调整适配逻辑。上游来源和许可说明在库根目录的 `THIRD-PARTY-NOTICES.md`。
 

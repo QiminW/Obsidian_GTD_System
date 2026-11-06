@@ -372,6 +372,20 @@ function calendarTaskReferences(content, indexed) {
   const version=taskSourceVersion(content);
   return new Map(tasks.map(task=>[task.line,{line:task.line,raw:task.raw,version,nativeCalendar:true}]));
 }
+function calendarLeafTasks(content, indexed) {
+  const rows = content.split(/\r?\n/), quotes = new Map(), parents = new Set();
+  // Calendar also accepts "- [ ]Task"; normalize only the parsing copy.
+  const parseable = rows.map(raw => raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/, '$1 ')).join('\n');
+  for (const task of indexed) quotes.set(quoteTaskRow(task.raw).depth, task.raw);
+  for (const raw of quotes.values()) {
+    const tasks = operationTaskTree(parseable, raw);
+    for (let index = 0; index < tasks.length - 1; index++) {
+      const task = tasks[index], next = tasks[index + 1];
+      if (next.width > task.width && next.line < taskBlockEnd(rows, task)) parents.add(task.line);
+    }
+  }
+  return indexed.filter(task => !parents.has(task.line));
+}
 function calendarTaskInstances(tasks) {
   return tasks.flatMap(task => {
     if (!task.path.startsWith('00 GTD/')) return [task];
@@ -542,4 +556,4 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };

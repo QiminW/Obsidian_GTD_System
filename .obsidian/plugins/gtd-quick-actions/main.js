@@ -373,6 +373,20 @@ function calendarTaskReferences(content, indexed) {
   const version=taskSourceVersion(content);
   return new Map(tasks.map(task=>[task.line,{line:task.line,raw:task.raw,version,nativeCalendar:true}]));
 }
+function calendarLeafTasks(content, indexed) {
+  const rows = content.split(/\r?\n/), quotes = new Map(), parents = new Set();
+  // Calendar also accepts "- [ ]Task"; normalize only the parsing copy.
+  const parseable = rows.map(raw => raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/, '$1 ')).join('\n');
+  for (const task of indexed) quotes.set(quoteTaskRow(task.raw).depth, task.raw);
+  for (const raw of quotes.values()) {
+    const tasks = operationTaskTree(parseable, raw);
+    for (let index = 0; index < tasks.length - 1; index++) {
+      const task = tasks[index], next = tasks[index + 1];
+      if (next.width > task.width && next.line < taskBlockEnd(rows, task)) parents.add(task.line);
+    }
+  }
+  return indexed.filter(task => !parents.has(task.line));
+}
 function calendarTaskInstances(tasks) {
   return tasks.flatMap(task => {
     if (!task.path.startsWith('00 GTD/')) return [task];
@@ -543,7 +557,7 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
 
 return module.exports;
 })();
@@ -569,6 +583,10 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   for(const file of plugin.app.vault.getMarkdownFiles())prime(file);
   const source = task => task._gtdSourceTask || task;
   const inGtd = task => task?.path?.startsWith('00 GTD/');
+  const previousFeedback = calendar._gtdTaskError;
+  const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
+  calendar._gtdTaskError = feedback;
+  restores.push(() => { if (calendar._gtdTaskError === feedback) { if (previousFeedback === undefined) delete calendar._gtdTaskError; else calendar._gtdTaskError = previousFeedback; } });
   function wrap(target, name, make) {
     const original = target[name];
     if (typeof original !== 'function') return;
@@ -577,25 +595,29 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     restores.push(() => { if (target[name] === wrapped) target[name] = original; });
   }
   wrap(store, 'getTasks', original => function () {
-    const tasks=original.call(this),groups=new Map(),references=new Map();
+    const tasks=original.call(this),groups=new Map(),references=new Map(),leaves=new Map();
     for(const task of tasks)if(inGtd(task)){if(!groups.has(task.path))groups.set(task.path,[]);groups.get(task.path).push(task);}
-    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));}
-    return logic.calendarTaskInstances(tasks.map(task=>inGtd(task)?{...task,_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
+    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));if(text!==undefined)leaves.set(path,new Set(logic.calendarLeafTasks(text,indexed).map(task=>task.line)));}
+    return logic.calendarTaskInstances(tasks.filter(task=>!inGtd(task)||!leaves.has(task.path)||leaves.get(task.path).has(task.line)).map(task=>inGtd(task)?{...task,_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
   });
   wrap(store, 'replaceTask', original => async function (task, replacement) {
     const canonical = source(task);
     if (!inGtd(canonical)) return original.call(this, task, replacement);
+    plugin.clearTaskActionNotice();
     return plugin.mutateCalendarTask(canonical, (content, reference) =>
       logic.replaceProjectTask(content, reference, logic.preserveTaskDays(canonical.raw, replacement)));
   });
   wrap(calendar, 'toggleTask', original => function (task) {
     const canonical = source(task);
+    if (inGtd(canonical)) plugin.clearTaskActionNotice();
     if (!inGtd(canonical) || !logic.taskDays(canonical.raw).length) return original.call(this, canonical);
     return original.call(this, { ...canonical, raw: logic.stripTaskDays(canonical.raw), _gtdSourceTask: canonical });
   });
-  wrap(calendar, 'openTask', original => function (task) { return original.call(this, source(task)); });
+  wrap(calendar, 'openTask', original => function (task) { const canonical=source(task);if(inGtd(canonical))plugin.clearTaskActionNotice();return original.call(this, canonical); });
+  wrap(calendar, 'createTask', original => function (date) { if(this.settings?.newTaskFile?.trim().startsWith('00 GTD/'))plugin.clearTaskActionNotice();return original.call(this,date); });
   wrap(calendar, 'editTask', original => function (task) {
     const canonical = source(task);
+    if (inGtd(canonical)) plugin.clearTaskActionNotice();
     if (!inGtd(canonical) || !logic.taskDays(canonical.raw).length) return original.call(this, canonical);
     return original.call(this, { ...canonical, raw: logic.stripTaskDays(canonical.raw), description: logic.stripTaskDays(canonical.description || ''), _gtdSourceTask: canonical });
   });
@@ -603,6 +625,7 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     const canonical = source(task);
     if (!inGtd(canonical) || !task._gtdKind) return original.call(this, canonical, date);
     if (task._gtdDay === date) return;
+    plugin.clearTaskActionNotice();
     try {
       if (task._gtdKind === 'arrangement') {
         await plugin.mutateCalendarTask(canonical, (content, reference) => {
@@ -615,16 +638,17 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
         await plugin.mutateCalendarTask(canonical, (content, reference) => logic.updateProjectTaskDate(content, reference, 'due', date));
         new Notice('截止日期已修改');
       } else return original.call(this, canonical, date);
-    } catch (error) { new Notice(error.message || String(error)); }
+    } catch (error) { plugin.showTaskActionError(error); }
   });
   wrap(calendar, 'deleteTask', original => async function (task) {
     const canonical = source(task);
     if (!inGtd(canonical)) return original.call(this, canonical);
+    plugin.clearTaskActionNotice();
     try {
       const result = await plugin.mutateCalendarTask(canonical, (content, reference) => logic.deleteProjectTask(content, reference));
       plugin.showTaskDeletionUndo({ path: canonical.path, title: result.title, count: result.count, undo: result.undo });
       return true;
-    } catch (error) { new Notice(error.message || String(error)); return false; }
+    } catch (error) { plugin.showTaskActionError(error); return false; }
   });
   calendar.refreshCalendars();
   return { calendar, store, restore() { disposed=true;window.clearTimeout(refreshTimer);events.forEach(event=>plugin.app.vault.offref(event));snapshots.clear();restores.reverse().forEach(restore => restore()); calendar.refreshCalendars(); } };
