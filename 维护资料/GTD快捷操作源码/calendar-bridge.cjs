@@ -4,6 +4,8 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   const store = calendar.taskStore, restores = [], snapshots=new Map(), revisions=new Map(), events=[];
   let disposed=false,refreshTimer;
   const refresh=()=>{window.clearTimeout(refreshTimer);refreshTimer=window.setTimeout(()=>{if(!disposed)calendar.refreshCalendars();},25);};
+  const workspace=plugin.app.workspace,orderEvent=workspace?.on('gtd-project-order-changed',refresh);
+  if(orderEvent)restores.push(()=>workspace.offref(orderEvent));
   async function prime(file) {
     if(!file?.path?.startsWith('00 GTD/')||file.extension!=='md')return;
     const path=file.path,revision=(revisions.get(path)||0)+1;revisions.set(path,revision);snapshots.delete(path);
@@ -28,9 +30,12 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     const {mode,gridRef,date,active,completed,jsx,sortable,strategy,renderTask}=options;
     if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
     const groups=new Map();
-    const makeGroup=(key,label,full)=>({key,label,full,active:[],completed:[],children:new Map(),done:0,total:0});
+    const tasks=[...active,...completed],paths=[...new Set(tasks.map(task=>task.path))];
+    const ranks=new Map(logic.orderProjectPaths(paths,plugin.data.projectOrder).map((path,index)=>[path,index]));
+    tasks.sort((a,b)=>ranks.get(a.path)-ranks.get(b.path)||(source(a).line??Infinity)-(source(b).line??Infinity));
+    const makeGroup=(key,label,full)=>({key,label,full,tasks:[],entries:[],children:new Map(),done:0,total:0});
     const count=(group,task)=>{group.total++;if(task.completed)group.done++;};
-    for(const task of [...active,...completed]){
+    for(const task of tasks){
       const project=task.path.replace(/\.md$/i,'').split('/').pop(),projectKey=JSON.stringify([task.path,null]);
       if(!groups.has(projectKey))groups.set(projectKey,makeGroup(projectKey,project,project));
       let group=groups.get(projectKey);count(group,task);
@@ -38,16 +43,16 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
       ancestors.forEach((label,index)=>{
         keys.push(task._gtdAncestorKeys?.[index]||(index===ancestors.length-1&&task._gtdGroupKey)||'name:'+label);
         const key=JSON.stringify([task.path,keys]);
-        if(!group.children.has(key))group.children.set(key,makeGroup(key,label,[project,...ancestors.slice(0,index+1)].join(' › ')));
+        if(!group.children.has(key)){const child=makeGroup(key,label,[project,...ancestors.slice(0,index+1)].join(' › '));group.children.set(key,child);group.entries.push({group:child});}
         group=group.children.get(key);count(group,task);
       });
-      group[task.completed?'completed':'active'].push(task);
+      group.tasks.push(task);group.entries.push({task});
     }
     const renderGroup=group=>{
       const key=date+'::'+group.key;
       return jsx.jsxs('details',{className:'gtd-calendar-task-group',open:!foldedGroups.has(key),onToggle:event=>{if(event.currentTarget.open)foldedGroups.delete(key);else foldedGroups.add(key);},children:[
         jsx.jsxs('summary',{className:'gtd-calendar-group-heading','aria-label':group.full,onClick:event=>event.stopPropagation(),onDoubleClick:event=>event.stopPropagation(),children:[jsx.jsx('span',{className:'gtd-calendar-group-title',children:group.label}),jsx.jsx('span',{className:'gtd-calendar-group-count',children:group.done+'/'+group.total})]}),
-        jsx.jsxs('div',{className:'gtd-calendar-group-list',children:[...['active','completed'].map(state=>jsx.jsx(sortable,{id:`tasks:${date}:group:${group.key}:${state}`,items:group[state].map(task=>task.id),strategy,children:group[state].map(renderTask)},state)),...[...group.children.values()].map(renderGroup)]})
+        jsx.jsx('div',{className:'gtd-calendar-group-list',children:jsx.jsx(sortable,{id:`tasks:${date}:group:${group.key}:source`,items:group.tasks.map(task=>task.id),strategy,children:group.entries.map(entry=>entry.task?renderTask(entry.task):renderGroup(entry.group))})})
       ]},key);
     };
     return [...groups.values()].map(renderGroup);

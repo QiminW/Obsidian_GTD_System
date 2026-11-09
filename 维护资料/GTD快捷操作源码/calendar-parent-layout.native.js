@@ -3,7 +3,7 @@
  const p=app.plugins.plugins['gtd-quick-actions'],calendar=app.plugins.plugins['tasks-calendar'],pause=ms=>new Promise(r=>setTimeout(r,ms)),results=[];
  const check=(name,pass)=>{results.push({name,pass});if(!pass)throw Error(name)},until=async(fn,label)=>{for(let i=0;i<240;i++){const value=await fn();if(value)return value;await pause(40)}throw Error('Timeout: '+label)};
  const w=window.electron.remote.getCurrentWindow();w.webContents.setBackgroundThrottling(false);w.showInactive();w.moveTop();
- const stamp=Date.now().toString(36).slice(-4),paths=['00 GTD/00 工作区/01 项目/00 工作/示例分享-'+stamp+'.md','00 GTD/00 工作区/01 项目/00 工作/示例课程-'+stamp+'.md'],files=[],date=p.todayDateKey(),history=p.undoHistory,entries=history.entries.slice(),savedData=structuredClone(p.data),savedSettings=structuredClone(calendar.settings),home=app.workspace.getActiveFile();
+ const stamp=Date.now().toString(36).slice(-4),paths=['00 GTD/00 工作区/01 项目/00 工作/示例分享-'+stamp+'.md','00 GTD/00 工作区/01 项目/01 学习/示例分享-'+stamp+'.md'],files=[],date=p.todayDateKey(),history=p.undoHistory,entries=history.entries.slice(),savedData=structuredClone(p.data),savedSettings=structuredClone(calendar.settings),home=app.workspace.getActiveFile();
  const root=()=>[...document.querySelectorAll('.block-language-tasks-calendar.tasks-calendar')].find(e=>e.closest('.gtd-dashboard')&&e.offsetWidth);
  const mode=name=>[...root().querySelectorAll('.tasks-calendar-mode-switch button')].find(e=>e.textContent===name);
  const cards=()=>[...root().querySelectorAll('.tasks-calendar-grid .tasks-calendar-task')].filter(e=>paths.includes(e.dataset.gtdSourcePath));
@@ -13,6 +13,7 @@
  const overdueCards=()=>[...root().querySelectorAll('.tasks-calendar-overdue-list .tasks-calendar-task')].filter(e=>paths.includes(e.dataset.gtdSourcePath));
  const overdueGroups=()=>[...root().querySelectorAll('.tasks-calendar-overdue-list > .gtd-calendar-task-group')].filter(g=>g.querySelector('[data-gtd-source-path="'+paths[0]+'"],[data-gtd-source-path="'+paths[1]+'"]'));
  const sourceCard=(path,id)=>calendar.taskStore.getTasks().find(t=>t.path===path&&(t._gtdSourceTask||t).raw.includes('^'+id));
+ let restoreCompletedHidden=false;
  const capture=async name=>{
   if(!window.__gtdLayoutCaptureFolder)return;
   root().scrollIntoView({block:'start'});await pause(120);
@@ -24,6 +25,7 @@
   const yesterday=window.moment(date).subtract(1,'day').format('YYYY-MM-DD');
   for(let i=0;i<2;i++)files.push(await app.vault.create(paths[i],'---\ntype: gtd-project\nstatus: active\narea: 工作\n---\n## 任务\n- [ ] 内容整理 ^root\n  - [ ] 准备材料 ^parent\n    - [ ] 核对引用 <!-- gtd-days: '+date+' --> ^first\n    - [ ] '+(i?'整理习题':'导出讲义')+' <!-- gtd-days: '+date+' --> ^second\n    - [ ] 补齐旧资料 <!-- gtd-days: '+yesterday+' --> ^old-first\n    - [ ] 核验旧版本 <!-- gtd-days: '+yesterday+' --> ^old-second\n'+(i?'':'  - [ ] 交付准备 ^delivery\n    - [ ] 确认输出格式 <!-- gtd-days: '+date+' --> ^format\n    - [ ] 检查旧附件 <!-- gtd-days: '+yesterday+' --> ^attachment\n- [ ] 确认时间 <!-- gtd-days: '+date+' --> ^standalone\n')));
   await until(()=>root(),'calendar mounted');mode('Day').click();root().querySelector('.tasks-calendar-today-button').click();
+  const showCompleted=root().querySelector('button[aria-label="Show completed tasks"]');if(showCompleted){restoreCompletedHidden=true;showCompleted.click();}
   await until(()=>groupButtons().length===2,'two context layout buttons');
   check('day toolbar provides exactly two layout choices',groupButtons().length===2);
   groupButtons().find(b=>b.dataset.gtdCalendarLayout==='path').click();await until(()=>cards().length===6,'six leaf cards');
@@ -34,7 +36,20 @@
   await until(()=>overdueCards().length===5,'five overdue leaf cards');check('overdue cards also show inline ancestry',overdueCards().every(c=>getComputedStyle(c.querySelector('.gtd-calendar-context')).display!=='none'&&/准备材料|交付准备/.test(c.querySelector('.gtd-calendar-context').textContent)));
   await capture('calendar-parent-path');
   groupButtons().find(b=>b.dataset.gtdCalendarLayout==='group').click();await until(()=>groups().length>0,'source-specific groups');
+  if(p.data.calendarCompact===true){root().querySelector('.gtd-calendar-height-toggle').click();await pause(80);}
   check('one project heading merges all branches and standalone tasks',projectGroups().length===2);
+  const projectOrder=()=>projectGroups().map(g=>g.querySelector('.tasks-calendar-task').dataset.gtdSourcePath);
+  const tableOrder=()=>[...document.querySelectorAll('.gtd-project-progress > tbody > tr[data-project-path]')].map(row=>row.dataset.projectPath).filter(path=>paths.includes(path));
+  const overdueOrder=()=>overdueGroups().map(g=>g.querySelector('.tasks-calendar-task').dataset.gtdSourcePath);
+  const titles=(items,path)=>items.filter(c=>c.dataset.gtdSourcePath===path).map(c=>c.querySelector('.tasks-calendar-task-title').textContent);
+  await until(()=>tableOrder().length===2,'fixture projects in progress table');
+  check('equal project names in different areas have matching stable fallback order',JSON.stringify(projectOrder())===JSON.stringify([paths[0],paths[1]])&&JSON.stringify(projectOrder())===JSON.stringify(tableOrder()));
+  await p.moveProjectDisplay(paths[1],paths[0],'before');await until(()=>projectOrder()[0]===paths[1]&&overdueOrder()[0]===paths[1]&&tableOrder()[0]===paths[1],'project reorder reflected in both calendar sections');
+  check('day and overdue project groups follow project progress after a saved reorder',JSON.stringify(projectOrder())===JSON.stringify([paths[1],paths[0]])&&JSON.stringify(overdueOrder())===JSON.stringify(tableOrder()));
+  await p.moveProjectDisplay(paths[0],paths[1],'before');await until(()=>projectOrder()[0]===paths[0]&&overdueOrder()[0]===paths[0],'second project reorder');
+  check('project order updates immediately without reopening the calendar',JSON.stringify(projectOrder())===JSON.stringify(tableOrder()));
+  check('day branches and standalone tasks follow the project source order',JSON.stringify(titles(cards(),paths[0]))===JSON.stringify(['核对引用','导出讲义','确认输出格式','确认时间']));
+  check('overdue branches follow the same source order',JSON.stringify(titles(overdueCards(),paths[0]))===JSON.stringify(['补齐旧资料','核验旧版本','检查旧附件']));
   const projectA=projectGroups().find(g=>g.querySelector('[data-gtd-source-path="'+paths[0]+'"]'));
   check('shared ancestor appears once above its sibling branches',[...projectA.querySelectorAll('.gtd-calendar-group-title')].filter(t=>t.textContent==='内容整理').length===1&&['准备材料','交付准备'].every(title=>[...projectA.querySelectorAll('.gtd-calendar-group-title')].some(t=>t.textContent===title)));
   const common=projectA.querySelector(':scope > .gtd-calendar-group-list > .gtd-calendar-task-group');
@@ -57,8 +72,16 @@
   groups().forEach(g=>{if(!g.open)g.querySelector('summary').click()});await pause(80);
   const before=await app.vault.read(files[1]),target=cards().find(c=>c.dataset.gtdSourcePath===paths[1]&&c.querySelector('.tasks-calendar-task-title')?.textContent==='核对引用');target.querySelector('.tasks-calendar-checkbox').click();
   await until(async()=>/\[x\].*核对引用/.test(await app.vault.read(files[1]))&&history.pending===0,'grouped checkbox saved');
+  await until(()=>cards().find(c=>c.dataset.gtdSourcePath===paths[1]&&c.querySelector('.tasks-calendar-task-title')?.textContent==='核对引用')?.querySelector('.tasks-calendar-checkbox')?.checked,'completed card rendered');
+  check('completed cards retain their place in source order',JSON.stringify(titles(cards(),paths[1]))===JSON.stringify(['核对引用','整理习题']));
   check('grouped checkbox writes only its own source project',await app.vault.read(files[0])!==await app.vault.read(files[1])&&!/\[x\].*核对引用/.test(await app.vault.read(files[0])));
   await history.undo();await until(async()=>await app.vault.read(files[1])===before,'grouped completion undo');check('grouped completion supports one-step undo',await app.vault.read(files[1])===before);
+  const beforeReorder=await app.vault.read(files[0]),model=await p.readProjectTaskTree(paths[0]),branches=model.roots.find(n=>n.title==='内容整理').children;
+  await p.reorderProjectTask(paths[0],branches.find(n=>n.title==='交付准备').reference,branches.find(n=>n.title==='准备材料').reference,'before');
+  await until(()=>titles(cards(),paths[0])[0]==='确认输出格式'&&titles(overdueCards(),paths[0])[0]==='检查旧附件','sibling branch reorder');
+  check('reordering parent branches updates day and overdue task order',JSON.stringify(titles(cards(),paths[0]))===JSON.stringify(['确认输出格式','核对引用','导出讲义','确认时间']));
+  await history.undo();await until(async()=>await app.vault.read(files[0])===beforeReorder&&titles(cards(),paths[0])[0]==='核对引用','sibling reorder undo');
+  check('undo restores both source and grouped task order',JSON.stringify(titles(cards(),paths[0]))===JSON.stringify(['核对引用','导出讲义','确认输出格式','确认时间']));
   if(p.data.calendarCompact!==true)root().querySelector('.gtd-calendar-height-toggle').click();await pause(120);
   check('grouped compact mode uses More without internal scrolling',!!root().querySelector('.tasks-calendar-grid.is-day [data-gtd-compact-more]')&&cards().filter(c=>getComputedStyle(c).display!=='none').length<=3);
   check('compact mode hides empty headings at every hierarchy level',[...root().querySelectorAll('.gtd-calendar-task-group')].every(g=>[...g.querySelectorAll('.tasks-calendar-task')].some(t=>!t.hasAttribute('data-gtd-compact-hidden'))||g.hasAttribute('data-gtd-compact-group-hidden')));
@@ -73,8 +96,10 @@
   const navigation=cards().find(c=>c.dataset.gtdSourcePath===paths[1]).querySelector('.gtd-calendar-context');navigation.click();await until(()=>app.workspace.getActiveFile()?.path===paths[1],'source navigation');check('clicking the path locates the actual source note',app.workspace.getActiveFile()?.path===paths[1]&&!document.querySelector('.modal'));
  }catch(error){results.push({name:error.stack,pass:false})}finally{
   for(const file of files)if(app.vault.getAbstractFileByPath(file.path)===file)await app.vault.delete(file);
-  history.entries.splice(0,history.entries.length,...entries);p.data=savedData;await p.saveData(p.data);calendar.settings=savedSettings;await calendar.saveSettings();
-  if(home&&app.vault.getAbstractFileByPath(home.path)===home)await app.workspace.activeLeaf.openFile(home);p.calendarLayout.refresh();calendar.refreshCalendars();
+  history.entries.splice(0,history.entries.length,...entries);p.data=savedData;await p.saveData(p.data);
+  if(home&&app.vault.getAbstractFileByPath(home.path)===home)await app.workspace.activeLeaf.openFile(home);
+  if(restoreCompletedHidden)root()?.querySelector('button[aria-label="Hide completed tasks"]')?.click();
+  calendar.settings=savedSettings;await calendar.saveSettings();p.calendarLayout.refresh();calendar.refreshCalendars();
   w.webContents.setBackgroundThrottling(true);window.__calendarParentLayout={pass:results.every(r=>r.pass),checks:results.length,failed:results.filter(r=>!r.pass),results};
  }
  return JSON.stringify(window.__calendarParentLayout);

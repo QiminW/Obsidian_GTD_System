@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.13.1",
-  "builtAt": "2026-11-09T10:30:42+08:00",
+  "version": "1.13.2",
+  "builtAt": "2026-11-09T10:43:25+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.13.1",
+      "version": "1.13.2",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,13 +100,13 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 128337,
-      "sha256": "582bc99101cab41c43475b420a6f0523ec2b3306ad356f7ddeb5b48a349682cf"
+      "bytes": 128977,
+      "sha256": "67933b4d1f2c5203907fbd22aa66756c85d9ddbf92916a465daa692fe81d873e"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 285,
-      "sha256": "ab68ef07b6278b2944a307002ab69d66fcaebd1ce4db9f92e2d01ec5b9071817"
+      "sha256": "06e94f045fa26ee66f5663566b6b9c5fc9f76c62ba01774319888d6f1b0439b7"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
@@ -250,8 +250,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 20459,
-      "sha256": "acca1400f3dcdf23e668e0455421c7cc7214ad99ce3185077796c74cafc8d7f2"
+      "bytes": 20579,
+      "sha256": "ee5ed9fc82f07c747550eb8af60a1628fb1189828c26f09a7bc02632952a3b2e"
     },
     {
       "path": "00 GTD/首页.md",
@@ -265,8 +265,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3023,
-      "sha256": "fe5214a338ecfd6cb253b7024b947641339d9eb382fa64e3f7baf54eef2a2f9d"
+      "bytes": 3041,
+      "sha256": "b8d1547670f8c1346c70b38505a6b2485c5edececf9e347f0e3a4db7acf4bffd"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -330,13 +330,13 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 17285,
-      "sha256": "5ecc07d0a600ae3e2e80f781bb431ce4d39ce7c9151b6447f7ead04b6bb00bed"
+      "bytes": 17396,
+      "sha256": "1c082fca4d6b925d8ab07c4f998f7bddf78beaa68d9ee3a9a0ecf11262c8bf02"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
-      "bytes": 9563,
-      "sha256": "34ecb351555683114df9a8b42c6fc4717441223a8596bb1b2ba69e75ea2197cf"
+      "bytes": 10033,
+      "sha256": "476e553f4c0990285b7edb9f8ae60b92709bf0f4f95f64cc25bb5d67d48accd7"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-context.test.cjs",
@@ -350,8 +350,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-groups.test.cjs",
-      "bytes": 4550,
-      "sha256": "bbe82687b69138d9992f7f788b8d6fcc772742cd2e4d1c90198f56dee0925d70"
+      "bytes": 7864,
+      "sha256": "83822335b12583bd26171956220fae2cea98b7a30b94ff2dc79e8b4cf6cbf441"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.cjs",
@@ -370,8 +370,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-parent-layout.native.js",
-      "bytes": 12644,
-      "sha256": "059276bc16da8497c195655e60118d6fc63b08fa6532a0e982beed022a0dbf1e"
+      "bytes": 16429,
+      "sha256": "b435e2d275f4536fd3adcde241c14d3d5f2be4b835d1d5a25fafac63cca46b45"
     },
     {
       "path": "维护资料/GTD快捷操作源码/completed-display.test.cjs",
@@ -395,13 +395,13 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/logic.cjs",
-      "bytes": 36348,
-      "sha256": "7c660ffebbadb51059fd427955e04c1bf0243d39d5da672aa5809d97d8abe348"
+      "bytes": 36511,
+      "sha256": "e7b6579ba26eca7051d729275f7d061f831c0c4d2775efb04fc2906ef05b4075"
     },
     {
       "path": "维护资料/GTD快捷操作源码/logic.test.cjs",
-      "bytes": 24520,
-      "sha256": "1b33d16858341a92a74d08bf837b7db0bc938b470ecb7a6c6a5d6204578b65bd"
+      "bytes": 24934,
+      "sha256": "6de05dd79d2274035b77ff9404f25e337d2db81ca9d476b492412334a38b3b87"
     },
     {
       "path": "维护资料/GTD快捷操作源码/main-body.js",
@@ -490,8 +490,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 7596,
-      "sha256": "63ec79f8e5ca1a316ac47a52eddde307dbaeeaff5b9d3573a7c45d37728aadcd"
+      "bytes": 8026,
+      "sha256": "21203ace2e8bdce7cf280aa1ca5c8781938c4026735e58de65625ac3fb9d5fbe"
     },
     {
       "path": "维护资料/底色来源.md",

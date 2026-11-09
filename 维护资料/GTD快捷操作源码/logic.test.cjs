@@ -325,3 +325,9 @@ test('project display ordering keeps unknown projects and persists requested rel
   assert.deepEqual(ordered,['b.md','a.md','c.md']);
   assert.deepEqual(feature('moveDisplayItem')(ordered,'c.md','b.md','before'),['c.md','b.md','a.md']);
 });
+test('project fallback order is deterministic for equal names in different folders', () => {
+  const a='00 GTD/Projects/A/Example.md',b='00 GTD/Projects/B/Example.md',c='00 GTD/Projects/B/Alpha.md';
+  assert.deepEqual(feature('orderProjectPaths')([b,a,c],[]),[c,a,b]);
+  assert.deepEqual(feature('orderProjectPaths')([a,c,b],[]),[c,a,b]);
+  assert.deepEqual(feature('orderProjectPaths')([a,b,c],[b]),[b,c,a]);
+});

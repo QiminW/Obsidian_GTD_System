@@ -452,7 +452,9 @@ function moveSiblingTask(content, from, to, side = 'before') {
 }
 function orderProjectPaths(paths, order) {
   const available = new Set(paths), seen = new Set(), result = [];
-  for (const path of [...(Array.isArray(order)?order:[]), ...paths]) if (available.has(path) && !seen.has(path)) { seen.add(path);result.push(path); }
+  const name=path=>path.replace(/\.md$/i,'').split('/').pop();
+  const fallback=[...available].sort((a,b)=>name(a).localeCompare(name(b))||a.localeCompare(b));
+  for (const path of [...(Array.isArray(order)?order:[]), ...fallback]) if (available.has(path) && !seen.has(path)) { seen.add(path);result.push(path); }
   return result;
 }
 function moveDisplayItem(paths, source, target, side = 'before') {
