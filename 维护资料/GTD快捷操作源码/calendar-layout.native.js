@@ -10,8 +10,9 @@
   check('calendar layout controller is available', typeof install === 'function');
   const original = [...document.querySelectorAll('.tasks-calendar')].find(e => e.offsetHeight);
   if (!original) throw new Error('Open the demonstration homepage first');
-  const card = original.querySelector('.tasks-calendar-task');
+  const card = original.querySelector('.tasks-calendar-task')?.cloneNode(true);
   if (!card) throw new Error('The demonstration calendar needs one task');
+  card.removeAttribute('data-gtd-parent');card.removeAttribute('data-gtd-parent-path');
   const livePlugin = app.plugins.plugins['gtd-quick-actions'], hadLiveLayout = !!livePlugin.calendarLayout;
   livePlugin.calendarLayout?.destroy(); delete livePlugin.calendarLayout;
   const host = document.createElement('div');
@@ -179,7 +180,10 @@
             check(`live ${mode}/${compact}: overdue metadata is hidden`, [...original.querySelectorAll('.tasks-calendar-overdue-meta')].every(m => getComputedStyle(m).display === 'none'));
             const expected = new Map([['确认本周重点','示例项目 - 工作周报'],['完成需求沟通','示例项目 - 工作周报'],['编写周报初稿','示例项目 - 工作周报'],['整理核心概念','示例项目 - 课程学习'],['完成章节练习','示例项目 - 课程学习']]);
             const known = tasks.filter(t => expected.has(t.querySelector('.tasks-calendar-task-title').textContent.trim()));
-            check(`live ${mode}/${compact}: tooltip is the exact project rather than the task name`, known.length > 0 && known.every(t => t.getAttribute('aria-label') === '所属项目：' + expected.get(t.querySelector('.tasks-calendar-task-title').textContent.trim())));
+            check(`live ${mode}/${compact}: tooltip retains the exact project and available ancestry`, known.length > 0 && known.every(t => {
+              const project=expected.get(t.querySelector('.tasks-calendar-task-title').textContent.trim()),parents=t.dataset.gtdParentPath;
+              return t.getAttribute('aria-label') === (parents?'所属位置：'+project+' › '+parents:'所属项目：'+project);
+            }));
             if (mode === 'Month') {
               const days = [...original.querySelectorAll('.tasks-calendar-day')];
               check(`live month/${compact}: cells do not clip cards`, days.every(d => d.scrollHeight <= d.clientHeight + 1));

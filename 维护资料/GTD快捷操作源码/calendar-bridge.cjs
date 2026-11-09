@@ -23,6 +23,27 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
   calendar._gtdTaskError = feedback;
   restores.push(() => { if (calendar._gtdTaskError === feedback) { if (previousFeedback === undefined) delete calendar._gtdTaskError; else calendar._gtdTaskError = previousFeedback; } });
+  const foldedGroups=new Set(),previousDayRenderer=calendar._gtdRenderDayTasks;
+  const renderDayGroups=options=>{
+    const {mode,gridRef,date,active,completed,jsx,sortable,strategy,renderTask}=options;
+    if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
+    const groups=new Map();
+    for(const task of [...active,...completed]){
+      const key=task._gtdGroupKey||JSON.stringify([task.path,null]);
+      if(!groups.has(key))groups.set(key,{key,task,active:[],completed:[]});
+      groups.get(key)[task.completed?'completed':'active'].push(task);
+    }
+    return [...groups.values()].map(group=>{
+      const project=group.task.path.replace(/\.md$/i,'').split('/').pop(),parent=group.task._gtdParentTitle;
+      const label=project+(parent?' › '+parent:''),full=[project,...group.task._gtdAncestors||[]].join(' › '),key=date+'::'+group.key;
+      return jsx.jsxs('details',{className:'gtd-calendar-task-group',open:!foldedGroups.has(key),onToggle:event=>{if(event.currentTarget.open)foldedGroups.delete(key);else foldedGroups.add(key);},children:[
+        jsx.jsxs('summary',{className:'gtd-calendar-group-heading','aria-label':full,onClick:event=>event.stopPropagation(),onDoubleClick:event=>event.stopPropagation(),children:[jsx.jsx('span',{className:'gtd-calendar-group-title',children:label}),jsx.jsx('span',{className:'gtd-calendar-group-count',children:group.completed.length+'/'+(group.active.length+group.completed.length)})]}),
+        jsx.jsxs('div',{className:'gtd-calendar-group-list',children:['active','completed'].map(state=>jsx.jsx(sortable,{id:`tasks:${date}:group:${group.key}:${state}`,items:group[state].map(task=>task.id),strategy,children:group[state].map(renderTask)},state))})
+      ]},key);
+    });
+  };
+  calendar._gtdRenderDayTasks=renderDayGroups;
+  restores.push(()=>{if(calendar._gtdRenderDayTasks===renderDayGroups){if(previousDayRenderer===undefined)delete calendar._gtdRenderDayTasks;else calendar._gtdRenderDayTasks=previousDayRenderer;}});
   function wrap(target, name, make) {
     const original = target[name];
     if (typeof original !== 'function') return;
@@ -31,10 +52,10 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     restores.push(() => { if (target[name] === wrapped) target[name] = original; });
   }
   wrap(store, 'getTasks', original => function () {
-    const tasks=original.call(this),groups=new Map(),references=new Map(),leaves=new Map();
+    const tasks=original.call(this),groups=new Map(),references=new Map(),leaves=new Map(),contexts=new Map();
     for(const task of tasks)if(inGtd(task)){if(!groups.has(task.path))groups.set(task.path,[]);groups.get(task.path).push(task);}
-    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));if(text!==undefined)leaves.set(path,new Set(logic.calendarLeafTasks(text,indexed).map(task=>task.line)));}
-    return logic.calendarTaskInstances(tasks.filter(task=>!inGtd(task)||!leaves.has(task.path)||leaves.get(task.path).has(task.line)).map(task=>inGtd(task)?{...task,_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
+    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));if(text!==undefined)leaves.set(path,new Set(logic.calendarLeafTasks(text,indexed).map(task=>task.line)));if(references.get(path))contexts.set(path,logic.calendarTaskContexts(text,indexed));}
+    return logic.calendarTaskInstances(tasks.filter(task=>!inGtd(task)||!leaves.has(task.path)||leaves.get(task.path).has(task.line)).map(task=>inGtd(task)?{...task,...contexts.get(task.path)?.get(task.line),_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
   });
   wrap(store, 'replaceTask', original => async function (task, replacement) {
     const canonical = source(task);

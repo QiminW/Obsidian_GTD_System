@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.12.1",
-  "builtAt": "2026-11-06T17:34:46+08:00",
+  "version": "1.13.0",
+  "builtAt": "2026-11-09T09:53:32+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.12.1",
+      "version": "1.13.0",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,18 +100,18 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 121660,
-      "sha256": "8f76064e6fbab461f9b81fd52669b15f263097a512ef675112dc7128bc0af4ad"
+      "bytes": 127582,
+      "sha256": "ff07c90160de0448ca3e217af0b859c49c242866099432364b9a781f7811aed3"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 285,
-      "sha256": "626b7d65f6044a41833b3acb243f838c12d7d89f40f9badacffaa89cab1a1db1"
+      "sha256": "08f99a0f77c408a5b3277628ad1cb549f60cae9646c338aac63f14ca19f53977"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
-      "bytes": 9481,
-      "sha256": "098f882b0fc9a6315b2a4037209126e13699653400795bfac4c9072a6201e683"
+      "bytes": 12852,
+      "sha256": "0d0df1f76ccd1a8bf53616f257ebc72709042ac9e77d32fca510e00b5581b35d"
     },
     {
       "path": ".obsidian/plugins/obsidian-tasks-plugin/LICENSE.txt",
@@ -165,8 +165,8 @@
     },
     {
       "path": ".obsidian/plugins/tasks-calendar/main.js",
-      "bytes": 566197,
-      "sha256": "ef3705ca0e150c07ee01e5adeaeb74e739f5d440f64a9b7c6738eaebdd4840fa"
+      "bytes": 567702,
+      "sha256": "7da5c03c88756a25689b6ddec2f17aef47f9b6e3ca2f4ac10cf91919fdfd5d90"
     },
     {
       "path": ".obsidian/plugins/tasks-calendar/manifest.json",
@@ -250,8 +250,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 19879,
-      "sha256": "1ad2a196eb6e75b19ffc92a8aa77a8a32b80a773f10f9cce342f69988f6f8b2d"
+      "bytes": 20414,
+      "sha256": "e1779a32b0cea70bdd4173e5d10d5103c65c48a3979e3c028163cf3bbd376a2f"
     },
     {
       "path": "00 GTD/首页.md",
@@ -265,13 +265,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 2805,
-      "sha256": "5f1dfa69b90094272c7b5e7c8c471f3a775957a6b9a9d86a3bcf9be458c2c91e"
+      "bytes": 2963,
+      "sha256": "63e83c9e748b6a9b62075960f10499116e3c2c26f9d6bae3a823ac381f597a1d"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
-      "bytes": 3193,
-      "sha256": "c36f6edce9958176ef1a4aecf6b478ce00bcf1df8eee798748250991fb5bb488"
+      "bytes": 3544,
+      "sha256": "3f0841ce385ae04b05d70795bd97fe913f7175dfc57011d5b6cf7f40185320f6"
     },
     {
       "path": "docs/images/calendar-week.png",
@@ -330,13 +330,18 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 16876,
-      "sha256": "4a2c32ae0ac75d4abfb6e0a5cc3265ef7d982bc8de40f43ed519397d354304bb"
+      "bytes": 17231,
+      "sha256": "fa7c7082abcfbf096985d9aadd9a193e84f100cd4f5544a3241ef54382630aea"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
-      "bytes": 6706,
-      "sha256": "1ee1b8b09cc945c9df38cc1d30bac24e759fad71a3cbfef33c0611348f195c05"
+      "bytes": 8903,
+      "sha256": "4a27b73e8d07021dbd138e9fcf5cffabcce06f671abe16859bc913ed8315e9ba"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/calendar-context.test.cjs",
+      "bytes": 2212,
+      "sha256": "13e6fb1a67c320ae70c2857f6aabd455686659babfb72a30f56f7559422db89c"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-feedback.test.cjs",
@@ -344,19 +349,29 @@
       "sha256": "135c89206b04a05e15136df71c1cc953a9bab7b66570dd1a111ef6422016feed"
     },
     {
+      "path": "维护资料/GTD快捷操作源码/calendar-groups.test.cjs",
+      "bytes": 3016,
+      "sha256": "07347b3a4c320b31749f720e51dc7807640dafc594d06cfa9c51135ceb07048a"
+    },
+    {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.cjs",
-      "bytes": 6434,
-      "sha256": "c0e2d6600f6769c40b763f167c47983f22ac8bfbb2d1ffc61c40f01382b9cbbf"
+      "bytes": 8891,
+      "sha256": "15b0731b87711cd420895c6aaf82aaf5c84bdf4b318c4e12615d569e8fe3f110"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.native.js",
-      "bytes": 17922,
-      "sha256": "cae69f6d5923c83cf2a4ad0df3d05c5ceb072a9069fd2f40031f7c923cf57531"
+      "bytes": 18186,
+      "sha256": "bf1c9a23937404dfef04b1d2ffd469715ebd7c60c94dde62ef00fa39cbf32663"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-leaves.test.cjs",
       "bytes": 2369,
       "sha256": "6b3accda9b7f0ba8301381e970fe698bd4210d796ef587a4179a7ea3a6e4c2e9"
+    },
+    {
+      "path": "维护资料/GTD快捷操作源码/calendar-parent-layout.native.js",
+      "bytes": 10223,
+      "sha256": "7ec5f5e879d01b1353a0a3553d9d621203d9c2ee97a5c2e701a0a78466fb83d4"
     },
     {
       "path": "维护资料/GTD快捷操作源码/completed-display.test.cjs",
@@ -380,8 +395,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/logic.cjs",
-      "bytes": 35050,
-      "sha256": "4ac9e56f96462ceb758624c8173276c940282e684d9dbca744f6d83e8d24f458"
+      "bytes": 36254,
+      "sha256": "c025da70f0aa2a17475570fece4a9789d252f934d24948d2e9d16682df68847a"
     },
     {
       "path": "维护资料/GTD快捷操作源码/logic.test.cjs",
@@ -425,8 +440,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/styles.css",
-      "bytes": 9481,
-      "sha256": "098f882b0fc9a6315b2a4037209126e13699653400795bfac4c9072a6201e683"
+      "bytes": 12852,
+      "sha256": "0d0df1f76ccd1a8bf53616f257ebc72709042ac9e77d32fca510e00b5581b35d"
     },
     {
       "path": "维护资料/GTD快捷操作源码/task-controls.native.js",
@@ -475,8 +490,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 6753,
-      "sha256": "b2a60a91d633850c0ae49858f177d1ad1b249764d113577efa6f92b4638c8450"
+      "bytes": 7392,
+      "sha256": "221af8fd597675cfa2a401a1954d496cae2a6ee9d10a3e124e52de30e4393478"
     },
     {
       "path": "维护资料/底色来源.md",
@@ -490,9 +505,9 @@
     },
     {
       "path": "维护资料/适配日历.py",
-      "bytes": 2435,
-      "sha256": "6808a670f475bd647e1710cfd125b98e947ccd384921323aca9c4dea8a9380a7"
+      "bytes": 5346,
+      "sha256": "37adca4d521abb690b5bfc3db02bd39a641d5dadaf153ab901aaf2a9f9de6c34"
     }
   ],
-  "documentationUpdatedAt": "2026-11-06"
+  "documentationUpdatedAt": "2026-11-09"
 }

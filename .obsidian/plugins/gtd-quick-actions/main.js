@@ -387,6 +387,25 @@ function calendarLeafTasks(content, indexed) {
   }
   return indexed.filter(task => !parents.has(task.line));
 }
+function calendarTaskContexts(content, indexed) {
+  const rows=content.split(/\r?\n/),byLine=new Map(indexed.map(task=>[task.line,task])),quotes=new Map(),contexts=new Map();
+  const parseable=rows.map(raw=>raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/,'$1 ')).join('\n');
+  for(const task of indexed)quotes.set(quoteTaskRow(task.raw).depth,task.raw);
+  const title=node=>node.title.replace(/(?:^|\s)#(?:doing|gtd\/(?:doing|waiting|someday))(?=\s|$)/g,'').trim();
+  for(const raw of quotes.values()){
+    const stack=[];
+    for(const node of operationTaskTree(parseable,raw)){
+      while(stack.length&&(stack.at(-1).width>=node.width||stack.at(-1).end<=node.line))stack.pop();
+      const task=byLine.get(node.line),parent=stack.at(-1);
+      if(task&&task.raw===rows[node.line]){
+        const ancestors=stack.map(title),block=parent&&/\s\^([\w-]+)\s*$/.exec(parent.raw);
+        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdParentTitle:ancestors.at(-1)||'',_gtdGroupKey:JSON.stringify([task.path,parent?(block?'block:'+block[1]:'line:'+parent.line):null])});
+      }
+      stack.push({...node,end:taskBlockEnd(rows,node)});
+    }
+  }
+  return contexts;
+}
 function calendarTaskInstances(tasks) {
   return tasks.flatMap(task => {
     if (!task.path.startsWith('00 GTD/')) return [task];
@@ -557,7 +576,7 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
 
 return module.exports;
 })();
@@ -587,6 +606,27 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
   calendar._gtdTaskError = feedback;
   restores.push(() => { if (calendar._gtdTaskError === feedback) { if (previousFeedback === undefined) delete calendar._gtdTaskError; else calendar._gtdTaskError = previousFeedback; } });
+  const foldedGroups=new Set(),previousDayRenderer=calendar._gtdRenderDayTasks;
+  const renderDayGroups=options=>{
+    const {mode,gridRef,date,active,completed,jsx,sortable,strategy,renderTask}=options;
+    if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
+    const groups=new Map();
+    for(const task of [...active,...completed]){
+      const key=task._gtdGroupKey||JSON.stringify([task.path,null]);
+      if(!groups.has(key))groups.set(key,{key,task,active:[],completed:[]});
+      groups.get(key)[task.completed?'completed':'active'].push(task);
+    }
+    return [...groups.values()].map(group=>{
+      const project=group.task.path.replace(/\.md$/i,'').split('/').pop(),parent=group.task._gtdParentTitle;
+      const label=project+(parent?' › '+parent:''),full=[project,...group.task._gtdAncestors||[]].join(' › '),key=date+'::'+group.key;
+      return jsx.jsxs('details',{className:'gtd-calendar-task-group',open:!foldedGroups.has(key),onToggle:event=>{if(event.currentTarget.open)foldedGroups.delete(key);else foldedGroups.add(key);},children:[
+        jsx.jsxs('summary',{className:'gtd-calendar-group-heading','aria-label':full,onClick:event=>event.stopPropagation(),onDoubleClick:event=>event.stopPropagation(),children:[jsx.jsx('span',{className:'gtd-calendar-group-title',children:label}),jsx.jsx('span',{className:'gtd-calendar-group-count',children:group.completed.length+'/'+(group.active.length+group.completed.length)})]}),
+        jsx.jsxs('div',{className:'gtd-calendar-group-list',children:['active','completed'].map(state=>jsx.jsx(sortable,{id:`tasks:${date}:group:${group.key}:${state}`,items:group[state].map(task=>task.id),strategy,children:group[state].map(renderTask)},state))})
+      ]},key);
+    });
+  };
+  calendar._gtdRenderDayTasks=renderDayGroups;
+  restores.push(()=>{if(calendar._gtdRenderDayTasks===renderDayGroups){if(previousDayRenderer===undefined)delete calendar._gtdRenderDayTasks;else calendar._gtdRenderDayTasks=previousDayRenderer;}});
   function wrap(target, name, make) {
     const original = target[name];
     if (typeof original !== 'function') return;
@@ -595,10 +635,10 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     restores.push(() => { if (target[name] === wrapped) target[name] = original; });
   }
   wrap(store, 'getTasks', original => function () {
-    const tasks=original.call(this),groups=new Map(),references=new Map(),leaves=new Map();
+    const tasks=original.call(this),groups=new Map(),references=new Map(),leaves=new Map(),contexts=new Map();
     for(const task of tasks)if(inGtd(task)){if(!groups.has(task.path))groups.set(task.path,[]);groups.get(task.path).push(task);}
-    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));if(text!==undefined)leaves.set(path,new Set(logic.calendarLeafTasks(text,indexed).map(task=>task.line)));}
-    return logic.calendarTaskInstances(tasks.filter(task=>!inGtd(task)||!leaves.has(task.path)||leaves.get(task.path).has(task.line)).map(task=>inGtd(task)?{...task,_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
+    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));if(text!==undefined)leaves.set(path,new Set(logic.calendarLeafTasks(text,indexed).map(task=>task.line)));if(references.get(path))contexts.set(path,logic.calendarTaskContexts(text,indexed));}
+    return logic.calendarTaskInstances(tasks.filter(task=>!inGtd(task)||!leaves.has(task.path)||leaves.get(task.path).has(task.line)).map(task=>inGtd(task)?{...task,...contexts.get(task.path)?.get(task.line),_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
   });
   wrap(store, 'replaceTask', original => async function (task, replacement) {
     const canonical = source(task);
@@ -679,15 +719,25 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     sync();
     Promise.resolve(plugin.saveData(plugin.data)).catch(error => console.error('GTD 日历显示设置未保存', error));
   }
+  const refreshCalendar=()=>plugin.app?.plugins?.plugins?.['tasks-calendar']?.refreshCalendars();
+  function setDayLayout(layout){
+    plugin.data.calendarDayLayout=layout;
+    sync();refreshCalendar();
+    Promise.resolve(plugin.saveData(plugin.data)).catch(error=>console.error('GTD 日历显示设置未保存',error));
+  }
   function compactTasks(root, compact) {
     const controlled = new Set();
     for (const list of root.querySelectorAll('.tasks-calendar-grid:is(.is-day,.is-week) .tasks-calendar-task-list,.tasks-calendar-overdue-list')) {
-      const tasks = [...list.children].filter(task => task.classList.contains('tasks-calendar-task'));
+      const tasks = [...list.querySelectorAll(':scope > .tasks-calendar-task,:scope > .gtd-calendar-task-group .tasks-calendar-task')];
       tasks.forEach((task, index) => {
         controlled.add(task);
         if (compact && index >= 3) task.setAttribute('data-gtd-compact-hidden', 'true');
         else task.removeAttribute('data-gtd-compact-hidden');
       });
+      for(const group of list.querySelectorAll(':scope > .gtd-calendar-task-group')){
+        const hidden=compact&&[...group.querySelectorAll('.tasks-calendar-task')].every(task=>task.hasAttribute('data-gtd-compact-hidden'));
+        if(hidden)group.setAttribute('data-gtd-compact-group-hidden','true');else group.removeAttribute('data-gtd-compact-group-hidden');
+      }
       const count = compact ? Math.max(0, tasks.length - 3) : 0;
       let more = list.querySelector(':scope > [data-gtd-compact-more]');
       if (count) {
@@ -703,13 +753,15 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     for (const task of root.querySelectorAll('[data-gtd-compact-hidden]')) if (!controlled.has(task)) task.removeAttribute('data-gtd-compact-hidden');
   }
   function removeEntry(root, entry) {
-    restoreTooltips(entry); entry.button.remove(); root.removeEventListener('click', entry.onMore, true);
+    restoreTooltips(entry); entry.button.remove(); entry.contextSwitch.remove(); root.removeEventListener('click', entry.onMore, true);
     root.querySelectorAll('[data-gtd-compact-more]').forEach(button => button.remove());
     root.querySelectorAll('[data-gtd-compact-hidden]').forEach(task => task.removeAttribute('data-gtd-compact-hidden'));
-    root.classList.remove('gtd-calendar-compact');
+    root.querySelectorAll('[data-gtd-compact-group-hidden]').forEach(group=>group.removeAttribute('data-gtd-compact-group-hidden'));
+    root.classList.remove('gtd-calendar-compact','gtd-calendar-day-path');
   }
   function sync() {
     if (disposed) return;
+    let newGroupedCalendar=false;
     const roots = new Set([...scope.querySelectorAll(selector)].filter(root => root.closest('.gtd-dashboard')));
     for (const [root, entry] of entries) if (!roots.has(root)) {
       removeEntry(root, entry); entries.delete(root);
@@ -722,6 +774,11 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         const button = doc.createElement('button');
         button.className = 'gtd-calendar-height-toggle'; button.type = 'button';
         button.addEventListener('click', () => setCompact(plugin.data.calendarCompact !== true));
+        const contextSwitch=doc.createElement('div');contextSwitch.className='gtd-calendar-context-switch';contextSwitch.setAttribute('role','group');contextSwitch.setAttribute('aria-label','日视图任务显示方式');
+        for(const [layout,text] of [['path','路径'],['group','分组']]){
+          const choice=doc.createElement('button');choice.type='button';choice.textContent=text;choice.dataset.gtdCalendarLayout=layout;choice.setAttribute('aria-label',layout==='path'?'单行归属路径':'按父任务分组');
+          choice.addEventListener('click',()=>setDayLayout(layout));contextSwitch.append(choice);
+        }
         const onMore = event => {
           const more = event.target.closest?.('.tasks-calendar-more');
           if (!more || more.closest(selector) !== root || plugin.data.calendarCompact !== true) return;
@@ -731,7 +788,8 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
           if (custom) { event.preventDefault(); event.stopPropagation(); dayButton?.click(); }
         };
         root.addEventListener('click', onMore, true);
-        entry = { button, onMore, cardNames: new Map() }; entries.set(root, entry);
+        entry = { button, contextSwitch, onMore, cardNames: new Map() }; entries.set(root, entry);
+        if(plugin.data.calendarDayLayout==='group')newGroupedCalendar=true;
       }
       const compact = plugin.data.calendarCompact === true, button = entry.button;
       root.classList.toggle('gtd-calendar-compact', compact);
@@ -741,6 +799,10 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(compact));
       if (button.parentElement !== controls) controls.insertBefore(button, controls.querySelector('.tasks-calendar-mode-switch'));
+      const day=!!root.querySelector('.tasks-calendar-grid.is-day'),layout=plugin.data.calendarDayLayout==='group'?'group':'path';
+      entry.contextSwitch.hidden=!day;root.classList.toggle('gtd-calendar-day-path',day&&layout==='path');
+      if(entry.contextSwitch.parentElement!==controls)controls.insertBefore(entry.contextSwitch,button);
+      for(const choice of entry.contextSwitch.children)if(choice.getAttribute('aria-pressed')!==String(choice.dataset.gtdCalendarLayout===layout))choice.setAttribute('aria-pressed',String(choice.dataset.gtdCalendarLayout===layout));
       compactTasks(root, compact);
       const cards = new Set(root.querySelectorAll('.tasks-calendar-task'));
       for (const card of entry.cardNames.keys()) if (!cards.has(card)) entry.cardNames.delete(card);
@@ -748,18 +810,20 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         const project = projectOf(card);
         const name = card.querySelector('.tasks-calendar-task-title')?.textContent.trim();
         if (!project || !name) continue;
-        const label = '所属项目：' + project;
+        const parents=card.dataset.gtdParentPath;
+        const label = parents ? '所属位置：'+project+' › '+parents : '所属项目：' + project;
         entry.cardNames.set(card, name);
         if (card.getAttribute('aria-label') !== label) card.setAttribute('aria-label', label);
       }
     }
+    if(newGroupedCalendar)refreshCalendar();
   }
   const containsCalendar = node => node.nodeType === 1 && (node.matches(selector) || node.querySelector(selector));
   const observer = new doc.defaultView.MutationObserver(records => {
-    if (records.some(record => record.target.nodeType === 1 && record.target.closest(selector) && (record.type !== 'attributes' || record.target.matches('.tasks-calendar-task'))
+    if (records.some(record => record.target.nodeType === 1 && record.target.closest(selector) && (record.type !== 'attributes' || record.target.matches('.tasks-calendar-task,.tasks-calendar-grid'))
       || [...record.addedNodes, ...record.removedNodes].some(containsCalendar))) sync();
   });
-  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project'] });
+  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project','data-gtd-parent-path','class'] });
   sync();
   return {
     refresh: sync,

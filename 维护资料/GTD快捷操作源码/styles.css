@@ -2,6 +2,33 @@
 .gtd-quick-actions button { min-height:34px; padding-inline:16px; }
 .gtd-calendar-height-toggle { min-width:28px; height:28px; min-height:28px; padding:2px 5px; border:1px solid var(--background-modifier-border); background:var(--interactive-normal); color:var(--text-muted); box-shadow:none; font-size:13px; line-height:1; }
 .gtd-calendar-height-toggle[aria-pressed=true] { background:var(--interactive-accent); color:var(--text-on-accent); }
+.gtd-calendar-context-switch { display:inline-flex;align-items:center;gap:0;flex:0 0 auto; }
+.gtd-calendar-context-switch[hidden] { display:none !important; }
+.gtd-calendar-context-switch button { min-height:28px;height:28px;padding:2px 7px;border:1px solid var(--background-modifier-border);border-radius:0;background:var(--interactive-normal);color:var(--text-muted);box-shadow:none;font-size:var(--font-ui-small); }
+.gtd-calendar-context-switch button:first-child { border-radius:4px 0 0 4px; }
+.gtd-calendar-context-switch button:last-child { border-radius:0 4px 4px 0;margin-left:-1px; }
+.gtd-calendar-context-switch button[aria-pressed=true] { position:relative;background:var(--interactive-accent);color:var(--text-on-accent); }
+.gtd-calendar-context { display:none !important; }
+.gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .tasks-calendar-task { display:flex;align-items:center;gap:6px; }
+.gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .tasks-calendar-task-title { flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere; }
+.gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .tasks-calendar-checkbox { flex:0 0 auto; }
+.gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .gtd-calendar-context { display:block !important;flex:0 1 42%;min-width:0;width:auto;height:auto;min-height:0;margin-left:auto;padding:0 2px;border:0;border-radius:2px;background:transparent;box-shadow:none;color:var(--text-muted);font-size:var(--font-ui-smaller);line-height:1.4;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.gtd-dashboard .gtd-calendar-day-path .gtd-calendar-context:hover { color:var(--text-accent);text-decoration:underline; }
+.gtd-calendar-task-group { margin:0;padding:0;min-width:0; }
+.gtd-calendar-task-group + .gtd-calendar-task-group { margin-top:5px; }
+.gtd-calendar-group-heading { display:flex;align-items:center;gap:6px;min-height:28px;padding:4px 3px;list-style:none;color:var(--text-muted);font-size:var(--font-ui-small);cursor:pointer; }
+.gtd-calendar-group-heading::marker,.gtd-calendar-group-heading::-webkit-details-marker { display:none;content:''; }
+.gtd-calendar-group-heading::before { content:'▸';flex:0 0 13px; }
+.gtd-calendar-task-group[open] > .gtd-calendar-group-heading::before { content:'▾'; }
+.gtd-calendar-group-title { flex:1;min-width:0;overflow-wrap:anywhere; }
+.gtd-calendar-group-count { flex:0 0 auto;font-size:var(--font-ui-smaller); }
+.gtd-calendar-group-list { min-width:0;padding-left:17px;display:flex;flex-direction:column;gap:4px; }
+.gtd-calendar-task-group[data-gtd-compact-group-hidden] { display:none !important; }
+@media(max-width:650px) {
+ .gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .tasks-calendar-task { flex-wrap:wrap; }
+ .gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .tasks-calendar-task-title { flex-basis:calc(100% - 30px); }
+ .gtd-dashboard .gtd-calendar-day-path :is(.tasks-calendar-grid.is-day,.tasks-calendar-overdue-list) .gtd-calendar-context { flex-basis:100%;max-width:calc(100% - 22px);margin-left:22px;text-align:left; }
+}
 .gtd-board-home { display:flex; gap:5px; padding-inline:8px; white-space:nowrap; font-size:var(--font-ui-small); }
 .gtd-board-home svg { width:16px; height:16px; }
 .gtd-entry-form { display:grid; gap:16px; }

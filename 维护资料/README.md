@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.12.1 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.13.0 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -38,7 +38,9 @@ node --test
 
 ## Tasks Calendar 截止日红底
 
-`calendar-layout.cjs` 在 GTD 页面为日历工具栏加入高度切换按钮，并将日、周、月及逾期卡片的项目名称放入悬浮提示，保留任务 DOM 和输入状态。优先读取卡片上的 `data-gtd-project`，兼容仍在内存中运行的旧卡片所带的源路径。`calendarCompact` 保存显示偏好；卸载时恢复任务提示、移除按钮并断开观察器。
+`calendar-layout.cjs` 为 GTD 日历提供高度切换和日视图“路径／分组”开关，分别保存为 `calendarCompact` 与 `calendarDayLayout`。当天任务与逾期区在日视图中同步切换；周、月保持紧凑。卡片的完整归属提示读取 `data-gtd-project` 与 `data-gtd-parent-path`；卸载时恢复任务提示、移除按钮并断开观察器。
+
+`calendarTaskContexts` 按准确的源笔记层级生成父任务路径与分组身份，完整索引先验证源引用，再筛选末级任务。`calendar-bridge.cjs` 安装可选 `_gtdRenderDayTasks` 回调，由原生日历 React 渲染分组，保留原任务渲染和排序处理，不移动 React 管理的卡片 DOM。日期列表与逾期列表使用独立折叠键；相同项目中的稳定父任务块 ID 可保留折叠身份。`calendar-context.test.cjs`、`calendar-groups.test.cjs` 和 `calendar-parent-layout.native.js` 验证来源、布局切换、折叠、勾选、撤销、窄屏及定位。
 
 收缩时，日、周和逾期列表通过显示标记保留前 3 项，并添加“更多”入口；月视图继续使用原生裁剪；日、周日期格最低 160px，月日期格最低 112px，空日期和展开、收缩状态均遵守最低高度。点击“更多”恢复展开状态，日期入口同时打开对应日视图。卸载时移除显示标记、“更多”按钮和事件监听，不修改任务内容。
 
@@ -50,7 +52,7 @@ node --test
 python 适配日历.py
 ```
 
-脚本为普通卡片和拖动预览卡片增加 GTD 截止日属性与源项目名称属性，并在原有失败处理处加入可选 `_gtdTaskError` 回调。项目名称直接取自该任务的源文件，不通过任务名称匹配。日历桥接安装时接管 GTD 提醒，卸载时恢复原回调；GTD 外的任务保留原提醒。脚本会检查版本、代码位置和重复适配，遇到不匹配的文件时停止。完成后在 Obsidian 中先关闭 GTD 快捷操作，再重新启用 Tasks Calendar 和 GTD 快捷操作。
+脚本为卡片补充截止日、源项目、父级路径及源笔记属性，在普通卡片中加入可定位源任务的路径按钮，为当天与逾期列表加入可选 `_gtdRenderDayTasks` 渲染入口，并保留 `_gtdTaskError` 提醒回调。项目与父级直接取自该任务的源笔记，不通过任务名称匹配。桥接卸载时恢复原回调；GTD 外的日历保留原布局。脚本检查版本、代码位置和重复适配，遇到不匹配的文件时停止。完成后先关闭 GTD 快捷操作，再重新启用 Tasks Calendar 和 GTD 快捷操作。
 
 其他版本需先检查其卡片渲染结构，再调整适配逻辑。上游来源和许可说明在库根目录的 `THIRD-PARTY-NOTICES.md`。
 
