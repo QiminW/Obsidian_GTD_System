@@ -24,3 +24,9 @@ test('standalone tasks group by project and metadata does not modify indexed sou
  const source='- [ ] One\n- [ ] Two\n',tasks=indexed(source),before=structuredClone(tasks),meta=logic.calendarTaskContexts(source,tasks);
  assert.equal(meta.get(0)._gtdGroupKey,meta.get(1)._gtdGroupKey);assert.deepEqual(tasks,before);
 });
+test('every ancestor has its own source identity so shared paths merge without merging duplicate labels',()=>{
+ const source='- [ ] Root ^root\n  - [ ] Same\n    - [ ] First\n  - [ ] Same\n    - [ ] Second\n';
+ const meta=contexts(source),a=meta.get(2)._gtdAncestorKeys,b=meta.get(4)._gtdAncestorKeys;
+ assert.equal(a.length,2);assert.equal(a[0],b[0]);assert.notEqual(a[1],b[1]);
+ assert.deepEqual(a,contexts(source.replace('Root','Renamed')).get(2)._gtdAncestorKeys);
+});

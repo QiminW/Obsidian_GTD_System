@@ -397,8 +397,8 @@ function calendarTaskContexts(content, indexed) {
       while(stack.length&&(stack.at(-1).width>=node.width||stack.at(-1).end<=node.line))stack.pop();
       const task=byLine.get(node.line),parent=stack.at(-1);
       if(task&&task.raw===rows[node.line]){
-        const ancestors=stack.map(title),block=parent&&/\s\^([\w-]+)\s*$/.exec(parent.raw);
-        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdParentTitle:ancestors.at(-1)||'',_gtdGroupKey:JSON.stringify([task.path,parent?(block?'block:'+block[1]:'line:'+parent.line):null])});
+        const ancestors=stack.map(title),ancestorKeys=stack.map(ancestor=>{const block=/\s\^([\w-]+)\s*$/.exec(ancestor.raw);return block?'block:'+block[1]:'line:'+ancestor.line;});
+        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdAncestorKeys:ancestorKeys,_gtdParentTitle:ancestors.at(-1)||'',_gtdGroupKey:JSON.stringify([task.path,parent?ancestorKeys.at(-1):null])});
       }
       stack.push({...node,end:taskBlockEnd(rows,node)});
     }

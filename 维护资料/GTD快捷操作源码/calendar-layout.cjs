@@ -35,7 +35,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         if (compact && index >= 3) task.setAttribute('data-gtd-compact-hidden', 'true');
         else task.removeAttribute('data-gtd-compact-hidden');
       });
-      for(const group of list.querySelectorAll(':scope > .gtd-calendar-task-group')){
+      for(const group of list.querySelectorAll('.gtd-calendar-task-group')){
         const hidden=compact&&[...group.querySelectorAll('.tasks-calendar-task')].every(task=>task.hasAttribute('data-gtd-compact-hidden'));
         if(hidden)group.setAttribute('data-gtd-compact-group-hidden','true');else group.removeAttribute('data-gtd-compact-group-hidden');
       }

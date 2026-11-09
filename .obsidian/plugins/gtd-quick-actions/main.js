@@ -398,8 +398,8 @@ function calendarTaskContexts(content, indexed) {
       while(stack.length&&(stack.at(-1).width>=node.width||stack.at(-1).end<=node.line))stack.pop();
       const task=byLine.get(node.line),parent=stack.at(-1);
       if(task&&task.raw===rows[node.line]){
-        const ancestors=stack.map(title),block=parent&&/\s\^([\w-]+)\s*$/.exec(parent.raw);
-        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdParentTitle:ancestors.at(-1)||'',_gtdGroupKey:JSON.stringify([task.path,parent?(block?'block:'+block[1]:'line:'+parent.line):null])});
+        const ancestors=stack.map(title),ancestorKeys=stack.map(ancestor=>{const block=/\s\^([\w-]+)\s*$/.exec(ancestor.raw);return block?'block:'+block[1]:'line:'+ancestor.line;});
+        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdAncestorKeys:ancestorKeys,_gtdParentTitle:ancestors.at(-1)||'',_gtdGroupKey:JSON.stringify([task.path,parent?ancestorKeys.at(-1):null])});
       }
       stack.push({...node,end:taskBlockEnd(rows,node)});
     }
@@ -611,19 +611,29 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     const {mode,gridRef,date,active,completed,jsx,sortable,strategy,renderTask}=options;
     if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
     const groups=new Map();
+    const makeGroup=(key,label,full)=>({key,label,full,active:[],completed:[],children:new Map(),done:0,total:0});
+    const count=(group,task)=>{group.total++;if(task.completed)group.done++;};
     for(const task of [...active,...completed]){
-      const key=task._gtdGroupKey||JSON.stringify([task.path,null]);
-      if(!groups.has(key))groups.set(key,{key,task,active:[],completed:[]});
-      groups.get(key)[task.completed?'completed':'active'].push(task);
+      const project=task.path.replace(/\.md$/i,'').split('/').pop(),projectKey=JSON.stringify([task.path,null]);
+      if(!groups.has(projectKey))groups.set(projectKey,makeGroup(projectKey,project,project));
+      let group=groups.get(projectKey);count(group,task);
+      const ancestors=task._gtdAncestors||(task._gtdParentTitle?[task._gtdParentTitle]:[]),keys=[];
+      ancestors.forEach((label,index)=>{
+        keys.push(task._gtdAncestorKeys?.[index]||(index===ancestors.length-1&&task._gtdGroupKey)||'name:'+label);
+        const key=JSON.stringify([task.path,keys]);
+        if(!group.children.has(key))group.children.set(key,makeGroup(key,label,[project,...ancestors.slice(0,index+1)].join(' › ')));
+        group=group.children.get(key);count(group,task);
+      });
+      group[task.completed?'completed':'active'].push(task);
     }
-    return [...groups.values()].map(group=>{
-      const project=group.task.path.replace(/\.md$/i,'').split('/').pop(),parent=group.task._gtdParentTitle;
-      const label=project+(parent?' › '+parent:''),full=[project,...group.task._gtdAncestors||[]].join(' › '),key=date+'::'+group.key;
+    const renderGroup=group=>{
+      const key=date+'::'+group.key;
       return jsx.jsxs('details',{className:'gtd-calendar-task-group',open:!foldedGroups.has(key),onToggle:event=>{if(event.currentTarget.open)foldedGroups.delete(key);else foldedGroups.add(key);},children:[
-        jsx.jsxs('summary',{className:'gtd-calendar-group-heading','aria-label':full,onClick:event=>event.stopPropagation(),onDoubleClick:event=>event.stopPropagation(),children:[jsx.jsx('span',{className:'gtd-calendar-group-title',children:label}),jsx.jsx('span',{className:'gtd-calendar-group-count',children:group.completed.length+'/'+(group.active.length+group.completed.length)})]}),
-        jsx.jsxs('div',{className:'gtd-calendar-group-list',children:['active','completed'].map(state=>jsx.jsx(sortable,{id:`tasks:${date}:group:${group.key}:${state}`,items:group[state].map(task=>task.id),strategy,children:group[state].map(renderTask)},state))})
+        jsx.jsxs('summary',{className:'gtd-calendar-group-heading','aria-label':group.full,onClick:event=>event.stopPropagation(),onDoubleClick:event=>event.stopPropagation(),children:[jsx.jsx('span',{className:'gtd-calendar-group-title',children:group.label}),jsx.jsx('span',{className:'gtd-calendar-group-count',children:group.done+'/'+group.total})]}),
+        jsx.jsxs('div',{className:'gtd-calendar-group-list',children:[...['active','completed'].map(state=>jsx.jsx(sortable,{id:`tasks:${date}:group:${group.key}:${state}`,items:group[state].map(task=>task.id),strategy,children:group[state].map(renderTask)},state)),...[...group.children.values()].map(renderGroup)]})
       ]},key);
-    });
+    };
+    return [...groups.values()].map(renderGroup);
   };
   calendar._gtdRenderDayTasks=renderDayGroups;
   restores.push(()=>{if(calendar._gtdRenderDayTasks===renderDayGroups){if(previousDayRenderer===undefined)delete calendar._gtdRenderDayTasks;else calendar._gtdRenderDayTasks=previousDayRenderer;}});
@@ -734,7 +744,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         if (compact && index >= 3) task.setAttribute('data-gtd-compact-hidden', 'true');
         else task.removeAttribute('data-gtd-compact-hidden');
       });
-      for(const group of list.querySelectorAll(':scope > .gtd-calendar-task-group')){
+      for(const group of list.querySelectorAll('.gtd-calendar-task-group')){
         const hidden=compact&&[...group.querySelectorAll('.tasks-calendar-task')].every(task=>task.hasAttribute('data-gtd-compact-hidden'));
         if(hidden)group.setAttribute('data-gtd-compact-group-hidden','true');else group.removeAttribute('data-gtd-compact-group-hidden');
       }
