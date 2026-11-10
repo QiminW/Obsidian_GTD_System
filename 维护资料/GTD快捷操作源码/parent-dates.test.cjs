@@ -18,18 +18,26 @@ test('parent multi-day planning fills empty child plans but keeps existing plans
  assert.equal(nodes(result)[1].due,'2026-11-10');
 });
 
-test('parent Today appends today to already planned descendants without replacing independent dates or status',()=>{
+test('parent Today appends today to unfinished descendants without replacing independent dates or completed tasks',()=>{
  const source='- [ ] <!-- gtd-days: 2026-11-09 --> Parent 📅 2026-11-13 ^p\r\n\t- [ ] Own ⏳ 2026-11-03 📅 2026-11-12 ^own\n\t\t- [ ] <!-- gtd-days: 2026-11-08 --> Deep #doing ^deep\n\t- [x] <!-- gtd-days: 2026-11-04 --> Done ✅ 2026-11-05\n- [ ] <!-- gtd-days: 2026-11-02 --> Sibling\n';
  const result=logic.setProjectTaskDay(source,ref(source),'2026-11-10',undefined,{appendToDescendants:true});
- assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09','2026-11-10'],['2026-11-03','2026-11-10'],['2026-11-08','2026-11-10'],['2026-11-04','2026-11-10'],['2026-11-02']]);
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09','2026-11-10'],['2026-11-03','2026-11-10'],['2026-11-08','2026-11-10'],['2026-11-04'],['2026-11-02']]);
  assert.equal(nodes(result)[1].due,'2026-11-12');assert.equal(nodes(result)[3].completed,true);
  assert.ok(result.includes('Deep #doing ^deep'));assert.ok(result.includes('Done ✅ 2026-11-05'));assert.ok(result.includes('^p\r\n'));assert.ok(result.endsWith('- [ ] <!-- gtd-days: 2026-11-02 --> Sibling\n'));
 });
 
-test('removing Today from a parent preserves descendant independent schedules',()=>{
- const source='- [ ] <!-- gtd-days: 2026-11-09,2026-11-10 --> Parent\n  - [ ] <!-- gtd-days: 2026-11-08,2026-11-10 --> Child\n';
+test('removing Today from a parent removes today from all descendants and preserves every other arrangement',()=>{
+ const source='- [ ] <!-- gtd-days: 2026-11-09,2026-11-10 --> Parent\r\n  - [ ] <!-- gtd-days: 2026-11-08,2026-11-10 --> Child 📅 2026-11-13\n    - [x] Deep ⏳ 2026-11-10 ✅ 2026-11-09\n  - [ ] Empty\n- [ ] <!-- gtd-days: 2026-11-10 --> Sibling\n';
  const result=logic.setProjectTaskDay(source,ref(source),'2026-11-10',undefined,{appendToDescendants:true});
- assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09'],['2026-11-08','2026-11-10']]);
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09'],['2026-11-08'],[],[],['2026-11-10']]);
+ assert.equal(nodes(result)[1].due,'2026-11-13');assert.equal(nodes(result)[2].completed,true);assert.ok(result.includes('Deep ✅ 2026-11-09'));assert.ok(result.includes('Parent\r\n'));
+});
+
+test('Today bypasses generic inheritance for empty completed and cancelled descendants',()=>{
+ const source='- [ ] <!-- gtd-days: 2026-11-09 --> Parent\n  - [ ] Empty\n  - [x] Done\n    - [X] Done deep\n  - [-] Cancelled\n  - [x] <!-- gtd-days: 2026-11-10 --> Previously done today\n';
+ const result=logic.setProjectTaskDay(source,ref(source),'2026-11-10',undefined,{appendToDescendants:true});
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09','2026-11-10'],['2026-11-10'],[],[],[],['2026-11-10']]);
+ assert.ok(result.endsWith('  - [x] <!-- gtd-days: 2026-11-10 --> Previously done today\n'));
 });
 
 test('parent Today respects ordinary-list boundaries and skips fenced task examples',()=>{

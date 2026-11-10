@@ -332,21 +332,23 @@ function setProjectTaskDay(content, reference, date, enabled, {appendToDescendan
   if (!reference || reference.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请刷新后重新安排');
   dateValue(date, '安排日期');
   if (!date) throw new Error('请选择安排日期');
-  if (!taskTree(content).some(task => task.line === reference.line && task.raw === reference.raw)) throw new Error('任务位置已变化，请刷新后重新安排');
+  const tasks=taskTree(content),target=tasks.find(task=>task.line===reference.line&&task.raw===reference.raw);
+  if (!target) throw new Error('任务位置已变化，请刷新后重新安排');
   const days = new Set(taskDays(reference.raw));
   const add = enabled === undefined ? !days.has(date) : enabled;
   if (add) days.add(date); else days.delete(date);
   const raw = reference.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu, '');
-  let result=replaceProjectTask(content, reference, setTaskDays(raw, [...days]), ['days']);
-  if(appendToDescendants&&add){
-    const tasks=taskTree(result),target=tasks.find(task=>task.line===reference.line),rows=result.split(/\r?\n/),end=taskBlockEnd(rows,target),offsets=[0];
-    for(const delimiter of result.matchAll(/\r?\n/g))offsets.push(delimiter.index+delimiter[0].length);
-    for(const child of tasks.filter(task=>task.line>target.line&&task.line<end).reverse()){
-      const planned=taskDays(child.raw);
-      if(planned.includes(date))continue;
-      const updated=setTaskDays(child.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu,''),[...planned,date]),start=offsets[child.line];
-      result=result.slice(0,start)+updated+result.slice(start+child.raw.length);
-    }
+  if(!appendToDescendants)return replaceProjectTask(content, reference, setTaskDays(raw, [...days]), ['days']);
+  // Today synchronizes only the chosen day, without generic fill-empty inheritance.
+  const rows=content.split(/\r?\n/),end=taskBlockEnd(rows,target),offsets=[0];let result=content;
+  for(const delimiter of content.matchAll(/\r?\n/g))offsets.push(delimiter.index+delimiter[0].length);
+  for(const task of tasks.filter(task=>task.line>=target.line&&task.line<end).reverse()){
+    if(add&&task!==target&&['x','X','-'].includes(task.status))continue;
+    const planned=taskDays(task.raw);
+    if(planned.includes(date)===add)continue;
+    const next=add?[...planned,date]:planned.filter(day=>day!==date);
+    const updated=setTaskDays(task.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu,''),next),start=offsets[task.line];
+    result=result.slice(0,start)+updated+result.slice(start+task.raw.length);
   }
   return result;
 }

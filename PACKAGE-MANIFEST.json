@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.13.3",
-  "builtAt": "2026-11-10T08:58:30+08:00",
+  "version": "1.13.4",
+  "builtAt": "2026-11-10T09:07:18+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.14.5",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.13.3",
+      "version": "1.13.4",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,13 +100,13 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 129794,
-      "sha256": "fde8b09f5e4a3367c9df36a62ce73c9845f001e663c3e2a4152019d9b3895888"
+      "bytes": 129954,
+      "sha256": "cf32dc69fc97656e22051785c92bf5711008ba89ce22b85f2ea38de93e889ad8"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 285,
-      "sha256": "4645072cd1143ed7fd920bee59d95825be31214c29961a5c535ecd8eaf1d56a4"
+      "sha256": "5061621d23f5d6de9e34fc0fb29a15e32191cabcd22b2cd08e3d36eb066b5c69"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
@@ -250,8 +250,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 20840,
-      "sha256": "3fd0f8e4e9ecb2fc9f8380e73fc7126978bfe2d881bccc2ff0a84d25ee3003b8"
+      "bytes": 20984,
+      "sha256": "649ed85f7df80dba995eec8a23d35ccebd2bf97c3ff442ddf99a0a2b25c7efe0"
     },
     {
       "path": "00 GTD/首页.md",
@@ -266,7 +266,7 @@
     {
       "path": "README.md",
       "bytes": 3041,
-      "sha256": "63fb722c88d7f62f6e9e273ccfea7dbaf748f3adef55b253da32e99268c1ad09"
+      "sha256": "4ff41f8147a49657184358292b1116293f3200236a80c477e7fd4f99af0ad1c1"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -330,8 +330,8 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 17627,
-      "sha256": "6e217c0e4b89da40e86442108e38147d2d064fdc89264a6c1b1bfb5e7b6c4e66"
+      "bytes": 17783,
+      "sha256": "dccb47cdfd46129d0f1b275a66bf11dc524f833727447a59a8c2fe34a0607d72"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -395,8 +395,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/logic.cjs",
-      "bytes": 37260,
-      "sha256": "56fa2c14e53ce906021659aa3a964935e8bbfbae8588af05099d9d08b4e276a5"
+      "bytes": 37418,
+      "sha256": "09710c4dfd40834b553849498d5042a2fc50c53862d62e7027af97f59d122404"
     },
     {
       "path": "维护资料/GTD快捷操作源码/logic.test.cjs",
@@ -420,13 +420,13 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/parent-dates.test.cjs",
-      "bytes": 7722,
-      "sha256": "4d7d1e50565322effa5417de9db9a281577a6c382b4a7742f50475a273721424"
+      "bytes": 8674,
+      "sha256": "d3a77ef842f5d9d2cf205f5826957e9e39180d92f290a6c6a5a58f942b06a48f"
     },
     {
       "path": "维护资料/GTD快捷操作源码/parent-policy.native.js",
-      "bytes": 14246,
-      "sha256": "154888a2a74e5245718c213c4014997bb27162ee3dc4c5988aa0c077677b38af"
+      "bytes": 15957,
+      "sha256": "2e6e617cf84fe4f4a206a1bc72ad2097e49043adf0bfa4fe7c29a76d58315a61"
     },
     {
       "path": "维护资料/GTD快捷操作源码/refresh-input.native.js",
@@ -490,8 +490,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 8214,
-      "sha256": "2e1b11904b56efa2f75ec35146d2c008be03abfbfd797539e57cbb17f4a2fd72"
+      "bytes": 8304,
+      "sha256": "29c11d5404dbedef1ed1750d0fd8088728c3fe76c439355241fd626e02029a5c"
     },
     {
       "path": "维护资料/底色来源.md",
