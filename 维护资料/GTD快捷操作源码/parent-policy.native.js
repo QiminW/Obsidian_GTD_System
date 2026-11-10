@@ -47,6 +47,15 @@
   check('independent child plan stays unchanged',JSON.stringify((await node('自定子任务')).days)==='["2026-11-08"]');
   check('grandchild inherits the nearest independent plan',JSON.stringify((await node('孙任务')).days)==='["2026-11-08"]');
   document.querySelectorAll('.gtd-day-panel').forEach(e=>e.hidePopover?.());
+  const beforeToday=await app.vault.read(file),historyBeforeToday=history.entries.length,today=p.todayDateKey();
+  taskRow('父任务').querySelector('[data-gtd-task-today]').click();
+  await until(async()=> (await node('父任务')).days.includes(today),'parent Today saved');
+  check('parent Today appends today to every already planned child and grandchild',(await model()).every(n=>n.days.includes(today)));
+  check('Today retains independent plans and deadlines',(await node('自定子任务')).days.includes('2026-11-08')&&(await node('自定子任务')).due==='2026-11-15'&&(await node('孙任务')).days.includes('2026-11-08'));
+  await until(()=>app.plugins.plugins['tasks-calendar'].taskStore.getTasks().filter(t=>t.path===path&&t._gtdDay===today).length===3,'today leaf cards indexed');
+  check('calendar receives all three leaf tasks for today',app.plugins.plugins['tasks-calendar'].taskStore.getTasks().filter(t=>t.path===path&&t._gtdDay===today).length===3);
+  await until(()=>history.pending===0,'Today save finished');check('parent Today propagation records one undo operation',history.entries.length===historyBeforeToday+1);
+  await history.undo();await until(async()=>await app.vault.read(file)===beforeToday,'Today propagation undo');check('one undo restores every pre-Today arrangement',await app.vault.read(file)===beforeToday);
   const calendar=app.plugins.plugins['tasks-calendar'],store=calendar.taskStore;
   const sourceCard=async key=>{
    const indexed=store.tasksByPath.get(path)||[],text=await app.vault.read(file),refs=logic.calendarTaskReferences(text,indexed),task=indexed.find(t=>t.raw.includes('^'+key));

@@ -18,6 +18,27 @@ test('parent multi-day planning fills empty child plans but keeps existing plans
  assert.equal(nodes(result)[1].due,'2026-11-10');
 });
 
+test('parent Today appends today to already planned descendants without replacing independent dates or status',()=>{
+ const source='- [ ] <!-- gtd-days: 2026-11-09 --> Parent 📅 2026-11-13 ^p\r\n\t- [ ] Own ⏳ 2026-11-03 📅 2026-11-12 ^own\n\t\t- [ ] <!-- gtd-days: 2026-11-08 --> Deep #doing ^deep\n\t- [x] <!-- gtd-days: 2026-11-04 --> Done ✅ 2026-11-05\n- [ ] <!-- gtd-days: 2026-11-02 --> Sibling\n';
+ const result=logic.setProjectTaskDay(source,ref(source),'2026-11-10',undefined,{appendToDescendants:true});
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09','2026-11-10'],['2026-11-03','2026-11-10'],['2026-11-08','2026-11-10'],['2026-11-04','2026-11-10'],['2026-11-02']]);
+ assert.equal(nodes(result)[1].due,'2026-11-12');assert.equal(nodes(result)[3].completed,true);
+ assert.ok(result.includes('Deep #doing ^deep'));assert.ok(result.includes('Done ✅ 2026-11-05'));assert.ok(result.includes('^p\r\n'));assert.ok(result.endsWith('- [ ] <!-- gtd-days: 2026-11-02 --> Sibling\n'));
+});
+
+test('removing Today from a parent preserves descendant independent schedules',()=>{
+ const source='- [ ] <!-- gtd-days: 2026-11-09,2026-11-10 --> Parent\n  - [ ] <!-- gtd-days: 2026-11-08,2026-11-10 --> Child\n';
+ const result=logic.setProjectTaskDay(source,ref(source),'2026-11-10',undefined,{appendToDescendants:true});
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-09'],['2026-11-08','2026-11-10']]);
+});
+
+test('parent Today respects ordinary-list boundaries and skips fenced task examples',()=>{
+ const source='- [ ] Parent\n  ```md\n  - [ ] Example\n  ```\n  - [ ] <!-- gtd-days: 2026-11-09 --> Child\n- Supporting note\n  - [ ] <!-- gtd-days: 2026-11-08 --> Unrelated\n';
+ const result=logic.setProjectTaskDay(source,ref(source),'2026-11-10',undefined,{appendToDescendants:true});
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-10'],['2026-11-09','2026-11-10'],['2026-11-08']]);
+ assert.ok(result.includes('  - [ ] Example\n'));assert.ok(result.endsWith('- Supporting note\n  - [ ] <!-- gtd-days: 2026-11-08 --> Unrelated\n'));
+});
+
 test('resaving the same parent date fills missing children and clearing does not remove their independent dates',()=>{
  const source='- [ ] Parent 📅 2026-11-12\n  - [ ] Child\n';
  const filled=logic.updateProjectTaskDate(source,ref(source),'due','2026-11-12');

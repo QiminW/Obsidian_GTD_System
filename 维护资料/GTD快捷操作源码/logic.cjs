@@ -327,7 +327,7 @@ function setTaskDays(raw, dates) {
   if (!prefix) throw new Error('找不到任务行');
   return prefix[0] + marker + (result.slice(prefix[0].length) ? ' ' + result.slice(prefix[0].length) : '');
 }
-function setProjectTaskDay(content, reference, date, enabled) {
+function setProjectTaskDay(content, reference, date, enabled, {appendToDescendants=false} = {}) {
   if (!reference || reference.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请刷新后重新安排');
   dateValue(date, '安排日期');
   if (!date) throw new Error('请选择安排日期');
@@ -336,7 +336,18 @@ function setProjectTaskDay(content, reference, date, enabled) {
   const add = enabled === undefined ? !days.has(date) : enabled;
   if (add) days.add(date); else days.delete(date);
   const raw = reference.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu, '');
-  return replaceProjectTask(content, reference, setTaskDays(raw, [...days]), ['days']);
+  let result=replaceProjectTask(content, reference, setTaskDays(raw, [...days]), ['days']);
+  if(appendToDescendants&&add){
+    const tasks=taskTree(result),target=tasks.find(task=>task.line===reference.line),rows=result.split(/\r?\n/),end=taskBlockEnd(rows,target),offsets=[0];
+    for(const delimiter of result.matchAll(/\r?\n/g))offsets.push(delimiter.index+delimiter[0].length);
+    for(const child of tasks.filter(task=>task.line>target.line&&task.line<end).reverse()){
+      const planned=taskDays(child.raw);
+      if(planned.includes(date))continue;
+      const updated=setTaskDays(child.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu,''),[...planned,date]),start=offsets[child.line];
+      result=result.slice(0,start)+updated+result.slice(start+child.raw.length);
+    }
+  }
+  return result;
 }
 function migrateTaskDays(content) {
   const offsets = [0];

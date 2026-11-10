@@ -538,17 +538,17 @@ module.exports = class GtdQuickActions extends Plugin {
     if (failure) throw failure;
     return result;
   }
-  async toggleProjectTaskDay(path, reference, date) {
+  async toggleProjectTaskDay(path, reference, date, options) {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     let failure;
     await this.processGtdChange(file, content => {
-      try { return logic.setProjectTaskDay(content, reference, date); }
+      try { return logic.setProjectTaskDay(content, reference, date, undefined, options); }
       catch (error) { failure = error; return content; }
     });
     if (failure) throw failure;
   }
-  async toggleProjectTaskToday(path, reference) { return this.toggleProjectTaskDay(path, reference, this.todayDateKey()); }
+  async toggleProjectTaskToday(path, reference) { return this.toggleProjectTaskDay(path, reference, this.todayDateKey(), {appendToDescendants:true}); }
   listProjects() {
     return this.app.vault.getMarkdownFiles().filter(file => file.path.startsWith(PROJECTS + '/') && this.app.metadataCache.getFileCache(file)?.frontmatter?.status !== 'done').sort((a,b) => a.basename.localeCompare(b.basename, 'zh-CN'));
   }
