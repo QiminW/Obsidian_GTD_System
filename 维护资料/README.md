@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.13.4 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.13.5 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -62,4 +62,4 @@ python 适配日历.py
 
 Remotely Save 仅打包运行文件和许可证，没有 `data.json` 或任何同步账号、服务器及历史数据。启用后由使用者自行配置。
 
-父子规则：`logic.cjs` 在替换父任务完成状态前检查所有后代；取消子任务完成时，按源笔记的真实任务块边界恢复所有已完成的上级并清除完成日期，保留其他分支和日期安排。截止日期与“排”采用逐字段补空白，保留独立设置，新建和移入的子树也继承最近的上级日期。“今”通过 `appendToDescendants` 选项独立同步当天，绕开通用补空白继承：新增时跳过已完成或取消的后代，取消时从所有后代移除该天，包括旧版本已排入的已完成任务；保留其他日期、截止日期、状态与源格式。关联修改在同一次笔记写入中完成，支持整体撤销。`parent-completion.test.cjs`、`parent-dates.test.cjs` 和 `parent-policy.native.js` 覆盖规则、撤销以及演示库实际控件。
+父子规则：`logic.cjs` 在替换父任务完成状态前检查所有后代；取消子任务完成时，按源笔记的真实任务块边界恢复所有已完成的上级并清除完成日期，保留其他分支和日期安排。截止日期采用逐字段补空白，新建和移入的子树也继承最近的上级日期。“今／排”共用 `setProjectTaskDay`，默认启用 `appendToDescendants`，绕开通用补空白继承：新增时跳过已完成或取消的后代，取消时从所有后代移除所选一天，包括已完成任务；保留其他日期、截止日期、状态与源格式。关联修改在同一次笔记写入中完成，支持整体撤销。`parent-completion.test.cjs`、`parent-dates.test.cjs`、`undo-plugin.test.cjs` 和 `parent-policy.native.js` 覆盖规则、撤销以及演示库实际控件。

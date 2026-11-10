@@ -328,7 +328,7 @@ function setTaskDays(raw, dates) {
   if (!prefix) throw new Error('找不到任务行');
   return prefix[0] + marker + (result.slice(prefix[0].length) ? ' ' + result.slice(prefix[0].length) : '');
 }
-function setProjectTaskDay(content, reference, date, enabled, {appendToDescendants=false} = {}) {
+function setProjectTaskDay(content, reference, date, enabled, {appendToDescendants=true} = {}) {
   if (!reference || reference.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请刷新后重新安排');
   dateValue(date, '安排日期');
   if (!date) throw new Error('请选择安排日期');
@@ -339,7 +339,7 @@ function setProjectTaskDay(content, reference, date, enabled, {appendToDescendan
   if (add) days.add(date); else days.delete(date);
   const raw = reference.raw.replace(/[ \t]+⏳[ \t]*\d{4}-\d{2}-\d{2}/gu, '');
   if(!appendToDescendants)return replaceProjectTask(content, reference, setTaskDays(raw, [...days]), ['days']);
-  // Today synchronizes only the chosen day, without generic fill-empty inheritance.
+  // Date buttons synchronize only the chosen day, without fill-empty inheritance.
   const rows=content.split(/\r?\n/),end=taskBlockEnd(rows,target),offsets=[0];let result=content;
   for(const delimiter of content.matchAll(/\r?\n/g))offsets.push(delimiter.index+delimiter[0].length);
   for(const task of tasks.filter(task=>task.line>=target.line&&task.line<end).reverse()){

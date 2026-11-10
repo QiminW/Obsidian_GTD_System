@@ -11,11 +11,18 @@ test('parent deadline fills empty descendants while preserving their own deadlin
  assert.ok(result.includes('^a\n'));assert.ok(result.endsWith('- [ ] Sibling\r\n'));
 });
 
-test('parent multi-day planning fills empty child plans but keeps existing plans and deadlines',()=>{
- const source='- [ ] <!-- gtd-days: 2026-11-06 --> Parent\n  - [ ] Empty 📅 2026-11-10\n  - [ ] Own ⏳ 2026-11-08\n    - [ ] Grandchild\n';
+test('parent multi-day picker additions synchronize only the selected day while keeping independent plans and skipping completed descendants',()=>{
+ const source='- [ ] <!-- gtd-days: 2026-11-06 --> Parent\n  - [ ] Empty 📅 2026-11-10\n  - [ ] Own ⏳ 2026-11-08\n    - [ ] Grandchild\n  - [x] Done\n  - [-] Cancelled\n';
  const result=logic.setProjectTaskDay(source,ref(source),'2026-11-07');
- assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-06','2026-11-07'],['2026-11-06','2026-11-07'],['2026-11-08'],['2026-11-08']]);
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-06','2026-11-07'],['2026-11-07'],['2026-11-07','2026-11-08'],['2026-11-07'],[],[]]);
  assert.equal(nodes(result)[1].due,'2026-11-10');
+});
+
+test('parent multi-day picker removal removes only the selected day from every descendant',()=>{
+ const source='- [ ] <!-- gtd-days: 2026-11-06,2026-11-07 --> Parent\n  - [ ] <!-- gtd-days: 2026-11-07,2026-11-08 --> Child 📅 2026-11-15\n    - [x] <!-- gtd-days: 2026-11-07,2026-11-09 --> Done\n  - [ ] Empty\n- [ ] <!-- gtd-days: 2026-11-07 --> Sibling\n';
+ const result=logic.setProjectTaskDay(source,ref(source),'2026-11-07');
+ assert.deepEqual(nodes(result).map(n=>n.days),[['2026-11-06'],['2026-11-08'],['2026-11-09'],[],['2026-11-07']]);
+ assert.equal(nodes(result)[1].due,'2026-11-15');assert.equal(nodes(result)[2].completed,true);
 });
 
 test('parent Today appends today to unfinished descendants without replacing independent dates or completed tasks',()=>{

@@ -72,9 +72,12 @@ test('reopening a child and all completed ancestors is a single undoable operati
  await p.undoHistory.undo();assert.equal(file.text,original);
 });
 
-test('inheriting multiple-day plans is one undoable operation',async()=>{
+test('synchronizing a multi-day picker selection and cancellation each take one undo operation',async()=>{
  const original='## 任务\n- [ ] Parent ^first\n  - [ ] Empty\n  - [ ] <!-- gtd-days: 2026-11-09 --> Own\n';const {p,file}=setup(original);
- await p.toggleProjectTaskDay(PATH,ref(file.text),'2026-11-06');assert.equal((file.text.match(/gtd-days: 2026-11-06/g)||[]).length,2);
+ await p.toggleProjectTaskDay(PATH,ref(file.text),'2026-11-06');assert.equal((file.text.match(/gtd-days: 2026-11-06/g)||[]).length,3);
+ assert.match(file.text,/2026-11-06,2026-11-09/);assert.equal(p.undoHistory.entries.length,1);const added=file.text;
+ await p.toggleProjectTaskDay(PATH,ref(file.text),'2026-11-06');assert.doesNotMatch(file.text,/2026-11-06/);assert.match(file.text,/gtd-days: 2026-11-09/);assert.equal(p.undoHistory.entries.length,2);
+ await p.undoHistory.undo();assert.equal(file.text,added);
  await p.undoHistory.undo();assert.equal(file.text,original);
 });
 test('project metadata undo restores original formatting and surrounding content',async()=>{
