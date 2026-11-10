@@ -1,7 +1,7 @@
 module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   const calendar = plugin.app.plugins.plugins['tasks-calendar'];
   if (!calendar?.taskStore) return null;
-  const store = calendar.taskStore, restores = [], snapshots=new Map(), revisions=new Map(), events=[];
+  const store = calendar.taskStore, restores = [], snapshots=new Map(), revisions=new Map(), coherent=new Map(), events=[];
   let disposed=false,refreshTimer;
   const refresh=()=>{window.clearTimeout(refreshTimer);refreshTimer=window.setTimeout(()=>{if(!disposed)calendar.refreshCalendars();},25);};
   const workspace=plugin.app.workspace,orderEvent=workspace?.on('gtd-project-order-changed',refresh);
@@ -15,7 +15,7 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     }catch(_){if(!disposed)snapshots.delete(path);}
   }
   for(const event of ['create','modify'])events.push(plugin.app.vault.on(event,prime));
-  const forget=path=>{for(const key of [...snapshots.keys(),...revisions.keys()])if(key===path||key.startsWith(path+'/')){snapshots.delete(key);revisions.set(key,(revisions.get(key)||0)+1);}};
+  const forget=path=>{for(const key of [...snapshots.keys(),...revisions.keys(),...coherent.keys()])if(key===path||key.startsWith(path+'/')){snapshots.delete(key);coherent.delete(key);revisions.set(key,(revisions.get(key)||0)+1);}};
   events.push(plugin.app.vault.on('delete',file=>{forget(file.path);refresh();}));
   events.push(plugin.app.vault.on('rename',(file,oldPath)=>{forget(oldPath);if(file.extension==='md')prime(file);else for(const child of plugin.app.vault.getMarkdownFiles().filter(child=>child.path.startsWith(file.path+'/')))prime(child);}));
   for(const file of plugin.app.vault.getMarkdownFiles())prime(file);
@@ -67,10 +67,25 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     restores.push(() => { if (target[name] === wrapped) target[name] = original; });
   }
   wrap(store, 'getTasks', original => function () {
-    const tasks=original.call(this),groups=new Map(),references=new Map(),leaves=new Map(),contexts=new Map();
+    const tasks=original.call(this),groups=new Map(),visible=new Map(),emitted=new Set();
     for(const task of tasks)if(inGtd(task)){if(!groups.has(task.path))groups.set(task.path,[]);groups.get(task.path).push(task);}
-    for(const [path,indexed] of groups){const text=snapshots.get(path);references.set(path,text===undefined?null:logic.calendarTaskReferences(text,indexed));if(text!==undefined)leaves.set(path,new Set(logic.calendarLeafTasks(text,indexed).map(task=>task.line)));if(references.get(path))contexts.set(path,logic.calendarTaskContexts(text,indexed));}
-    return logic.calendarTaskInstances(tasks.filter(task=>!inGtd(task)||!leaves.has(task.path)||leaves.get(task.path).has(task.line)).map(task=>inGtd(task)?{...task,...contexts.get(task.path)?.get(task.line),_gtdReference:references.get(task.path)?.get(task.line)||null}:task));
+    for(const path of coherent.keys())if(!groups.has(path)){
+      const text=snapshots.get(path);if(text!==undefined&&logic.calendarTaskReferences(text,[]))coherent.set(path,[]);
+    }
+    for(const [path,indexed] of groups){
+      const text=snapshots.get(path),references=text===undefined?null:logic.calendarTaskReferences(text,indexed);
+      if(references){
+        const contexts=logic.calendarTaskContexts(text,indexed),model=logic.calendarLeafTasks(text,indexed).map(task=>({...task,...contexts.get(task.line),_gtdReference:references.get(task.line)}));
+        coherent.set(path,model);visible.set(path,model);
+      }else{
+        // Source text and the batched native index arrive separately. Keep groups
+        // intact until both describe the same revision, but block stale writes.
+        visible.set(path,(coherent.get(path)||indexed).map(task=>({...task,_gtdReference:null})));
+      }
+    }
+    return logic.calendarTaskInstances(tasks.flatMap(task=>{
+      if(!inGtd(task))return [task];if(emitted.has(task.path))return [];emitted.add(task.path);return visible.get(task.path);
+    }));
   });
   wrap(store, 'replaceTask', original => async function (task, replacement) {
     const canonical = source(task);
@@ -123,5 +138,5 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     } catch (error) { plugin.showTaskActionError(error); return false; }
   });
   calendar.refreshCalendars();
-  return { calendar, store, restore() { disposed=true;window.clearTimeout(refreshTimer);events.forEach(event=>plugin.app.vault.offref(event));snapshots.clear();restores.reverse().forEach(restore => restore()); calendar.refreshCalendars(); } };
+  return { calendar, store, restore() { disposed=true;window.clearTimeout(refreshTimer);events.forEach(event=>plugin.app.vault.offref(event));snapshots.clear();coherent.clear();restores.reverse().forEach(restore => restore()); calendar.refreshCalendars(); } };
 };
