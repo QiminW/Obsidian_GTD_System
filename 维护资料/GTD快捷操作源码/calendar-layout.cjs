@@ -62,7 +62,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
   }
   function sync() {
     if (disposed) return;
-    let newGroupedCalendar=false;
+    let newCalendar=false;
     const roots = new Set([...scope.querySelectorAll(selector)].filter(root => root.closest('.gtd-dashboard')));
     for (const [root, entry] of entries) if (!roots.has(root)) {
       removeEntry(root, entry); entries.delete(root);
@@ -90,7 +90,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         };
         root.addEventListener('click', onMore, true);
         entry = { button, contextSwitch, onMore, cardNames: new Map() }; entries.set(root, entry);
-        if(plugin.data.calendarDayLayout==='group')newGroupedCalendar=true;
+        newCalendar=true;
       }
       const compact = plugin.data.calendarCompact === true, button = entry.button;
       root.classList.toggle('gtd-calendar-compact', compact);
@@ -117,7 +117,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         if (card.getAttribute('aria-label') !== label) card.setAttribute('aria-label', label);
       }
     }
-    if(newGroupedCalendar)refreshCalendar();
+    if(newCalendar)refreshCalendar();
   }
   const containsCalendar = node => node.nodeType === 1 && (node.matches(selector) || node.querySelector(selector));
   const observer = new doc.defaultView.MutationObserver(records => {

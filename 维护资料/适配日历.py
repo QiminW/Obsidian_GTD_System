@@ -11,11 +11,17 @@ attributes={
  'data-gtd-project':[f'"data-gtd-project":{v}.path.replace(/\\.md$/i,"").split("/").pop(),'.encode() for v in ['r','o']],
  'data-gtd-parent':[f'"data-gtd-parent":{v}._gtdParentTitle||"",'.encode() for v in ['r','o']],
  'data-gtd-parent-path':[f'"data-gtd-parent-path":({v}._gtdAncestors||[]).join(" › "),'.encode() for v in ['r','o']],
- 'data-gtd-source-path':[f'"data-gtd-source-path":{v}.path,'.encode() for v in ['r','o']]
+ 'data-gtd-source-path':[f'"data-gtd-source-path":{v}.path,'.encode() for v in ['r','o']],
+ 'data-gtd-source-line':[f'"data-gtd-source-line":{v}.line,'.encode() for v in ['r','o']]
 }
 for name,values in attributes.items():
  if name.encode() in content and not all(content.count(a)==1 for a in values):raise SystemExit('检测到不同的适配结构，未写入文件')
 patched=content
+before=b'N=(0,Pe.useMemo)(()=>iO(H,s,a.settings,O,br(d)),[O,H,a.settings,s,d])'
+after=b'N=(0,Pe.useMemo)(()=>{let L=iO(H,s,a.settings,O,br(d));return a._gtdCalendarModel?.(L,v)??L},[O,H,a.settings,s,d])'
+if patched.count(after)!=1:
+ if patched.count(before)!=1:raise SystemExit('日历任务模型结构与配套版本不符，未写入文件')
+ patched=patched.replace(before,after,1)
 for index,variable in enumerate(['r','o']):
  before=f'"data-priority":{variable}.priority,'.encode()
  if patched.count(before)!=1:raise SystemExit('卡片结构与配套版本不符，未写入文件')

@@ -436,6 +436,24 @@ function calendarTaskInstances(tasks) {
     }));
   });
 }
+function calendarOverdueTasks(overdue, visible) {
+  const key=task=>{
+    const source=task._gtdSourceTask||task;
+    if(!source.path?.startsWith('00 GTD/'))return null;
+    return Number.isInteger(source.line)&&source.line>=0?JSON.stringify([source.path,source.line]):source.id?JSON.stringify([source.path,source.id]):source;
+  };
+  const shown=new Set(visible.map(key).filter(value=>value!==null)),chosen=new Map(),emitted=new Set();
+  const date=task=>task._gtdDay||task.scheduled||task.due||task.start||'';
+  for(const task of overdue){
+    const id=key(task);if(id===null||shown.has(id))continue;
+    const previous=chosen.get(id),deadline=task._gtdDeadline===true;
+    if(!previous||deadline&&previous._gtdDeadline!==true||deadline===(previous._gtdDeadline===true)&&date(task)>date(previous))chosen.set(id,task);
+  }
+  return overdue.filter(task=>{
+    const id=key(task);if(id===null)return true;
+    if(chosen.get(id)!==task||emitted.has(id))return false;emitted.add(id);return true;
+  });
+}
 function moveSiblingTask(content, from, to, side = 'before') {
   if (!from || !to || from.version !== taskSourceVersion(content) || to.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请重新拖动');
   if (!['before','after'].includes(side)) throw new Error('未知排序位置');
@@ -590,4 +608,4 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };

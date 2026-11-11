@@ -437,6 +437,24 @@ function calendarTaskInstances(tasks) {
     }));
   });
 }
+function calendarOverdueTasks(overdue, visible) {
+  const key=task=>{
+    const source=task._gtdSourceTask||task;
+    if(!source.path?.startsWith('00 GTD/'))return null;
+    return Number.isInteger(source.line)&&source.line>=0?JSON.stringify([source.path,source.line]):source.id?JSON.stringify([source.path,source.id]):source;
+  };
+  const shown=new Set(visible.map(key).filter(value=>value!==null)),chosen=new Map(),emitted=new Set();
+  const date=task=>task._gtdDay||task.scheduled||task.due||task.start||'';
+  for(const task of overdue){
+    const id=key(task);if(id===null||shown.has(id))continue;
+    const previous=chosen.get(id),deadline=task._gtdDeadline===true;
+    if(!previous||deadline&&previous._gtdDeadline!==true||deadline===(previous._gtdDeadline===true)&&date(task)>date(previous))chosen.set(id,task);
+  }
+  return overdue.filter(task=>{
+    const id=key(task);if(id===null)return true;
+    if(chosen.get(id)!==task||emitted.has(id))return false;emitted.add(id);return true;
+  });
+}
 function moveSiblingTask(content, from, to, side = 'before') {
   if (!from || !to || from.version !== taskSourceVersion(content) || to.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请重新拖动');
   if (!['before','after'].includes(side)) throw new Error('未知排序位置');
@@ -591,7 +609,7 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
 
 return module.exports;
 })();
@@ -619,6 +637,15 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   for(const file of plugin.app.vault.getMarkdownFiles())prime(file);
   const source = task => task._gtdSourceTask || task;
   const inGtd = task => task?.path?.startsWith('00 GTD/');
+  const previousModel=calendar._gtdCalendarModel;
+  const filterModel=(model,gridRef)=>{
+    if(!gridRef.current?.closest('.gtd-dashboard'))return model;
+    const dayKey=date=>[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+    const visible=model.days.flatMap(date=>model.tasksByDate.get(dayKey(date))||[]);
+    return {...model,overdueTasks:logic.calendarOverdueTasks(model.overdueTasks,visible)};
+  };
+  calendar._gtdCalendarModel=filterModel;
+  restores.push(()=>{if(calendar._gtdCalendarModel===filterModel){if(previousModel===undefined)delete calendar._gtdCalendarModel;else calendar._gtdCalendarModel=previousModel;}});
   const previousFeedback = calendar._gtdTaskError;
   const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
   calendar._gtdTaskError = feedback;
@@ -806,7 +833,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
   }
   function sync() {
     if (disposed) return;
-    let newGroupedCalendar=false;
+    let newCalendar=false;
     const roots = new Set([...scope.querySelectorAll(selector)].filter(root => root.closest('.gtd-dashboard')));
     for (const [root, entry] of entries) if (!roots.has(root)) {
       removeEntry(root, entry); entries.delete(root);
@@ -834,7 +861,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         };
         root.addEventListener('click', onMore, true);
         entry = { button, contextSwitch, onMore, cardNames: new Map() }; entries.set(root, entry);
-        if(plugin.data.calendarDayLayout==='group')newGroupedCalendar=true;
+        newCalendar=true;
       }
       const compact = plugin.data.calendarCompact === true, button = entry.button;
       root.classList.toggle('gtd-calendar-compact', compact);
@@ -861,7 +888,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         if (card.getAttribute('aria-label') !== label) card.setAttribute('aria-label', label);
       }
     }
-    if(newGroupedCalendar)refreshCalendar();
+    if(newCalendar)refreshCalendar();
   }
   const containsCalendar = node => node.nodeType === 1 && (node.matches(selector) || node.querySelector(selector));
   const observer = new doc.defaultView.MutationObserver(records => {

@@ -21,6 +21,15 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   for(const file of plugin.app.vault.getMarkdownFiles())prime(file);
   const source = task => task._gtdSourceTask || task;
   const inGtd = task => task?.path?.startsWith('00 GTD/');
+  const previousModel=calendar._gtdCalendarModel;
+  const filterModel=(model,gridRef)=>{
+    if(!gridRef.current?.closest('.gtd-dashboard'))return model;
+    const dayKey=date=>[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+    const visible=model.days.flatMap(date=>model.tasksByDate.get(dayKey(date))||[]);
+    return {...model,overdueTasks:logic.calendarOverdueTasks(model.overdueTasks,visible)};
+  };
+  calendar._gtdCalendarModel=filterModel;
+  restores.push(()=>{if(calendar._gtdCalendarModel===filterModel){if(previousModel===undefined)delete calendar._gtdCalendarModel;else calendar._gtdCalendarModel=previousModel;}});
   const previousFeedback = calendar._gtdTaskError;
   const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
   calendar._gtdTaskError = feedback;
