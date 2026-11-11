@@ -410,6 +410,12 @@ async function createProjectView(project) {
         cached={item,node,row:taskRow,branch,children:childContainer,signature};taskCache.set(node.key,cached);
       }
       const currentCheckbox=taskRow.querySelector('[data-gtd-task-checkbox]');if(currentCheckbox)currentCheckbox.checked=node.completed;
+      const currentToday=taskRow.querySelector('[data-gtd-task-today]');
+      if(currentToday){
+        const active=node.days.includes(plugin.todayDateKey());
+        currentToday.title=active?'移出今天':'加入今天';currentToday.setAttribute('aria-label',(active?'移出今天：':'加入今天：')+node.title);
+        currentToday.setAttribute('aria-pressed',String(active));currentToday.classList.toggle('is-active',active);
+      }
       if(titleEdit)mountedTitles.add(titleEdit.key);
       const rowId=JSON.stringify([path,node.key]);
       const currentArrange=taskRow.querySelector('[data-gtd-task-arrange]');if(currentArrange){currentArrange.setAttribute('aria-expanded',String(!!panelState));currentArrange.classList.toggle('is-active',!!panelState||node.days.length>0);}

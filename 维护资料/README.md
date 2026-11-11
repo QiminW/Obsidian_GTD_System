@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.13.7 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.13.8 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -25,6 +25,8 @@ node --test
 `undo-history.cjs` 保存当前会话最近 30 次写入事务；`undo-history.test.cjs` 检查顺序、并发、冲突及多步补偿，`undo-plugin.test.cjs` 检查真实插件方法的保存边界和快捷键路由。修改笔记的方法应通过 `processGtdChange` 捕获原文，不要用操作之前的异步读取代替实际写入时的快照。改名撤销还需恢复折叠状态及子任务草稿的引用。
 
 `tree-keyboard.cjs` 管理可见行导航和焦点。项目进度通过 `protectProjectView.setUpdate` 接管后续数据同步，按键与输入框事件保留在稳定的节点上；更新缓存节点时必须同步其源任务引用，涉及正在编辑或点击的控件时推迟结构替换。
+
+`checkTaskDay` 共用于每 30 秒检查、窗口 focus 与 document 恢复 visible，日期变化时只触发一次 `gtd-task-day-changed`。项目进度的“今”按钮在结构签名之外同步高亮、提示与 aria-pressed；日期变化不替换行或输入框，也不修改任务安排。`day-rollover.test.cjs` 检查跨天事件与唤醒入口，`day-rollover.native.js` 在演示库验证前一天、当天、多天及无安排任务的状态，以及输入法、光标和撤销记录保留。
 
 任务写入及撤销完成后，`publishProjectTaskTree` 直接从实际写入内容生成模型并触发 `gtd-project-tasks-changed`。项目视图立即更新源引用，保存锁在写入结束时解除，不等待后台读取；后续读取仍由渲染序号丢弃过时结果。`task-controls.native.js` 在独立演示库故意暂停显示读取，检查按钮恢复、连续操作、完成限制和撤销。
 

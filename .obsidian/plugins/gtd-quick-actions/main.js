@@ -1326,10 +1326,7 @@ module.exports = class GtdQuickActions extends Plugin {
       this.data.projectOrder=this.data.projectOrder.map(path=>{if(path===oldPath||path.startsWith(oldPath+'/')){changed=true;return file.path+path.slice(oldPath.length);}return path;});
       if(changed)this.saveData(this.data);
     }));
-    this.registerInterval(window.setInterval(() => {
-      const day = this.todayDateKey();
-      if (day !== this.currentDayKey) { this.currentDayKey = day; this.app.workspace.trigger('gtd-task-day-changed'); }
-    }, 30000));
+    this.installTaskDayCheck();
     await this.migrateLegacyPlanningDates();
     this.installUndoHistory();
     this.registerDomEvent(document,'keydown',event=>this.handleUndoShortcut(event),true);
@@ -1453,6 +1450,18 @@ module.exports = class GtdQuickActions extends Plugin {
     }).catch(error=>new Notice(error.message||String(error))).finally(()=>this.undoShortcutBusy=false);
   }
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
+  checkTaskDay() {
+    const day=this.todayDateKey();
+    if(day===this.currentDayKey)return;
+    this.currentDayKey=day;
+    this.app.workspace.trigger('gtd-task-day-changed');
+  }
+  installTaskDayCheck() {
+    const check=()=>this.checkTaskDay();
+    this.registerInterval(window.setInterval(check,30000));
+    this.registerDomEvent(window,'focus',check);
+    this.registerDomEvent(document,'visibilitychange',()=>{if(document.visibilityState==='visible')check();});
+  }
   installProjectKeyboard(component,table,scope) {
     this.projectKeyboardStates||=new Map();this.projectKeyboardControllers||=new Map();
     if(this.projectKeyboardControllers.has(table))return this.projectKeyboardControllers.get(table);
