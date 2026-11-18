@@ -50,6 +50,9 @@ for (const label of ['项目','领域','状态','进度','完成 / 总计','截�
 const body = table.createEl('tbody');
 const projectRows=new Map();
 let orderedPaths=[];
+let revealedRow,revealTimer;
+dv.component.register(()=>window.clearTimeout(revealTimer));
+const canStartTask=(project,node)=>typeof plugin.showFocusTaskMenu==='function'&&(project.status||'active')==='active'&&!node.completed&&!node.cancelled&&node.status!=='_'&&!node.children.length;
 const clearDropMarks=()=>dv.container.querySelectorAll('.gtd-drop-before,.gtd-drop-after').forEach(element=>element.classList.remove('gtd-drop-before','gtd-drop-after'));
 const dropSide=(event,element)=>event.clientY<element.getBoundingClientRect().top+element.getBoundingClientRect().height/2?'before':'after';
 function reorderProjectRows(){reconcile(body,plugin.orderedProjectPaths(orderedPaths.filter(path=>projectRows.has(path))).flatMap(path=>{const pair=projectRows.get(path);return [pair.row,pair.detail];}));keyboard.refresh();}
@@ -91,6 +94,7 @@ function renderNameInput(parent,state,kind,unavailable=false) {
 }
 async function createProjectView(project) {
   const path = project.file.path, projectState = scope+'::project:'+path;
+  const taskFoldKey=key=>scope+'::task:'+path+'::'+key;
   const projectId=JSON.stringify([path,'project']);
   const eventRefs=[],registerProjectEvent=ref=>{eventRefs.push(ref);dv.component.registerEvent(ref);};
   let expanded = plugin.projectTreeExpanded(projectState), busy = false, rendering = 0;
@@ -153,7 +157,7 @@ async function createProjectView(project) {
   const detail = body.createEl('tr', { cls:'gtd-project-detail' }); detail.hidden = !expanded; detail.dataset.treeFor = path;
   const tree = detail.createEl('td', { attr:{ colspan:'6' } });
   const taskCache=new Map(),entryCache=new Map(),dayCache=new Map(),orphanCache=new Map();
-  const pair={row,detail,dispose(){for(const ref of eventRefs)app.workspace.offref(ref);taskCache.clear();entryCache.clear();dayCache.clear();orphanCache.clear();},update:async page=>{
+  const pair={row,detail,revealTask,dispose(){for(const ref of eventRefs)app.workspace.offref(ref);taskCache.clear();entryCache.clear();dayCache.clear();orphanCache.clear();},update:async page=>{
     project=page;areaCell.textContent=String(project.area||'—');statusButton.textContent=(statuses[project.status]||project.status||'进行中')+' ▾';add.disabled=project.status==='done';
     const next=project.deadline?dv.date(project.deadline)?.toFormat('yyyy-MM-dd')||String(project.deadline):'';
     if(document.activeElement!==deadlineInput){projectDeadline=next;deadlineInput.value=next;}
@@ -164,7 +168,7 @@ async function createProjectView(project) {
     try {
       plugin.beginInlineTaskEntry(scope,path,parent);
       expanded=true;detail.hidden=false;toggle.setAttribute('aria-expanded','true');arrow.textContent='▾';plugin.setProjectTreeExpanded(projectState,true);
-      if(parent){plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+parent.key,true);const branch=taskCache.get(parent.key)?.branch;if(branch)branch.open=true;}
+      if(parent){plugin.setProjectTreeExpanded(taskFoldKey(parent.key),true);const branch=taskCache.get(parent.key)?.branch;if(branch)branch.open=true;}
       await renderTree();
     } catch(error){plugin.showTaskActionError(error);}
   }
@@ -173,7 +177,7 @@ async function createProjectView(project) {
     if(plugin.taskDayPanels.get(key)?.ownerLeaf===app.workspace.activeLeaf?.id)plugin.taskDayPanels.delete(key);
     else {
       plugin.taskDayPanels.set(key,{month:plugin.taskDayPanels.get(key)?.month||window.moment().startOf('month').format('YYYY-MM-DD'),ownerLeaf:app.workspace.activeLeaf?.id});
-      plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+node.key,true);
+      plugin.setProjectTreeExpanded(taskFoldKey(node.key),true);
       const branch=taskCache.get(node.key)?.branch;if(branch)branch.open=true;
     }
     await renderTree();
@@ -192,10 +196,10 @@ async function createProjectView(project) {
     }
     try { await renderTree(); } catch(error) { if(tree.isConnected)plugin.showTaskActionError(error); }
   }
-  async function renderTree() {
-    return refreshGuard.run(path,renderTreeNow,true);
+  async function renderTree(revealKey) {
+    return refreshGuard.run(path,()=>renderTreeNow(undefined,revealKey),true);
   }
-  async function renderTreeNow(savedModel) {
+  async function renderTreeNow(savedModel,revealKey) {
     const ticket = ++rendering;
     const model = savedModel || await plugin.readProjectTaskTree(path);
     if (ticket!==rendering||!tree.isConnected) return;
@@ -203,6 +207,11 @@ async function createProjectView(project) {
     bar.value=model.total?Math.round(model.done/model.total*100):0;
     bar.setAttribute('aria-label',project.file.name+' '+bar.value+'%');
     percent.textContent=model.total?bar.value+'%':'—';count.textContent=model.done+' / '+model.total;
+    if(revealKey){
+      const hasTask=node=>node.key===revealKey||node.children.some(hasTask);
+      if((!showCompleted&&!model.completedDisplay.activeKeys.has(revealKey))||!model.roots.some(hasTask))return;
+      if(!expanded)setExpandedState(true);
+    }
     if (!expanded) return;
     keyboard.capture();
     const entries=plugin.inlineTaskEntriesFor(scope,path),mounted=new Set();
@@ -342,7 +351,7 @@ async function createProjectView(project) {
         }
         if(visibleChildren.length){
           if(!branch){branch=document.createElement('details');branch.className='gtd-task-branch';item.prepend(branch);}
-          const foldKey=scope+'::task:'+path+'::'+node.key;
+          const foldKey=taskFoldKey(node.key);
           if(!cached||changingStructure)branch.open=plugin.projectTreeExpanded(foldKey,true);
           if(!branch.dataset.gtdBound){branch.dataset.gtdBound='true';branch.addEventListener('toggle',()=>plugin.setProjectTreeExpanded(foldKey,branch.open));}
           taskRow=branch.createEl('summary',{cls:'gtd-task-row'});branch.prepend(taskRow);
@@ -391,6 +400,22 @@ async function createProjectView(project) {
       arrange.classList.toggle('is-active',!!panelState||node.days.length>0);
       arrange.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();toggleDayPanel(node);});
       const rowActions=taskRow.createSpan({cls:'gtd-task-actions'});
+      if(canStartTask(project,node)){
+        const openStartMenu=event=>{
+          if(event.defaultPrevented||busy||!canStartTask(project,node))return;
+          event.preventDefault();event.stopPropagation();
+          if(!event.repeat)plugin.showFocusTaskMenu(path,node,event);
+        };
+        taskRow.addEventListener('contextmenu',event=>{
+          if(!event.target.closest('input:not([type=checkbox]),textarea,select,[contenteditable="true"]'))openStartMenu(event);
+        });
+        taskRow.addEventListener('keydown',event=>{
+          if(event.target===taskRow&&!event.isComposing&&(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'))openStartMenu(event);
+        });
+        const menu=rowActions.createEl('button',{text:'⋯',cls:'gtd-task-action gtd-task-start-menu',attr:{type:'button','aria-haspopup':'menu','aria-label':'任务启动选项：'+(node.title||'未命名任务')}});
+        menu.dataset.gtdTaskAction='focus';menu.disabled=busy;
+        menu.addEventListener('click',openStartMenu);
+      }
       const child=rowActions.createEl('button',{text:'＋',cls:'gtd-task-action',attr:{type:'button','aria-label':'添加子任务：'+node.title,title:node.completed||node.cancelled?'已完成或取消的任务不能添加子任务':'添加子任务'}});
       child.dataset.gtdTaskAction='add';child.dataset.gtdTaskAdd='true';child.dataset.unavailable=String(node.completed||node.cancelled||project.status==='done');
       child.disabled=busy||child.dataset.unavailable==='true';
@@ -420,9 +445,10 @@ async function createProjectView(project) {
       const rowId=JSON.stringify([path,node.key]);
       const currentArrange=taskRow.querySelector('[data-gtd-task-arrange]');if(currentArrange){currentArrange.setAttribute('aria-expanded',String(!!panelState));currentArrange.classList.toggle('is-active',!!panelState||node.days.length>0);}
       keyboard.register(taskRow,{id:rowId,parent:parentId,label:'任务：'+node.title,expanded:()=>!!cached.branch?.open,
-        toggle:cached.branch?value=>{cached.branch.open=value;plugin.setProjectTreeExpanded(scope+'::task:'+path+'::'+node.key,value);keyboard.refresh();}:null,
+        toggle:cached.branch?value=>{cached.branch.open=value;plugin.setProjectTreeExpanded(taskFoldKey(node.key),value);keyboard.refresh();}:null,
         rename:()=>taskRow.querySelector('[data-gtd-task-rename]')?.click(),add:()=>taskRow.querySelector('[data-gtd-task-add]')?.click(),
         remove:()=>taskRow.querySelector('[data-gtd-task-delete]')?.click(),today:()=>taskRow.querySelector('[data-gtd-task-today]')?.click()});
+      if(canStartTask(project,node))taskRow.setAttribute('aria-keyshortcuts',taskRow.getAttribute('aria-keyshortcuts')+' Shift+F10 ContextMenu');
       const wanted=visibleChildren.map(child=>addNode(childContainer,child,rowId));
       const entry=entries.find(state=>state.parentKey===node.key);
       if(entry){if(!childContainer)childContainer=item.createEl('ul',{cls:'gtd-task-list'});wanted.push(addEditor(childContainer,entry,node.completed||node.cancelled||entry.referenceStale));}
@@ -444,6 +470,7 @@ async function createProjectView(project) {
     for(const key of dayCache.keys())if(!seenDays.has(key))dayCache.delete(key);
     for(const key of orphanCache.keys())if(!titleEdits.some(state=>state.key===key))orphanCache.delete(key);
     keyboard.refresh();
+    return true;
   }
   registerProjectEvent(app.workspace.on('gtd-project-tasks-changed',(changedPath,model)=>{
     if(changedPath!==path||!tree.isConnected)return;
@@ -470,10 +497,31 @@ async function createProjectView(project) {
     for(const form of tree.querySelectorAll('form[data-gtd-task-title-editor]'))if(plugin.taskTitleEdits.get(form.dataset.gtdTaskTitleEditor)?.busy)form.querySelectorAll('input,button').forEach(control=>control.disabled=true);
     renderTree().catch(error=>plugin.showTaskActionError(error));
   }));
-  async function setExpanded(value){
+  function setExpandedState(value){
     expanded=value;detail.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded));arrow.textContent=expanded?'▾':'▸';
     row.setAttribute('aria-expanded',String(expanded));plugin.setProjectTreeExpanded(projectState,expanded);
+  }
+  async function setExpanded(value){
+    setExpandedState(value);
     if(expanded)await renderTree();keyboard.refresh();
+  }
+  async function revealTask(key,reference){
+    if(!key)return null;
+    if(reference||!expanded||!taskCache.get(key)?.row.isConnected){
+      const rendered=await renderTree(key);
+      if(!rendered)return null;
+    }
+    const task=taskCache.get(key);
+    if(!expanded||!task?.row.isConnected)return null;
+    if(reference){
+      const actual=task.node.reference;
+      if(actual.version!==reference.version||actual.line!==reference.line||actual.raw!==reference.raw)return null;
+    }
+    for(let parent=task.item.parentElement;parent&&parent!==tree;parent=parent.parentElement){
+      if(!parent.matches('details.gtd-task-branch')||parent.open)continue;
+      parent.open=true;plugin.setProjectTreeExpanded(taskFoldKey(parent.parentElement.dataset.taskKey),true);
+    }
+    return task.row;
   }
   toggle.addEventListener('click',()=>setExpanded(!expanded).catch(error=>plugin.showTaskActionError(error)));
   treeRenderers.set(path,renderTree);
@@ -492,6 +540,19 @@ async function updateProjects(){
   })();
   try{await projectUpdate;}finally{projectUpdate=null;}
 }
+table.gtdRevealTask=async(path,key,reference)=>{
+  if(projectUpdate)await projectUpdate;
+  if(!table.isConnected)return false;
+  if(!projectRows.has(path)&&readPages().some(page=>page.file.path===path))await updateProjects();
+  const taskRow=await projectRows.get(path)?.revealTask(key,reference);
+  if(!taskRow?.isConnected)return false;
+  taskRow.scrollIntoView({block:'center',inline:'nearest'});
+  taskRow.focus({preventScroll:true});keyboard.refresh();
+  revealedRow?.classList.remove('gtd-task-revealed');window.clearTimeout(revealTimer);
+  revealedRow=taskRow;taskRow.classList.add('gtd-task-revealed');
+  revealTimer=window.setTimeout(()=>{taskRow.classList.remove('gtd-task-revealed');revealedRow=null;},1600);
+  return true;
+};
 refreshGuard.setUpdate(updateProjects);
 await updateProjects();
 } finally { finishView(); }

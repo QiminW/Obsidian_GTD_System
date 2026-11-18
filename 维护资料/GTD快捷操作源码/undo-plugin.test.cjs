@@ -5,7 +5,7 @@ function setup(content='## 任务\n- [ ] First ^first\n- [ ] Second ^second\n'){
  const files=new Map(),notices=[],events=[];
  class File{constructor(path,text){this.path=path;this.text=text;this.extension='md';}get basename(){return this.path.split('/').at(-1).slice(0,-3);}}
  const Base=class{},obsidian={Plugin:class{register(){}},Modal:Base,Notice:class{constructor(message){notices.push(message);}},TFile:File,TFolder:Base,Menu:Base,MarkdownRenderChild:Base,MarkdownRenderer:{},Component:Base,parseYaml:value=>value.trim()?JSON.parse(value):null,stringifyYaml:value=>JSON.stringify(value)+'\n'};
- const Class=vm.runInNewContext('const module={exports:{}};'+fs.readFileSync(__dirname+'/main-body.js','utf8')+';module.exports',{require:()=>obsidian,logic,UndoHistory,structuredClone,window:{setTimeout,clearTimeout},console});
+ const Class=vm.runInNewContext('const module={exports:{}};'+fs.readFileSync(__dirname+'/main-body.js','utf8')+';module.exports',{require:()=>obsidian,logic,UndoHistory,structuredClone,crypto:require('node:crypto'),window:{setTimeout,clearTimeout},console});
  const file=new File(PATH,content),inbox=new File(INBOX,'# 收集箱\n- [ ] Collect ^collect\n');files.set(PATH,file);files.set(INBOX,inbox);
  const vault={getAbstractFileByPath:path=>files.get(path),getMarkdownFiles:()=>[...files.values()],read:async f=>f.text,async process(f,change){if(vault.beforeProcess){const hook=vault.beforeProcess;vault.beforeProcess=null;hook(f);}f.text=change(f.text);},async create(path,text){if(files.has(path))throw Error('exists');const f=new File(path,text);files.set(path,f);return f;}};
  const p=new Class();Object.assign(p,{data:{},inlineTaskEntries:new Map(),taskTitleEdits:new Map(),projectNameEdits:new Map(),taskDayPanels:new Map(),inlineTaskFocusKey:'',taskTitleFocusKey:'',projectNameFocusKey:'',saveData:async()=>{},app:{vault,metadataCache:{getFileCache:()=>({frontmatter:{}})},commands:{executeCommandById:id=>events.push(id)},plugins:{plugins:{'obsidian-tasks-plugin':{apiV1:{executeToggleTaskDoneCommand:raw=>raw.replace('- [ ]','- [x]')}}}},workspace:{activeLeaf:{id:'home',view:{file:{path:HOME},getMode:()=> 'preview',getViewType:()=> 'markdown',containerEl:{querySelector:()=>({})}}},trigger:(...args)=>events.push(args)},fileManager:{async renameFile(f,path){if(files.has(path)&&files.get(path)!==f)throw Error('exists');files.delete(f.path);f.path=path;files.set(path,f);}}}});
@@ -13,6 +13,44 @@ function setup(content='## 任务\n- [ ] First ^first\n- [ ] Second ^second\n'){
  return {p,file,inbox,files,notices,events,vault,File};
 }
 const ref=(text,key='block:first')=>{const flatten=nodes=>nodes.flatMap(n=>[n,...flatten(n.children)]);return flatten(logic.projectTaskTree(text).roots).find(n=>n.key===key).reference;};
+test('starting and switching tasks preserves dates and restores each authored next step',async()=>{
+ const {p,file}=setup('- [ ] <!-- gtd-days: 2026-11-19 --> First 📅 2026-11-21 ^first\n- [ ] Second ^second\n');
+ const original=file.text;
+ await p.startFocusTask(PATH,ref(original));
+ await p.saveFocusStep(await p.readFocusTask(),'打开文档');await p.startFocusTask(PATH,ref(original,'block:second'));
+ assert.equal((await p.readFocusTask()).node.title,'Second');assert.equal((await p.readFocusTask()).step,'');
+ await p.startFocusTask(PATH,ref(original));assert.equal((await p.readFocusTask()).step,'打开文档');assert.equal(file.text,original);
+ await p.toggleProjectTask(PATH,ref(file.text));assert.equal(await p.readFocusTask(),null);
+ await p.undoHistory.undo();assert.equal((await p.readFocusTask()).step,'打开文档');
+});
+test('starting an unmarked task pins the exact occurrence and respects stale and completed references',async()=>{
+ const original='- [ ] Same ^first\r\n- [ ] Same\r\n- [x] Done ^done\r\n';const {p,file}=setup(original),second=logic.projectTaskTree(original).roots[1].reference;
+ const draft=p.beginInlineTaskEntry(HOME,PATH,logic.projectTaskTree(original).roots[1]);draft.draft='保留的子任务草稿';draft.hidden=true;
+ await p.startFocusTask(PATH,ref(original));
+ await p.startFocusTask(PATH,second);assert.match(file.text,/^- \[ \] Same \^first\r\n- \[ \] Same \^gtd-[\w-]+\r\n/);
+ assert.equal((await p.readFocusTask()).node.line,1);
+ assert.equal(p.beginInlineTaskEntry(HOME,PATH,(await p.readFocusTask()).node),draft);
+ await assert.rejects(p.startFocusTask(PATH,second),/已变化/);
+ await assert.rejects(p.startFocusTask(PATH,ref(file.text,'block:done')),/未完成/);
+ await p.saveFocusStep(await p.readFocusTask(),'从第二项继续');
+ await p.undoHistory.undo();assert.equal((await p.readFocusTask()).step,'');
+ await p.undoHistory.undo();assert.equal(file.text,original);assert.equal((await p.readFocusTask()).node.line,0);
+ assert.equal(p.beginInlineTaskEntry(HOME,PATH,logic.projectTaskTree(original).roots[1]).draft,'保留的子任务草稿');
+ await p.undoHistory.undo();assert.equal(await p.readFocusTask(),null);
+});
+test('focus state and next step follow project or folder rename',async()=>{
+ const {p,file,files}=setup();await p.startFocusTask(PATH,ref(file.text));const draftTarget=await p.readFocusTask();
+ const next=PATH.replace('/00 工作/','/01 工作/');files.delete(PATH);file.path=next;files.set(next,file);
+ assert.equal(p.remapFocusPaths(PATH.slice(0,PATH.lastIndexOf('/')),next.slice(0,next.lastIndexOf('/'))),true);
+ await p.saveFocusStep(draftTarget,'继续');
+ assert.equal((await p.readFocusTask()).path,next);assert.equal((await p.readFocusTask()).step,'继续');
+});
+test('a failed focus settings write leaves an unmarked task and its undo history untouched',async()=>{
+ const original='- [ ] Unmarked\r\n';const {p,file}=setup(original);
+ p.saveData=async()=>{if(p.data.focusTask)throw Error('Settings unavailable');};
+ await assert.rejects(p.startFocusTask(PATH,logic.projectTaskTree(original).roots[0].reference),/Settings unavailable/);
+ assert.equal(file.text,original);assert.equal(await p.readFocusTask(),null);assert.equal(p.undoHistory.entries.length,0);
+});
 test('saved task snapshots provide current references for the next action without a display reread',async()=>{
  const {p,file,events,vault}=setup(),read=vault.read;vault.read=async()=>{throw Error('Unexpected display read')};
  await p.toggleProjectTask(PATH,ref(file.text));

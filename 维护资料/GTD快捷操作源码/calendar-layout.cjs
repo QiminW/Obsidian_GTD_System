@@ -102,10 +102,11 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         const project = card.dataset.gtdProject;
         const name = card.querySelector('.tasks-calendar-task-title')?.textContent.trim();
         if (!project || !name) continue;
-        const parents=card.dataset.gtdParentPath;
+        const parents=card.dataset.gtdParentPath, deadline=card.dataset.gtdOriginalDeadline;
         const label = parents ? '所属位置：'+project+' › '+parents : '所属项目：' + project;
-        entry.cardNames.set(card, name);
-        if (card.getAttribute('aria-label') !== label) card.setAttribute('aria-label', label);
+        const tooltip = deadline ? label + ' · ' + deadline : label;
+        entry.cardNames.set(card, deadline ? name + ' · ' + deadline : name);
+        if (card.getAttribute('aria-label') !== tooltip) card.setAttribute('aria-label', tooltip);
       }
     }
     if(newCalendar)refreshCalendar();
@@ -115,7 +116,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     if (records.some(record => record.target.nodeType === 1 && record.target.closest(selector) && (record.type !== 'attributes' || record.target.matches('.tasks-calendar-task,.tasks-calendar-grid'))
       || [...record.addedNodes, ...record.removedNodes].some(containsCalendar))) sync();
   });
-  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project','data-gtd-parent-path','class'] });
+  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project','data-gtd-parent-path','data-gtd-original-deadline','class'] });
   sync();
   return {
     refresh: sync,

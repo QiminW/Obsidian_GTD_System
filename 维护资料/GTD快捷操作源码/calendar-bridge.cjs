@@ -2,10 +2,18 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   const calendar = plugin.app.plugins.plugins['tasks-calendar'];
   if (!calendar?.taskStore) return null;
   const store = calendar.taskStore, restores = [], snapshots=new Map(), revisions=new Map(), coherent=new Map(), events=[];
+  const isProject = task => task?.path?.startsWith('00 GTD/00 工作区/01 项目/') && /\.md$/i.test(task.path);
+  const metadata = plugin.app.metadataCache;
+  const projectStatus = task => {
+    const file = plugin.app.vault.getAbstractFileByPath?.(task.path);
+    return file && metadata?.getFileCache(file)?.frontmatter?.status;
+  };
   let disposed=false,refreshTimer;
   const refresh=()=>{window.clearTimeout(refreshTimer);refreshTimer=window.setTimeout(()=>{if(!disposed)calendar.refreshCalendars();},25);};
   const workspace=plugin.app.workspace,orderEvent=workspace?.on('gtd-project-order-changed',refresh);
   if(orderEvent)restores.push(()=>workspace.offref(orderEvent));
+  const metadataEvent = metadata?.on?.('changed', file => { if (isProject(file)) refresh(); });
+  if (metadataEvent) restores.push(() => metadata.offref(metadataEvent));
   async function prime(file) {
     if(!file?.path?.startsWith('00 GTD/')||file.extension!=='md')return;
     const path=file.path,revision=(revisions.get(path)||0)+1;revisions.set(path,revision);snapshots.delete(path);
@@ -21,20 +29,78 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   for(const file of plugin.app.vault.getMarkdownFiles())prime(file);
   const source = task => task._gtdSourceTask || task;
   const inGtd = task => task?.path?.startsWith('00 GTD/');
-  const previousModel=calendar._gtdCalendarModel;
+  function hook(name, handler) {
+    const previous = calendar[name];
+    calendar[name] = handler;
+    restores.push(() => {
+      if (calendar[name] !== handler) return;
+      if (previous === undefined) delete calendar[name];
+      else calendar[name] = previous;
+    });
+  }
   const filterModel=(model,gridRef)=>{
     if(!gridRef.current?.closest('.gtd-dashboard'))return model;
+    const done = new Map();
+    const visibleTask = task => {
+      if (!isProject(task)) return true;
+      if (!done.has(task.path)) done.set(task.path, projectStatus(task) === 'done');
+      return !done.get(task.path);
+    };
+    let tasksByDate = model.tasksByDate, removed = 0;
+    for (const [date, tasks] of model.tasksByDate) {
+      const remaining = tasks.filter(visibleTask);
+      if (remaining.length === tasks.length) continue;
+      if (tasksByDate === model.tasksByDate) tasksByDate = new Map(tasksByDate);
+      if (remaining.length) tasksByDate.set(date, remaining);
+      else tasksByDate.delete(date);
+      removed += tasks.length - remaining.length;
+    }
     const dayKey=date=>[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
-    const visible=model.days.flatMap(date=>model.tasksByDate.get(dayKey(date))||[]);
-    return {...model,overdueTasks:logic.calendarOverdueTasks(model.overdueTasks,visible)};
+    const visible=model.days.flatMap(date=>tasksByDate.get(dayKey(date))||[]);
+    return {
+      ...model, ...(removed ? { tasksByDate, visibleTasks: model.visibleTasks - removed } : {}),
+      overdueTasks: logic.calendarOverdueTasks(model.overdueTasks.filter(visibleTask), visible)
+    };
   };
-  calendar._gtdCalendarModel=filterModel;
-  restores.push(()=>{if(calendar._gtdCalendarModel===filterModel){if(previousModel===undefined)delete calendar._gtdCalendarModel;else calendar._gtdCalendarModel=previousModel;}});
-  const previousFeedback = calendar._gtdTaskError;
-  const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
-  calendar._gtdTaskError = feedback;
-  restores.push(() => { if (calendar._gtdTaskError === feedback) { if (previousFeedback === undefined) delete calendar._gtdTaskError; else calendar._gtdTaskError = previousFeedback; } });
-  const foldedGroups=new Set(),previousDayRenderer=calendar._gtdRenderDayTasks;
+  hook('_gtdCalendarModel', filterModel);
+  hook('_gtdTaskError', (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback));
+  hook('_gtdLocateTask', async (task, anchor) => {
+    const canonical = source(task);
+    if (isProject(canonical) && anchor.closest('.gtd-dashboard')) {
+      try { if (await plugin.locateCalendarTask?.(canonical)) return; } catch (_) {}
+    }
+    return calendar.openTask(canonical);
+  });
+  function originalDeadline(task, today) {
+    const canonical = source(task);
+    if (!inGtd(canonical) || task.completed || canonical.completed || !canonical.due) return;
+    const days = (Date.parse(today) - Date.parse(canonical.due)) / 86400000;
+    if (days > 0) return '原截止 ' + canonical.due + ' · 已逾期 ' + days + ' 天';
+  }
+  hook('_gtdOriginalDeadline', originalDeadline);
+  function startable(task, canonical) {
+    if (!isProject(canonical) || task.completed || !canonical._gtdReference || (projectStatus(canonical) || 'active') !== 'active') return false;
+    const text = snapshots.get(canonical.path);
+    if (text === undefined) return false;
+    try {
+      const reference = logic.calendarTaskReference(text, canonical);
+      const matches = node => node.line === reference.line
+        ? node.children.length === 0 && !node.completed && !node.cancelled && node.status !== '_'
+        : node.children.some(matches);
+      return logic.projectTaskTree(text).roots.some(matches);
+    } catch (_) { return false; }
+  }
+  hook('_gtdAddTaskMenuItems', (menu, task, today) => {
+    const canonical = source(task), deadline = originalDeadline(task, today);
+    if (typeof plugin.startCalendarFocusTask === 'function' && startable(task, canonical)) {
+      menu.addItem(item => item.setTitle('开始这件').setIcon('play').onClick(async () => {
+        try { await plugin.startCalendarFocusTask(canonical); }
+        catch (error) { plugin.showTaskActionError(error); }
+      }));
+    }
+    if (deadline) menu.addItem(item => item.setTitle(deadline).setIcon('calendar-clock').setDisabled(true));
+  });
+  const foldedGroups=new Set();
   const renderDayGroups=options=>{
     const {mode,gridRef,date,active,completed,jsx,sortable,strategy,renderTask}=options;
     if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
@@ -65,8 +131,7 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     };
     return [...groups.values()].map(renderGroup);
   };
-  calendar._gtdRenderDayTasks=renderDayGroups;
-  restores.push(()=>{if(calendar._gtdRenderDayTasks===renderDayGroups){if(previousDayRenderer===undefined)delete calendar._gtdRenderDayTasks;else calendar._gtdRenderDayTasks=previousDayRenderer;}});
+  hook('_gtdRenderDayTasks', renderDayGroups);
   function wrap(target, name, make) {
     const original = target[name];
     if (typeof original !== 'function') return;
