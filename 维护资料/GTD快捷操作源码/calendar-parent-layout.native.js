@@ -93,14 +93,7 @@
   mode('Month').click();await pause(120);check('month retains compact cards and hides day-layout controls',root().querySelector('.gtd-calendar-context-switch').hidden);
   mode('Day').click();await pause(120);await app.vault.modify(files[0],(await app.vault.read(files[0])).replace('准备材料','材料核验'));
   await until(()=>cards().find(c=>c.dataset.gtdSourcePath===paths[0]&&c.getAttribute('aria-label')?.includes('材料核验')),'parent rename propagated');check('parent renames update visible paths and hover labels',cards().some(c=>c.querySelector('.gtd-calendar-context')?.textContent.includes('材料核验')));
-  const navigation=cards().find(c=>c.dataset.gtdSourcePath===paths[1]&&c.querySelector('.tasks-calendar-task-title')?.textContent==='核对引用').querySelector('.gtd-calendar-context');
-  navigation.click();
-  const revealed=await until(()=>[...document.querySelectorAll('.gtd-task-revealed')].find(row=>row.closest('tr[data-tree-for]')?.dataset.treeFor===paths[1]&&row.closest('li[data-task-key]')?.dataset.taskKey==='block:first'),'dashboard task reveal');
-  check('clicking the path keeps the dashboard open and focuses the source-matched row',app.workspace.getActiveFile()?.path==='00 GTD/首页.md'&&document.activeElement===revealed);
-  navigation.closest('.tasks-calendar-task').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:80,clientY:80}));
-  const sourceItem=await until(()=>[...document.querySelectorAll('.menu .menu-item')].find(item=>item.textContent.trim()==='Open source'),'source note menu action');
-  sourceItem.click();await until(()=>app.workspace.getActiveFile()?.path===paths[1],'source navigation');
-  check('the same card still opens its source note through the native menu',!document.querySelector('.modal'));
+  const navigation=cards().find(c=>c.dataset.gtdSourcePath===paths[1]).querySelector('.gtd-calendar-context');navigation.click();await until(()=>app.workspace.getActiveFile()?.path===paths[1],'source navigation');check('clicking the path locates the actual source note',app.workspace.getActiveFile()?.path===paths[1]&&!document.querySelector('.modal'));
  }catch(error){results.push({name:error.stack,pass:false})}finally{
   for(const file of files)if(app.vault.getAbstractFileByPath(file.path)===file)await app.vault.delete(file);
   history.entries.splice(0,history.entries.length,...entries);p.data=savedData;await p.saveData(p.data);

@@ -46,19 +46,9 @@ if patched.count(after)!=1:
  patched=patched.replace(before,after,1)
 before=b'(0,G.jsx)("span",{"aria-hidden":"true",className:"tasks-calendar-completion-overlay",ref:d})'
 breadcrumb='o.path.startsWith("00 GTD/")?(0,G.jsx)("button",{className:"gtd-calendar-context",type:"button","aria-label":"所属位置："+[o.path.replace(/\\.md$/i,"").split("/").pop(),...o._gtdAncestors||[]].join(" › "),onClick:A=>{A.preventDefault(),A.stopPropagation(),a.openTask(o)},children:o.path.replace(/\\.md$/i,"").split("/").pop()+(o._gtdParentTitle?" › "+o._gtdParentTitle:"")}):null,'.encode()
-after=breadcrumb.replace(b'A.stopPropagation(),a.openTask(o)',b'A.stopPropagation();return a._gtdLocateTask?.(o,A.currentTarget)??a.openTask(o)')+before
+after=breadcrumb+before
 if patched.count(after)!=1:
  if patched.count(before)!=1:raise SystemExit('任务归属入口结构与配套版本不符，未写入文件')
- previous=breadcrumb+before
- patched=patched.replace(previous if previous in patched else before,after,1)
-for before,after in [
- (b'function RM(e,t,n){let r=new xM.Menu().setUseNativeMenu(!1);',b'function RM(e,t,n){let r=new xM.Menu().setUseNativeMenu(!1);e._gtdAddTaskMenuItems?.(r,t,ze(new Date));'),
- (b'k=HM(o),H=c?.setNodeRef',b'k=HM(o),F=a._gtdOriginalDeadline?.(o,ze(new Date)),H=c?.setNodeRef'),
- (b'M4(f,k)','M4(f,F?k+" · "+F:k)'.encode()),
- (b'"data-priority":o.priority,',b'"data-priority":o.priority,"data-gtd-original-deadline":F,')
-]:
- if patched.count(after)==1:continue
- if patched.count(before)!=1:raise SystemExit('任务菜单或提示结构与配套版本不符，未写入文件')
  patched=patched.replace(before,after,1)
 overdue=b'L=>{let B=Ga(L,a.settings,N.today),oe=B?fd(br(N.today),br(B)):0;return(0,Fe.jsx)(LM,{calendarDate:B??N.today,highlightNewRecurrence:q.has(qi(L)),meta:(0,Fe.jsxs)("span",{className:"tasks-calendar-overdue-meta",children:[B?`${oe} ${oe===1?"day":"days"} ago \\xB7 ${B}`:"No date"," \\xB7"," ",L.path.replace(/\\.md$/i,"")]}),onCompletionChange:I,onRecurringCompletion:C,onRecurrencePreview:U,plugin:a,showSource:!1,task:L,titleId:`tasks-calendar-${n}-task-${K++}`},L.id)}'
 before=b'children:N.overdueTasks.map('+overdue+b')'

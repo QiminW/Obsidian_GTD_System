@@ -618,18 +618,10 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   const calendar = plugin.app.plugins.plugins['tasks-calendar'];
   if (!calendar?.taskStore) return null;
   const store = calendar.taskStore, restores = [], snapshots=new Map(), revisions=new Map(), coherent=new Map(), events=[];
-  const isProject = task => task?.path?.startsWith('00 GTD/00 工作区/01 项目/') && /\.md$/i.test(task.path);
-  const metadata = plugin.app.metadataCache;
-  const projectStatus = task => {
-    const file = plugin.app.vault.getAbstractFileByPath?.(task.path);
-    return file && metadata?.getFileCache(file)?.frontmatter?.status;
-  };
   let disposed=false,refreshTimer;
   const refresh=()=>{window.clearTimeout(refreshTimer);refreshTimer=window.setTimeout(()=>{if(!disposed)calendar.refreshCalendars();},25);};
   const workspace=plugin.app.workspace,orderEvent=workspace?.on('gtd-project-order-changed',refresh);
   if(orderEvent)restores.push(()=>workspace.offref(orderEvent));
-  const metadataEvent = metadata?.on?.('changed', file => { if (isProject(file)) refresh(); });
-  if (metadataEvent) restores.push(() => metadata.offref(metadataEvent));
   async function prime(file) {
     if(!file?.path?.startsWith('00 GTD/')||file.extension!=='md')return;
     const path=file.path,revision=(revisions.get(path)||0)+1;revisions.set(path,revision);snapshots.delete(path);
@@ -645,78 +637,20 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
   for(const file of plugin.app.vault.getMarkdownFiles())prime(file);
   const source = task => task._gtdSourceTask || task;
   const inGtd = task => task?.path?.startsWith('00 GTD/');
-  function hook(name, handler) {
-    const previous = calendar[name];
-    calendar[name] = handler;
-    restores.push(() => {
-      if (calendar[name] !== handler) return;
-      if (previous === undefined) delete calendar[name];
-      else calendar[name] = previous;
-    });
-  }
+  const previousModel=calendar._gtdCalendarModel;
   const filterModel=(model,gridRef)=>{
     if(!gridRef.current?.closest('.gtd-dashboard'))return model;
-    const done = new Map();
-    const visibleTask = task => {
-      if (!isProject(task)) return true;
-      if (!done.has(task.path)) done.set(task.path, projectStatus(task) === 'done');
-      return !done.get(task.path);
-    };
-    let tasksByDate = model.tasksByDate, removed = 0;
-    for (const [date, tasks] of model.tasksByDate) {
-      const remaining = tasks.filter(visibleTask);
-      if (remaining.length === tasks.length) continue;
-      if (tasksByDate === model.tasksByDate) tasksByDate = new Map(tasksByDate);
-      if (remaining.length) tasksByDate.set(date, remaining);
-      else tasksByDate.delete(date);
-      removed += tasks.length - remaining.length;
-    }
     const dayKey=date=>[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
-    const visible=model.days.flatMap(date=>tasksByDate.get(dayKey(date))||[]);
-    return {
-      ...model, ...(removed ? { tasksByDate, visibleTasks: model.visibleTasks - removed } : {}),
-      overdueTasks: logic.calendarOverdueTasks(model.overdueTasks.filter(visibleTask), visible)
-    };
+    const visible=model.days.flatMap(date=>model.tasksByDate.get(dayKey(date))||[]);
+    return {...model,overdueTasks:logic.calendarOverdueTasks(model.overdueTasks,visible)};
   };
-  hook('_gtdCalendarModel', filterModel);
-  hook('_gtdTaskError', (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback));
-  hook('_gtdLocateTask', async (task, anchor) => {
-    const canonical = source(task);
-    if (isProject(canonical) && anchor.closest('.gtd-dashboard')) {
-      try { if (await plugin.locateCalendarTask?.(canonical)) return; } catch (_) {}
-    }
-    return calendar.openTask(canonical);
-  });
-  function originalDeadline(task, today) {
-    const canonical = source(task);
-    if (!inGtd(canonical) || task.completed || canonical.completed || !canonical.due) return;
-    const days = (Date.parse(today) - Date.parse(canonical.due)) / 86400000;
-    if (days > 0) return '原截止 ' + canonical.due + ' · 已逾期 ' + days + ' 天';
-  }
-  hook('_gtdOriginalDeadline', originalDeadline);
-  function startable(task, canonical) {
-    if (!isProject(canonical) || task.completed || !canonical._gtdReference || (projectStatus(canonical) || 'active') !== 'active') return false;
-    const text = snapshots.get(canonical.path);
-    if (text === undefined) return false;
-    try {
-      const reference = logic.calendarTaskReference(text, canonical);
-      const matches = node => node.line === reference.line
-        ? node.children.length === 0 && !node.completed && !node.cancelled && node.status !== '_'
-        : node.children.some(matches);
-      return logic.projectTaskTree(text).roots.some(matches);
-    } catch (_) { return false; }
-  }
-  hook('_gtdAddTaskMenuItems', (menu, task, today) => {
-    const canonical = source(task), deadline = originalDeadline(task, today);
-    if (typeof plugin.startCalendarFocusTask === 'function' && startable(task, canonical)) {
-      menu.addItem(item => item.setTitle('开始这件').setIcon('play').onClick(async () => {
-        try { await plugin.startCalendarFocusTask(canonical); }
-        catch (error) { plugin.showTaskActionError(error); }
-      }));
-    }
-    if (deadline) menu.addItem(item => item.setTitle(deadline).setIcon('calendar-clock').setDisabled(true));
-  });
-  const foldedGroups=new Set();
+  calendar._gtdCalendarModel=filterModel;
+  restores.push(()=>{if(calendar._gtdCalendarModel===filterModel){if(previousModel===undefined)delete calendar._gtdCalendarModel;else calendar._gtdCalendarModel=previousModel;}});
+  const previousFeedback = calendar._gtdTaskError;
+  const feedback = (task, error, fallback) => inGtd(source(task)) ? plugin.showTaskActionError(error) : new Notice(fallback);
+  calendar._gtdTaskError = feedback;
+  restores.push(() => { if (calendar._gtdTaskError === feedback) { if (previousFeedback === undefined) delete calendar._gtdTaskError; else calendar._gtdTaskError = previousFeedback; } });
+  const foldedGroups=new Set(),previousDayRenderer=calendar._gtdRenderDayTasks;
   const renderDayGroups=options=>{
     const {mode,gridRef,date,active,completed,jsx,sortable,strategy,renderTask}=options;
     if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
@@ -747,7 +681,8 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     };
     return [...groups.values()].map(renderGroup);
   };
-  hook('_gtdRenderDayTasks', renderDayGroups);
+  calendar._gtdRenderDayTasks=renderDayGroups;
+  restores.push(()=>{if(calendar._gtdRenderDayTasks===renderDayGroups){if(previousDayRenderer===undefined)delete calendar._gtdRenderDayTasks;else calendar._gtdRenderDayTasks=previousDayRenderer;}});
   function wrap(target, name, make) {
     const original = target[name];
     if (typeof original !== 'function') return;
@@ -937,11 +872,10 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
         const project = card.dataset.gtdProject;
         const name = card.querySelector('.tasks-calendar-task-title')?.textContent.trim();
         if (!project || !name) continue;
-        const parents=card.dataset.gtdParentPath, deadline=card.dataset.gtdOriginalDeadline;
+        const parents=card.dataset.gtdParentPath;
         const label = parents ? '所属位置：'+project+' › '+parents : '所属项目：' + project;
-        const tooltip = deadline ? label + ' · ' + deadline : label;
-        entry.cardNames.set(card, deadline ? name + ' · ' + deadline : name);
-        if (card.getAttribute('aria-label') !== tooltip) card.setAttribute('aria-label', tooltip);
+        entry.cardNames.set(card, name);
+        if (card.getAttribute('aria-label') !== label) card.setAttribute('aria-label', label);
       }
     }
     if(newCalendar)refreshCalendar();
@@ -951,7 +885,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     if (records.some(record => record.target.nodeType === 1 && record.target.closest(selector) && (record.type !== 'attributes' || record.target.matches('.tasks-calendar-task,.tasks-calendar-grid'))
       || [...record.addedNodes, ...record.removedNodes].some(containsCalendar))) sync();
   });
-  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project','data-gtd-parent-path','data-gtd-original-deadline','class'] });
+  observer.observe(scope === doc ? doc.body : scope, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label', 'data-gtd-project','data-gtd-parent-path','class'] });
   sync();
   return {
     refresh: sync,
@@ -1100,86 +1034,6 @@ const PROJECTS = '00 GTD/00 工作区/01 项目';
 const INBOX = '00 GTD/00 工作区/00 功能页面/收件箱.md';
 const AREAS = '00 GTD/00 工作区/02 领域';
 const ARCHIVE = '00 GTD/00 工作区/99 归档';
-const HOME_FOCUS_EVENT = 'gtd-focus-changed';
-
-function flattenTasks(nodes) {
-  return nodes.flatMap(node => [node, ...flattenTasks(node.children)]);
-}
-
-function canStartTask(node) {
-  return !node.children.length && !node.completed && !node.cancelled && node.status !== '_';
-}
-
-class FocusTaskView extends MarkdownRenderChild {
-  constructor(plugin, element) { super(element); this.plugin = plugin; }
-  onload() {
-    const { plugin, containerEl } = this;
-    const root = containerEl.createDiv({ cls: 'gtd-focus-task' });
-    root.hidden = true;
-    root.createSpan({ cls: 'gtd-focus-label', text: '当前任务' });
-    const title = root.createEl('button', { cls: 'gtd-focus-title', attr: { type: 'button', title: '定位到项目进度' } });
-    const step = root.createEl('input', { attr: { type: 'text', 'aria-label': '下一步', placeholder: '下一步（选填）', maxlength: '240' } });
-    const help = root.createEl('button', { text: '卡住了', attr: { type: 'button' } });
-    const close = root.createEl('button', { text: '×', attr: { type: 'button', 'aria-label': '收起当前任务', title: '收起当前任务' } });
-    const report = error => plugin.showTaskActionError(error);
-    let current, render = 0;
-    const refresh = async () => {
-      const request = ++render;
-      const focus = await plugin.readFocusTask();
-      if (request !== render) return;
-      root.hidden = !focus;
-      if (focus) {
-        title.textContent = focus.node.title;
-        if (current?.key !== focus.key || current?.file !== focus.file || root.ownerDocument.activeElement !== step) step.value = focus.step;
-      }
-      current = focus;
-    };
-    const update = () => refresh().catch(report);
-    title.addEventListener('click', () => {
-      if (current) plugin.locateProjectTask(current.file.path, current.key).then(found => {
-        if (!found) new Notice('暂时找不到这项任务');
-      }).catch(report);
-    });
-    step.addEventListener('change', () => { if (current) plugin.saveFocusStep(current, step.value).catch(report); });
-    step.addEventListener('keydown', event => {
-      if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
-        event.preventDefault();
-        event.stopPropagation();
-        step.blur();
-      }
-    });
-    help.addEventListener('click', () => new Notice('先做一个小动作：打开相关材料，或者只读第一行。做完可以喝口水，再决定是否继续。', 6000));
-    close.addEventListener('click', () => plugin.clearFocusTask().catch(report));
-    this.registerEvent(plugin.app.workspace.on(HOME_FOCUS_EVENT, update));
-    this.registerEvent(plugin.app.workspace.on('gtd-project-tasks-changed', path => {
-      if (path === plugin.data.focusTask?.path) update();
-    }));
-    this.registerEvent(plugin.app.metadataCache.on('changed', file => {
-      if (file.path === plugin.data.focusTask?.path) update();
-    }));
-    this.registerEvent(plugin.app.vault.on('delete', file => {
-      const path = plugin.data.focusTask?.path;
-      if (path === file.path || path?.startsWith(file.path + '/')) update();
-    }));
-    this.register(() => { render++; });
-    update();
-  }
-}
-
-class FinishProjectModal extends Modal {
-  constructor(app, remaining, resolve) { super(app); this.remaining = remaining; this.resolve = resolve; }
-  onOpen() {
-    this.setTitle('完成项目');
-    this.contentEl.createEl('p', { text: '还有 ' + this.remaining + ' 项未完成。确认后，剩余事项可在项目笔记里查看。' });
-    const actions = this.contentEl.createDiv({ cls: 'gtd-form-actions' });
-    actions.createEl('button', { text: '返回检查' }).addEventListener('click', () => this.close());
-    actions.createEl('button', { text: '确认完成', cls: 'mod-cta' }).addEventListener('click', () => {
-      this.confirmed = true;
-      this.close();
-    });
-  }
-  onClose() { this.resolve(this.confirmed === true); }
-}
 
 class InboxView extends MarkdownRenderChild {
   constructor(plugin, element) { super(element);this.plugin=plugin; }
@@ -1401,7 +1255,6 @@ module.exports = class GtdQuickActions extends Plugin {
     this.register(() => this.clearTaskActionNotice());
     this.currentDayKey = this.todayDateKey();
     this.registerMarkdownCodeBlockProcessor('gtd-inbox',(_source,element,context)=>context.addChild(new InboxView(this,element)));
-    this.registerMarkdownCodeBlockProcessor('gtd-focus', (_source, element, context) => context.addChild(new FocusTaskView(this, element)));
     this.registerMarkdownCodeBlockProcessor('gtd-actions', (_source, element) => {
       const actions = element.createDiv({ cls: 'gtd-quick-actions' });
       const capture = actions.createEl('button', { text: '快速收集', cls: 'mod-cta' });
@@ -1428,13 +1281,10 @@ module.exports = class GtdQuickActions extends Plugin {
     this.registerDomEvent(window, 'resize', hideDayPopover);
     this.registerDomEvent(document,'click',event=>this.handleInlineEntryOutsideClick(event),true);
     this.registerEvent(this.app.vault.on('rename',(file,oldPath)=>{
-      const focusChanged = this.remapFocusPaths(oldPath, file.path);
-      let changed = focusChanged;
-      if (Array.isArray(this.data.projectOrder)) {
-        this.data.projectOrder=this.data.projectOrder.map(path=>{if(path===oldPath||path.startsWith(oldPath+'/')){changed=true;return file.path+path.slice(oldPath.length);}return path;});
-      }
-      if (changed) this.saveData(this.data).catch(error => console.error('GTD：未能保存项目路径', error));
-      if (focusChanged) this.app.workspace.trigger(HOME_FOCUS_EVENT);
+      if(!Array.isArray(this.data.projectOrder))return;
+      let changed=false;
+      this.data.projectOrder=this.data.projectOrder.map(path=>{if(path===oldPath||path.startsWith(oldPath+'/')){changed=true;return file.path+path.slice(oldPath.length);}return path;});
+      if(changed)this.saveData(this.data);
     }));
     this.installTaskDayCheck();
     await this.migrateLegacyPlanningDates();
@@ -1476,11 +1326,8 @@ module.exports = class GtdQuickActions extends Plugin {
     const path=file.path;let before,after;
     await this.app.vault.process(file,current=>{before=current;after=transform(current);return after;});
     this.recordUndoContent(file,path,before,after,remapName);
-    if (before !== after) {
-      if (remapName) this.remapTaskNameState(path, logic.projectTaskTree(before), logic.projectTaskTree(after));
-      else this.rebaseInlineTaskReferences(path, before, after);
-      this.publishProjectTaskTree(path, after);
-    }
+    if(!remapName&&before!==after)this.rebaseInlineTaskReferences(path,before,after);
+    if(before!==after)this.publishProjectTaskTree(path,after);
   }
   publishProjectTaskTree(path,content) {
     if(!path.startsWith(PROJECTS+'/'))return;
@@ -1508,9 +1355,8 @@ module.exports = class GtdQuickActions extends Plugin {
       state.reference=target.reference;
     }
   }
-  async processGtdFrontmatter(file,update,expected) {
+  async processGtdFrontmatter(file,update) {
     return this.processGtdChange(file,content=>{
-      if (expected !== undefined && content !== expected) throw new Error('项目内容已变化，请重新检查后完成');
       const match=/^(\uFEFF?)---\r?\n((?:[\s\S]*?\r?\n)?)---(?:\r?\n|$)/.exec(content),newline=match?.[0].includes('\r\n')?'\r\n':'\n';
       const data=match?(parseYaml(match[2])||{}):{};
       if(typeof data!=='object'||Array.isArray(data))throw new Error('项目属性格式不正确');
@@ -1770,31 +1616,15 @@ module.exports = class GtdQuickActions extends Plugin {
     if(!(file instanceof TFile)||!path.startsWith(PROJECTS+'/')){new Notice('找不到项目笔记');return;}
     const done=this.app.metadataCache.getFileCache(file)?.frontmatter?.status==='done';
     const menu=new Menu();
-    menu.addItem(item=>item.setTitle(done?'恢复进行中':'完成项目').setIcon(done?'rotate-ccw':'check').onClick(() => {
-      const change = done ? this.setProjectStatus(path, 'active') : this.requestProjectCompletion(path);
-      change.catch(error => this.showTaskActionError(error));
-    }));
+    menu.addItem(item=>item.setTitle(done?'恢复进行中':'完成项目').setIcon(done?'rotate-ccw':'check').onClick(()=>this.setProjectStatus(path,done?'active':'done').catch(error=>new Notice(error.message||String(error)))));
     menu.addItem(item=>item.setTitle('归档项目').setIcon('archive').onClick(()=>this.archiveProject(path).catch(error=>new Notice(error.message||String(error)))));
     menu.showAtMouseEvent(event);
   }
-  async requestProjectCompletion(path) {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
-    const source = await this.app.vault.read(file);
-    const remaining = flattenTasks(logic.projectTaskTree(source).roots).filter(canStartTask).length;
-    if (remaining && !await new Promise(resolve => new FinishProjectModal(this.app, remaining, resolve).open())) return;
-    await this.setProjectStatus(path, 'done', { file, source });
-  }
-  async setProjectStatus(path,status,confirmation) {
+  async setProjectStatus(path,status) {
     const file=this.app.vault.getAbstractFileByPath(path);
     if(!(file instanceof TFile)||!path.startsWith(PROJECTS+'/')||file.extension!=='md')throw new Error('找不到项目笔记');
     if(!['active','done'].includes(status))throw new Error('未知项目状态');
-    await this.processGtdFrontmatter(file, frontmatter => {
-      if (file.path !== path || this.app.vault.getAbstractFileByPath(path) !== file || confirmation && confirmation.file !== file) {
-        throw new Error('项目位置已变化，请重新检查后再操作');
-      }
-      frontmatter.status = status;
-    }, confirmation?.source);
+    await this.processGtdFrontmatter(file,frontmatter=>{frontmatter.status=status;});
     new Notice(status==='done'?'项目已完成，可在项目总览中恢复或归档':'项目已恢复进行中');
   }
   async updateProjectDeadline(path,value,expected) {
@@ -1901,153 +1731,6 @@ module.exports = class GtdQuickActions extends Plugin {
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     const model=logic.projectTaskTree(await this.app.vault.read(file));
     return {...model,completedDisplay:logic.partitionCompletedTasks(model.roots)};
-  }
-  focusProjectFile(path) {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (!path.startsWith(PROJECTS + '/') || !(file instanceof TFile) || file.extension !== 'md') return null;
-    const status = this.app.metadataCache.getFileCache(file)?.frontmatter?.status || 'active';
-    return status === 'active' ? file : null;
-  }
-  async startFocusTask(path, reference) {
-    return this.undoHistory.run('启动任务', async () => {
-      const file = this.focusProjectFile(path);
-      if (!file) throw new Error('请在进行中的项目里选择任务');
-      let key;
-      await this.processGtdChange(file, content => {
-        if (file.path !== path) throw new Error('项目位置已变化，请重新选择任务');
-        const tasks = flattenTasks(logic.projectTaskTree(content).roots);
-        const task = tasks.find(node => node.line === reference.line && node.raw === reference.raw && node.reference.version === reference.version);
-        if (!task) throw new Error('任务内容已变化，请重新选择');
-        if (!canStartTask(task)) throw new Error('请选择一项未完成的末级任务');
-        if (task.key.startsWith('block:')) {
-          if (tasks.filter(node => node.key === task.key).length !== 1) throw new Error('任务块编号重复，请先在项目笔记中修正');
-          key = task.key;
-          return content;
-        }
-        const id = 'gtd-' + crypto.randomUUID();
-        key = 'block:' + id;
-        return logic.replaceProjectTask(content, reference, task.raw.trimEnd() + ' ^' + id + task.raw.slice(task.raw.trimEnd().length));
-      }, true);
-      try {
-        await this.changeFocusTask({ path: file.path, key });
-      } catch (error) {
-        const steps = this.undoHistory.current.steps;
-        const anchorChange = steps.at(-1);
-        if (anchorChange) {
-          await anchorChange.check();
-          await anchorChange.undo();
-          steps.pop();
-        }
-        throw error;
-      }
-    });
-  }
-  async readFocusTask() {
-    const current = this.data.focusTask;
-    if (!current) return null;
-    const file = this.focusProjectFile(current.path);
-    if (!file) return null;
-    const tasks = flattenTasks(logic.projectTaskTree(await this.app.vault.read(file)).roots);
-    const matches = tasks.filter(node => node.key === current.key);
-    if (matches.length !== 1 || !canStartTask(matches[0])) return null;
-    return { ...current, file, node: matches[0], step: this.data.focusSteps?.[file.path]?.[current.key] || '' };
-  }
-  async saveFocusStep({ file, key }, value) {
-    const read = () => {
-      if (this.app.vault.getAbstractFileByPath(file.path) !== file) throw new Error('任务笔记已移除');
-      return this.data.focusSteps?.[file.path]?.[key] || '';
-    };
-    const apply = step => {
-      const allSteps = this.data.focusSteps ||= {};
-      const steps = allSteps[file.path] ||= {};
-      if (step) steps[key] = step;
-      else delete steps[key];
-      if (!Object.keys(steps).length) delete allSteps[file.path];
-    };
-    return this.undoHistory.run('修改下一步', () => this.changeFocusSetting(read, apply, value.trim()));
-  }
-  async clearFocusTask() {
-    return this.undoHistory.run('收起当前任务', () => this.changeFocusTask());
-  }
-  async changeFocusTask(next) {
-    const read = () => this.data.focusTask && { ...this.data.focusTask };
-    const apply = task => {
-      if (task) this.data.focusTask = { ...task };
-      else delete this.data.focusTask;
-    };
-    const same = (a, b) => a?.path === b?.path && a?.key === b?.key;
-    await this.changeFocusSetting(read, apply, next, same);
-  }
-  async changeFocusSetting(read, apply, next, same = Object.is) {
-    const previous = read();
-    if (same(previous, next)) return;
-    const write = async value => {
-      const before = read();
-      apply(value);
-      try { await this.saveData(this.data); }
-      catch (error) { apply(before); throw error; }
-      this.app.workspace.trigger(HOME_FOCUS_EVENT);
-    };
-    const check = expected => {
-      if (!same(read(), expected)) throw new Error('启动记录已变化，未撤销');
-    };
-    await write(next);
-    this.undoHistory.record({ check: () => check(next), undo: () => write(previous), redo: () => write(next) });
-  }
-  remapFocusPaths(before, after) {
-    const isAffected = path => path === before || path.startsWith(before + '/');
-    const remap = path => after + path.slice(before.length);
-    const current = this.data.focusTask;
-    let changed = false;
-    if (current && isAffected(current.path)) {
-      current.path = remap(current.path);
-      changed = true;
-    }
-    const steps = this.data.focusSteps;
-    for (const path of Object.keys(steps || {}).filter(isAffected)) {
-      steps[remap(path)] = steps[path];
-      delete steps[path];
-      changed = true;
-    }
-    return changed;
-  }
-  showFocusTaskMenu(path, node, event) {
-    if (!canStartTask(node) || !this.focusProjectFile(path)) return;
-    const reference = node.reference;
-    const menu = new Menu();
-    menu.addItem(item => item.setTitle('开始这件').setIcon('play').onClick(() =>
-      this.startFocusTask(path, reference).catch(error => this.showTaskActionError(error))));
-    if (event.type === 'keydown' || event.type === 'click' && !event.detail) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      menu.showAtPosition({ x: rect.left, y: rect.bottom });
-    } else menu.showAtMouseEvent(event);
-  }
-  async readCalendarProjectTask(task) {
-    const file = this.focusProjectFile(task.path);
-    if (!file) return null;
-    const content = await this.app.vault.read(file);
-    const reference = logic.calendarTaskReference(content, task);
-    return flattenTasks(logic.projectTaskTree(content).roots).find(node => node.line === reference.line && node.raw === reference.raw);
-  }
-  async startCalendarFocusTask(task) {
-    const node = await this.readCalendarProjectTask(task);
-    if (!node) throw new Error('请在项目进度中选择这项任务');
-    await this.startFocusTask(task.path, node.reference);
-  }
-  async locateCalendarTask(task) {
-    const node = await this.readCalendarProjectTask(task);
-    return node ? this.locateProjectTask(task.path, node.key, node.reference) : false;
-  }
-  async locateProjectTask(path, key, reference) {
-    if (this.app.workspace.activeLeaf?.view.file?.path !== HOME) await this.openHome();
-    const leaf = this.app.workspace.activeLeaf;
-    const deadline = Date.now() + 3000;
-    while (leaf?.view.file?.path === HOME && Date.now() < deadline) {
-      const table = [...leaf.view.containerEl.querySelectorAll('.gtd-project-progress')].find(el => el.getClientRects().length);
-      if (table?.gtdRevealTask) return table.gtdRevealTask(path, key, reference);
-      await new Promise(resolve => window.setTimeout(resolve, 50));
-    }
-    return false;
   }
   clearTaskActionNotice() {
     if(this.taskActionNotice){
@@ -2177,6 +1860,7 @@ module.exports = class GtdQuickActions extends Plugin {
       }catch(error){failure=error;return content;}
     },true);
     if(failure)throw failure;
+    this.remapTaskNameState(path,before,after);
     return {path,file,before,after};
   }
   remapTaskNameState(path,before,after) {
