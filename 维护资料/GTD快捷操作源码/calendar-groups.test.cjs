@@ -3,7 +3,7 @@ global.window={setTimeout:()=>0,clearTimeout(){}};
 const jsx={jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})};
 function setup(){const calendar={taskStore:{getTasks:()=>[]},refreshCalendars(){}};const plugin={data:{calendarDayLayout:'group'},app:{plugins:{plugins:{'tasks-calendar':calendar}},vault:{on:()=>({}),offref(){},getMarkdownFiles:()=>[]}}};const bridge=install(plugin,logic,class{});return {plugin,calendar,bridge};}
 const opts=(extra={})=>({mode:'day',gridRef:{current:{closest:()=>({})}},date:'2026-11-09',active:[],completed:[],jsx,sortable:'sortable',strategy:'vertical',renderTask:task=>({type:'card',props:{task}}),...extra});
-const task=(id,group='p',project='Example')=>({id,path:'00 GTD/'+project+'.md',_gtdGroupKey:project+':'+group,_gtdParentTitle:group,_gtdAncestors:['Root',group],_gtdAncestorKeys:['root',group]});
+const task=(id,group='p',project='Example')=>({id,path:'00 GTD/'+project+'.md',_gtdAncestors:['Root',group],_gtdAncestorKeys:['root',group]});
 const children=group=>group.props.children[1].props.children.props.children.filter(node=>node.type==='details');
 const label=group=>group.props.children[0].props.children[0].props.children;
 const count=group=>group.props.children[0].props.children[1].props.children;
@@ -19,8 +19,8 @@ test('parent grouping retains all original cards and separates duplicate project
  const parent=children(children(groups[0])[0])[0],list=parent.props.children[1].props.children;assert.equal(label(parent),'p');assert.deepEqual(list.props.items,['one','two','four']);assert.equal(list.props.children[0].props.task,active[0]);
  groups[0].props.onToggle({currentTarget:{open:false}});assert.equal(s.calendar._gtdRenderDayTasks(opts({active,completed}))[0].props.open,false);s.bridge.restore();
 });
-test('root task groups show only their project name',()=>{
- const s=setup(),groups=s.calendar._gtdRenderDayTasks(opts({active:[{...task('root'),_gtdParentTitle:'',_gtdAncestors:[],_gtdAncestorKeys:[]}]}));
+test('tasks without ancestor metadata show only their project name',()=>{
+ const s=setup(),groups=s.calendar._gtdRenderDayTasks(opts({active:[{id:'root',path:'00 GTD/Example.md'}]}));
  assert.equal(groups[0].props.children[0].props.children[0].props.children,'Example');s.bridge.restore();
 });
 test('shared project and ancestor paths merge recursively while direct root tasks remain visible',()=>{

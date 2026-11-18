@@ -409,10 +409,10 @@ function calendarTaskContexts(content, indexed) {
     const stack=[];
     for(const node of operationTaskTree(parseable,raw)){
       while(stack.length&&(stack.at(-1).width>=node.width||stack.at(-1).end<=node.line))stack.pop();
-      const task=byLine.get(node.line),parent=stack.at(-1);
+      const task=byLine.get(node.line);
       if(task&&task.raw===rows[node.line]){
         const ancestors=stack.map(title),ancestorKeys=stack.map(ancestor=>{const block=/\s\^([\w-]+)\s*$/.exec(ancestor.raw);return block?'block:'+block[1]:'line:'+ancestor.line;});
-        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdAncestorKeys:ancestorKeys,_gtdParentTitle:ancestors.at(-1)||'',_gtdGroupKey:JSON.stringify([task.path,parent?ancestorKeys.at(-1):null])});
+        contexts.set(node.line,{_gtdAncestors:ancestors,_gtdAncestorKeys:ancestorKeys,_gtdParentTitle:ancestors.at(-1)||''});
       }
       stack.push({...node,end:taskBlockEnd(rows,node)});
     }
@@ -664,10 +664,9 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
       const project=task.path.replace(/\.md$/i,'').split('/').pop(),projectKey=JSON.stringify([task.path,null]);
       if(!groups.has(projectKey))groups.set(projectKey,makeGroup(projectKey,project,project));
       let group=groups.get(projectKey);count(group,task);
-      const ancestors=task._gtdAncestors||(task._gtdParentTitle?[task._gtdParentTitle]:[]),keys=[];
+      const ancestors=task._gtdAncestors||[];
       ancestors.forEach((label,index)=>{
-        keys.push(task._gtdAncestorKeys?.[index]||(index===ancestors.length-1&&task._gtdGroupKey)||'name:'+label);
-        const key=JSON.stringify([task.path,keys]);
+        const key=JSON.stringify([task.path,task._gtdAncestorKeys.slice(0,index+1)]);
         if(!group.children.has(key)){const child=makeGroup(key,label,[project,...ancestors.slice(0,index+1)].join(' › '));group.children.set(key,child);group.entries.push({group:child});}
         group=group.children.get(key);count(group,task);
       });
@@ -777,15 +776,6 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     for (const [card, name] of entry.cardNames) if (card.getAttribute('aria-label') !== name) card.setAttribute('aria-label', name);
     entry.cardNames.clear();
   };
-  const projectOf = card => {
-    const project = card.dataset.gtdProject || card.querySelector('.tasks-calendar-task-source')?.textContent.trim();
-    if (project) return project;
-    // Compatibility for cards mounted before the updated calendar renderer loads.
-    const key = Object.keys(card).find(key => key.startsWith('__reactProps$'));
-    const children = key ? card[key]?.children : [];
-    const path = (Array.isArray(children) ? children : [children]).find(child => typeof child?.props?.sourcePath === 'string')?.props.sourcePath;
-    return path?.replace(/\.md$/i, '').split('/').pop();
-  };
   function setCompact(compact) {
     plugin.data.calendarCompact = compact;
     sync();
@@ -879,7 +869,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       const cards = new Set(root.querySelectorAll('.tasks-calendar-task'));
       for (const card of entry.cardNames.keys()) if (!cards.has(card)) entry.cardNames.delete(card);
       for (const card of cards) {
-        const project = projectOf(card);
+        const project = card.dataset.gtdProject;
         const name = card.querySelector('.tasks-calendar-task-title')?.textContent.trim();
         if (!project || !name) continue;
         const parents=card.dataset.gtdParentPath;
@@ -1117,7 +1107,7 @@ class EntryModal extends Modal {
     const actions = this.form.createEl('div', { cls: 'gtd-form-actions' });
     const cancel = actions.createEl('button', { text: '关闭', attr: { type: 'button' } });
     cancel.addEventListener('click', () => this.close());
-    const labels = { task: '添加任务', project: '创建项目', capture: '收集', area: '创建领域', move:'移入' };
+    const labels = { project: '创建项目', capture: '收集', area: '创建领域', move:'移入' };
     const submit = actions.createEl('button', { text: labels[this.kind], cls: 'mod-cta', attr: { type: 'submit' } });
     this.form.addEventListener('submit', async event => {
       event.preventDefault();
@@ -1139,7 +1129,7 @@ class EntryModal extends Modal {
       }
       if (saved && !this.entryClosed) (this.fields.title || this.fields.name)?.focus();
     });
-    window.setTimeout(() => this.fields.title?.focus() || this.fields.name?.focus(), 0);
+    window.setTimeout(() => (this.fields.title || this.fields.name)?.focus(), 0);
   }
   field(name, label, type = 'text', options = []) {
     const wrap = this.fieldsEl.createEl('label', { cls: 'gtd-form-field' });
@@ -1159,23 +1149,21 @@ class EntryModal extends Modal {
   onClose() { this.entryClosed = true; this.contentEl.empty(); }
 }
 
-class QuickTaskModal extends EntryModal {
-  constructor(plugin, context = {}) { super(plugin, '快速添加任务', 'task'); this.context = context; }
-  buildFields() {
-    this.field('title', '任务名称').required = true;
-    this.buildDestinationFields();
-    this.field('scheduled', '计划日期', 'date');
-    this.field('due', '截止日期', 'date');
+class InboxMoveModal extends EntryModal {
+  constructor(plugin, context) {
+    super(plugin, '移入项目', 'move');
+    this.context = context;
   }
-  buildDestinationFields() {
+  buildFields() {
+    this.fieldsEl.createDiv({ text: this.context.title, cls: 'gtd-move-summary' });
     const choices = this.plugin.listProjects().map(file => ({ value: file.path, label: file.path.slice(PROJECTS.length+1).replace(/\.md$/,'').replaceAll('/',' / ') }));
     const project = this.field('project', '所属项目', 'select', choices);
     project.required = true;
     if (!choices.length) project.createEl('option', { text: '请先新建项目', attr: { value: '' } });
-    const preferred = this.context.project || this.plugin.data.lastProject;
+    const preferred = this.plugin.data.lastProject;
     project.value = choices.some(c => c.value === preferred) ? preferred : (choices[0]?.value || '');
-    this.field('parent', '父任务', 'select', [{ value: '', label: '无（创建顶层任务）' }]);
-    this.parentLoaded = this.refreshParents(project.value, this.context.parent, !!this.context.parent);
+    this.field('parent', '父任务', 'select');
+    this.parentLoaded = this.refreshParents(project.value);
     project.addEventListener('change', () => { this.parentLoaded = this.refreshParents(project.value); });
   }
   async beforeSave() {
@@ -1183,24 +1171,19 @@ class QuickTaskModal extends EntryModal {
     if (this.parentError) throw new Error(this.parentError);
   }
   async save(data) {
-    await this.parentLoaded;
-    if (this.parentError) throw new Error(this.parentError);
     try {
-      await this.plugin.addTask(data);
+      await this.plugin.moveInboxTask(this.context.reference, data.project, data.parent ? JSON.parse(data.parent) : null);
     } catch (error) {
-      if (data.parent) this.parentLoaded = this.refreshParents(this.fields.project.value);
+      if (data.parent) {
+        this.parentLoaded = this.refreshParents(data.project);
+        await this.parentLoaded;
+      }
       throw error;
     }
-    new Notice('任务已添加');
+    new Notice('已移入所选项目');
   }
-  async afterSave(data) {
-    const previous = data.parent ? JSON.parse(data.parent) : null;
-    this.parentLoaded = this.refreshParents(data.project, previous);
-    await this.parentLoaded;
-    await super.afterSave(data);
-    await this.context.onSaved?.();
-  }
-  async refreshParents(path, retain = null, strict = false) {
+  async afterSave() { this.close(); }
+  async refreshParents(path) {
     const version = this.parentLoadVersion = (this.parentLoadVersion || 0) + 1;
     const select = this.fields.parent;
     select.empty();
@@ -1214,12 +1197,6 @@ class QuickTaskModal extends EntryModal {
       for (const task of parents) {
         select.createEl('option', { text: '　'.repeat(task.depth) + task.label, attr: { value: JSON.stringify({ line: task.line, raw: task.raw, version: task.version }) } });
       }
-      if (retain) {
-        const selected = strict ? parents.find(task => task.line === retain.line && task.raw === retain.raw && task.version === retain.version) : logic.retainedParent(parents, retain);
-        if (selected) select.value = JSON.stringify({ line: selected.line, raw: selected.raw, version: selected.version });
-        else if (strict) throw new Error('父任务已变化，请刷新任务树后重新点击加号');
-        else new Notice('父任务已变化，请重新选择父任务');
-      }
       select.disabled = false;
     } catch (error) {
       if (version === this.parentLoadVersion) {
@@ -1228,23 +1205,6 @@ class QuickTaskModal extends EntryModal {
       }
     }
   }
-}
-
-class InboxMoveModal extends QuickTaskModal {
-  constructor(plugin, context) { super(plugin,context);this.title='移入项目';this.kind='move'; }
-  buildFields() {
-    this.fieldsEl.createDiv({text:this.context.title,cls:'gtd-move-summary'});
-    this.buildDestinationFields();
-  }
-  async save(data) {
-    try { await this.plugin.moveInboxTask(this.context.reference,data.project,data.parent?JSON.parse(data.parent):null); }
-    catch(error) {
-      if(data.parent){this.parentLoaded=this.refreshParents(data.project);await this.parentLoaded;}
-      throw error;
-    }
-    new Notice('已移入所选项目');
-  }
-  async afterSave() { this.close(); }
 }
 
 class QuickCaptureModal extends EntryModal {
@@ -1615,11 +1575,7 @@ module.exports = class GtdQuickActions extends Plugin {
     if (path !== INBOX && !this.listProjects().some(file => file.path === path)) throw new Error('所选项目不存在或已完成，请重新选择');
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || file.extension !== 'md') throw new Error('找不到任务文件');
-    let parent = null;
-    if (data.parent) {
-      try { parent = typeof data.parent === 'string' ? JSON.parse(data.parent) : data.parent; }
-      catch { throw new Error('请重新选择父任务'); }
-    }
+    const parent = data.parent;
     await this.processGtdChange(file, content => parent ? logic.insertSubtask(content, taskLine, parent) : logic.insertTask(content, taskLine, path === INBOX ? 'inbox' : 'project'));
     if (path !== INBOX) this.rememberProject(path);
     return file;
@@ -1695,8 +1651,8 @@ module.exports = class GtdQuickActions extends Plugin {
     return file;
   }
   async listParentTasks(path) {
-    if (!this.listProjects().some(file => file.path === path)) throw new Error('所选项目不可用，请重新选择');
-    const file = this.app.vault.getAbstractFileByPath(path);
+    const file = this.listProjects().find(file => file.path === path);
+    if (!file) throw new Error('所选项目不可用，请重新选择');
     return logic.listParentTasks(await this.app.vault.read(file));
   }
   beginInlineTaskEntry(scope, path, parent = null) {
@@ -2010,10 +1966,6 @@ module.exports = class GtdQuickActions extends Plugin {
     const file = await this.app.vault.create(path, content);
     this.rememberProject(path);
     return file;
-  }
-  openTaskModal(context = {}) {
-    if (context.project && !this.listProjects().some(file => file.path === context.project)) throw new Error('所选项目不可用，请刷新后重试');
-    const modal = new QuickTaskModal(this, context); modal.open(); return modal;
   }
   openProjectModal() { const modal = new QuickProjectModal(this); modal.open(); return modal; }
   openCaptureModal() { const modal = new QuickCaptureModal(this); modal.open(); return modal; }

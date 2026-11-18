@@ -6,15 +6,6 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     for (const [card, name] of entry.cardNames) if (card.getAttribute('aria-label') !== name) card.setAttribute('aria-label', name);
     entry.cardNames.clear();
   };
-  const projectOf = card => {
-    const project = card.dataset.gtdProject || card.querySelector('.tasks-calendar-task-source')?.textContent.trim();
-    if (project) return project;
-    // Compatibility for cards mounted before the updated calendar renderer loads.
-    const key = Object.keys(card).find(key => key.startsWith('__reactProps$'));
-    const children = key ? card[key]?.children : [];
-    const path = (Array.isArray(children) ? children : [children]).find(child => typeof child?.props?.sourcePath === 'string')?.props.sourcePath;
-    return path?.replace(/\.md$/i, '').split('/').pop();
-  };
   function setCompact(compact) {
     plugin.data.calendarCompact = compact;
     sync();
@@ -108,7 +99,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       const cards = new Set(root.querySelectorAll('.tasks-calendar-task'));
       for (const card of entry.cardNames.keys()) if (!cards.has(card)) entry.cardNames.delete(card);
       for (const card of cards) {
-        const project = projectOf(card);
+        const project = card.dataset.gtdProject;
         const name = card.querySelector('.tasks-calendar-task-title')?.textContent.trim();
         if (!project || !name) continue;
         const parents=card.dataset.gtdParentPath;

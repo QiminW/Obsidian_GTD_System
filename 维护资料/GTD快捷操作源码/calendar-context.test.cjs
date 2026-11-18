@@ -6,13 +6,13 @@ test('calendar metadata carries exact full ancestry and direct parent without ta
  const meta=contexts(source).get(2);assert.deepEqual(meta._gtdAncestors,['Root','Parent']);assert.equal(meta._gtdParentTitle,'Parent');
  assert.equal(contexts(source).get(0)._gtdParentTitle,'');
 });
-test('same parent labels in different branches or projects remain separate groups',()=>{
- const source='- [ ] Parent\n  - [ ] Child\n- [ ] Parent\n  - [ ] Child\n',a=contexts(source),b=contexts(source,'00 GTD/Projects/Other.md');
- assert.notEqual(a.get(1)._gtdGroupKey,a.get(3)._gtdGroupKey);assert.notEqual(a.get(1)._gtdGroupKey,b.get(1)._gtdGroupKey);
+test('same parent labels in different branches have distinct ancestor keys',()=>{
+ const source='- [ ] Parent\n  - [ ] Child\n- [ ] Parent\n  - [ ] Child\n',meta=contexts(source);
+ assert.notDeepEqual(meta.get(1)._gtdAncestorKeys,meta.get(3)._gtdAncestorKeys);
 });
 test('stable parent block IDs retain grouping identity after renaming',()=>{
  const source='- [ ] Parent ^parent\n  - [ ] Child\n';
- assert.equal(contexts(source).get(1)._gtdGroupKey,contexts(source.replace('Parent','Renamed')).get(1)._gtdGroupKey);
+ assert.deepEqual(contexts(source).get(1)._gtdAncestorKeys,contexts(source.replace('Parent','Renamed')).get(1)._gtdAncestorKeys);
 });
 test('ordinary list siblings end false parents but preserve the actual upper ancestor',()=>{
  const source='- [ ] Root\n  - [ ] Previous\n  - Note\n    - [ ] Child\n';assert.deepEqual(contexts(source).get(3)._gtdAncestors,['Root']);
@@ -22,7 +22,7 @@ test('quoted and no-space checkbox syntax produces correct parent paths',()=>{
 });
 test('standalone tasks group by project and metadata does not modify indexed source references',()=>{
  const source='- [ ] One\n- [ ] Two\n',tasks=indexed(source),before=structuredClone(tasks),meta=logic.calendarTaskContexts(source,tasks);
- assert.equal(meta.get(0)._gtdGroupKey,meta.get(1)._gtdGroupKey);assert.deepEqual(tasks,before);
+ assert.deepEqual(meta.get(0)._gtdAncestorKeys,[]);assert.deepEqual(meta.get(1)._gtdAncestorKeys,[]);assert.deepEqual(tasks,before);
 });
 test('every ancestor has its own source identity so shared paths merge without merging duplicate labels',()=>{
  const source='- [ ] Root ^root\n  - [ ] Same\n    - [ ] First\n  - [ ] Same\n    - [ ] Second\n';

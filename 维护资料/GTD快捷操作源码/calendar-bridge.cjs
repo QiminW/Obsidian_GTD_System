@@ -48,10 +48,9 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
       const project=task.path.replace(/\.md$/i,'').split('/').pop(),projectKey=JSON.stringify([task.path,null]);
       if(!groups.has(projectKey))groups.set(projectKey,makeGroup(projectKey,project,project));
       let group=groups.get(projectKey);count(group,task);
-      const ancestors=task._gtdAncestors||(task._gtdParentTitle?[task._gtdParentTitle]:[]),keys=[];
+      const ancestors=task._gtdAncestors||[];
       ancestors.forEach((label,index)=>{
-        keys.push(task._gtdAncestorKeys?.[index]||(index===ancestors.length-1&&task._gtdGroupKey)||'name:'+label);
-        const key=JSON.stringify([task.path,keys]);
+        const key=JSON.stringify([task.path,task._gtdAncestorKeys.slice(0,index+1)]);
         if(!group.children.has(key)){const child=makeGroup(key,label,[project,...ancestors.slice(0,index+1)].join(' › '));group.children.set(key,child);group.entries.push({group:child});}
         group=group.children.get(key);count(group,task);
       });
