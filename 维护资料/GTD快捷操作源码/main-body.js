@@ -7,6 +7,23 @@ const ARCHIVE = '00 GTD/00 工作区/99 归档';
 const PROJECT_PAGE = 'gtd-project-page';
 const PROJECT_PROGRESS = '00 GTD/00 工作区/05 系统视图/项目进度';
 
+function installGtdPageTheme(plugin) {
+  const { workspace, vault } = plugin.app;
+  const views = () => ['markdown', 'bases'].flatMap(type => workspace.getLeavesOfType(type).map(leaf => leaf.view));
+  const update = () => {
+    for (const view of views()) {
+      view.contentEl.classList.toggle('gtd-vault-page', !!view.file?.path.startsWith('00 GTD/'));
+    }
+  };
+  plugin.registerEvent(workspace.on('file-open', update));
+  plugin.registerEvent(workspace.on('layout-change', update));
+  plugin.registerEvent(vault.on('rename', update));
+  workspace.onLayoutReady(update);
+  plugin.register(() => {
+    for (const view of views()) view.contentEl.classList.remove('gtd-vault-page');
+  });
+}
+
 class InboxView extends MarkdownRenderChild {
   constructor(plugin, element) { super(element);this.plugin=plugin; }
   onload() {
@@ -227,6 +244,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.taskDayPanels = new Map();
     this.register(() => this.clearTaskActionNotice());
     this.currentDayKey = this.todayDateKey();
+    installGtdPageTheme(this);
     this.registerMarkdownCodeBlockProcessor('gtd-inbox',(_source,element,context)=>context.addChild(new InboxView(this,element)));
     this.registerMarkdownCodeBlockProcessor('gtd-actions', (_source, element) => {
       const actions = element.createDiv({ cls: 'gtd-quick-actions' });

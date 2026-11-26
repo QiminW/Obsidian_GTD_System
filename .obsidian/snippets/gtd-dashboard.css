@@ -1,60 +1,60 @@
-/* GTD Paper + Compact: warm gray-brown accents, dense layout. CSS only. */
-/* Folder content + GTD dialogs. Sidebar, tabs and title bar keep their theme. */
+/* Light gray palette for GTD note content, project views and dialogs. */
 :is(
   .gtd-dashboard,
   .gtd-project-progress,
   .gtd-action-modal,
   .gtd-day-panel,
-  .workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content,
+  .view-content.gtd-vault-page,
   .modal:has(.gtd-action-modal)
 ) {
   color-scheme: light;
-  --color-base-00: #fffdf7;
-  --color-base-05: #f7f2e8;
-  --color-base-10: #f2ede2;
-  --color-base-20: #e5dac4;
-  --color-base-25: #d9cbb1;
-  --color-base-30: #c8b99b;
-  --color-base-35: #b0a083;
-  --color-base-40: #877b63;
-  --color-base-50: #696152;
-  --color-base-60: #514c40;
-  --color-base-70: #403c32;
-  --color-base-80: #454337;
-  --color-base-90: #3a382e;
-  --color-base-100: #26251f;
-  --accent-h: 28;
-  --accent-s: 26%;
-  --accent-l: 32%;
-  --color-accent: #68513d;
-  --color-accent-rgb: 104, 81, 61;
-  --interactive-accent: #68513d;
-  --interactive-accent-hover: #513c2b;
-  --interactive-accent-rgb: 104, 81, 61;
-  --interactive-normal: #f1ebdf;
-  --interactive-hover: #e8e1d4;
-  --background-primary: #f7f2e8;
-  --background-primary-alt: #f2ede2;
-  --background-secondary: #e5dac4;
-  --background-secondary-alt: #ded1b7;
-  --background-modifier-border: #b0a083;
-  --background-modifier-border-hover: #948265;
-  --background-modifier-border-focus: #68513d;
-  --background-modifier-hover: rgb(104 81 61 / .1);
-  --background-modifier-active-hover: rgb(104 81 61 / .18);
-  --background-modifier-form-field: #fffdf7;
-  --background-modifier-cover: rgb(48 47 40 / .24);
-  --background-modifier-box-shadow: rgb(65 57 42 / .08);
+  --color-base-00: #fff;
+  --color-base-05: #f7f8fa;
+  --color-base-10: #f1f3f5;
+  --color-base-20: #e9ecf0;
+  --color-base-25: #e2e6eb;
+  --color-base-30: #c6ccd5;
+  --color-base-35: #aeb7c2;
+  --color-base-40: #78828f;
+  --color-base-50: #616a75;
+  --color-base-60: #525b65;
+  --color-base-70: #3a424e;
+  --color-base-80: #323945;
+  --color-base-90: #2d333c;
+  --color-base-100: #262a31;
+  --accent-h: 216;
+  --accent-s: 15%;
+  --accent-l: 27%;
+  --color-accent: var(--color-base-70);
+  --color-accent-rgb: 58, 66, 78;
+  --interactive-accent: var(--color-accent);
+  --interactive-accent-hover: #252d37;
+  --interactive-accent-rgb: var(--color-accent-rgb);
+  --interactive-normal: var(--color-base-05);
+  --interactive-hover: var(--color-base-20);
+  --background-primary: var(--color-base-10);
+  --background-primary-alt: var(--color-base-05);
+  --background-secondary: var(--color-base-20);
+  --background-secondary-alt: var(--color-base-25);
+  --background-modifier-border: var(--color-base-30);
+  --background-modifier-border-hover: #a3acb8;
+  --background-modifier-border-focus: var(--interactive-accent);
+  --background-modifier-hover: var(--background-secondary);
+  --background-modifier-active-hover: #dfe4ea;
+  --background-modifier-form-field: var(--color-base-00);
+  --background-modifier-cover: rgba(var(--color-accent-rgb), .24);
+  --background-modifier-box-shadow: rgba(var(--color-accent-rgb), .08);
   --background-modifier-error: #a64638;
   --background-modifier-error-hover: rgb(166 70 56 / .1);
-  --text-normal: #26251f;
-  --text-muted: #514c40;
-  --text-faint: #696152;
-  --text-accent: #5d4734;
-  --text-accent-hover: #453222;
+  --text-normal: var(--color-base-100);
+  --text-muted: var(--color-base-60);
+  --text-faint: var(--color-base-50);
+  --text-accent: var(--interactive-accent);
+  --text-accent-hover: var(--interactive-accent-hover);
   --text-on-accent: #ffffff;
   --text-error: #a64638;
-  --text-selection: rgb(104 81 61 / .18);
+  --text-selection: rgba(var(--color-accent-rgb), .16);
+  --callout-blend-mode: normal;
   --font-text-size: 14px;
   --line-height-normal: 1.45;
   --p-spacing: .5rem;
@@ -78,120 +78,120 @@
   --inline-title-color: var(--text-normal);
   --inline-title-size: 22px;
   --caret-color: var(--text-normal);
-  --link-color: #5d4734;
-  --link-color-hover: #453222;
-  --link-external-color: #5d4734;
-  --link-external-color-hover: #453222;
-  --checkbox-color: #68513d;
-  --checkbox-color-hover: #513c2b;
+  --link-color: var(--text-accent);
+  --link-color-hover: var(--text-accent-hover);
+  --link-external-color: var(--link-color);
+  --link-external-color-hover: var(--link-color-hover);
+  --checkbox-color: var(--interactive-accent);
+  --checkbox-color-hover: var(--interactive-accent-hover);
   --checkbox-marker-color: #ffffff;
   --checkbox-background: transparent;
-  --checkbox-border-color: #877b63;
-  --checkbox-border-color-hover: #68513d;
+  --checkbox-border-color: var(--color-base-40);
+  --checkbox-border-color-hover: var(--interactive-accent);
   --input-height: 28px;
   --input-radius: 4px;
   --button-radius: 4px;
-  --icon-color: #595243;
-  --icon-color-hover: #5d4734;
-  --icon-color-active: #5d4734;
-  --icon-color-focused: #5d4734;
-  --scrollbar-bg: rgb(92 86 69 / .13);
-  --scrollbar-thumb-bg: rgb(92 86 69 / .22);
-  --scrollbar-active-thumb-bg: rgb(104 81 61 / .35);
-  --modal-background: #f7f2e8;
-  --modal-border-color: #b0a083;
-  --menu-background: #fffdf7;
-  --code-background: #eee8dc;
-  --code-normal: #535146;
-  --code-comment: #696152;
-  --code-keyword: #67513d;
-  --code-function: #6c573e;
-  --code-string: #79613e;
-  --code-value: #8b5f3a;
-  --code-operator: #6b695d;
-  --code-property: #6a5a4a;
-  --code-tag: #67513d;
-  --code-important: #a64638;
-  --code-punctuation: #696152;
+  --icon-color: var(--text-muted);
+  --icon-color-hover: var(--text-accent);
+  --icon-color-active: var(--text-accent);
+  --icon-color-focused: var(--text-accent);
+  --scrollbar-bg: rgba(var(--color-accent-rgb), .13);
+  --scrollbar-thumb-bg: rgba(var(--color-accent-rgb), .22);
+  --scrollbar-active-thumb-bg: rgba(var(--color-accent-rgb), .35);
+  --modal-background: var(--background-primary);
+  --modal-border-color: var(--gtd-line);
+  --menu-background: var(--background-modifier-form-field);
+  --code-background: var(--background-secondary);
+  --code-normal: var(--text-normal);
+  --code-comment: var(--text-faint);
+  --code-keyword: #40516a;
+  --code-function: #3f556b;
+  --code-string: #394d5c;
+  --code-value: #525f74;
+  --code-operator: var(--text-muted);
+  --code-property: var(--text-accent);
+  --code-tag: var(--code-keyword);
+  --code-important: var(--text-error);
+  --code-punctuation: var(--text-faint);
   --metadata-label-text-color: var(--text-muted);
   --metadata-input-text-color: var(--text-normal);
-  --table-border-color: #c8b99b;
-  --table-header-background: #e5dac4;
+  --table-border-color: var(--gtd-line-soft);
+  --table-header-background: var(--gtd-surface-raised);
   --bases-header-height: 30px;
   --bases-table-font-size: 13px;
   --bases-table-header-weight: 650;
-  --bases-table-header-color: #514c40;
-  --bases-table-header-background: #e5dac4;
-  --bases-table-header-background-hover: rgb(104 81 61 / .07);
-  --bases-table-group-background: #f7f2e8;
-  --bases-table-cell-background-active: #fffdf7;
-  --bases-table-cell-background-disabled: #f2ede2;
-  --bases-table-cell-background-selected: #e6dac8;
-  --bases-table-cell-shadow-active: 0 0 0 2px #b6a58f;
-  --bases-table-cell-shadow-focus: 0 0 0 2px #766049;
-  --bases-table-summary-background: #e5dac4;
-  --bases-table-summary-background-hover: rgb(104 81 61 / .07);
-  --bases-table-border-color: #c8b99b;
+  --bases-table-header-color: var(--text-muted);
+  --bases-table-header-background: var(--gtd-surface-raised);
+  --bases-table-header-background-hover: var(--gtd-accent-soft);
+  --bases-table-group-background: var(--background-primary);
+  --bases-table-cell-background-active: var(--background-modifier-form-field);
+  --bases-table-cell-background-disabled: var(--background-primary-alt);
+  --bases-table-cell-background-selected: var(--background-secondary-alt);
+  --bases-table-cell-shadow-active: 0 0 0 2px var(--gtd-line);
+  --bases-table-cell-shadow-focus: 0 0 0 2px var(--interactive-accent);
+  --bases-table-summary-background: var(--gtd-surface-raised);
+  --bases-table-summary-background-hover: var(--gtd-accent-soft);
+  --bases-table-border-color: var(--gtd-line-soft);
   --bases-table-row-height: 26px;
-  --bases-group-heading-property-color: #514c40;
+  --bases-group-heading-property-color: var(--text-muted);
   --bases-group-heading-value-size: 13px;
-  --bases-filter-input-background: #fcfaf5;
-  --bases-embed-border-color: #d8d1c3;
-  --bases-cards-background: #fcfaf5;
-  --bases-cards-cover-background: #f2ede2;
-  --bases-cards-shadow: 0 0 0 1px #d8d1c3;
-  --bases-cards-shadow-hover: 0 0 0 1px #b6a58f;
+  --bases-filter-input-background: var(--background-modifier-form-field);
+  --bases-embed-border-color: var(--gtd-line-soft);
+  --bases-cards-background: var(--background-modifier-form-field);
+  --bases-cards-cover-background: var(--background-primary-alt);
+  --bases-cards-shadow: 0 0 0 1px var(--gtd-line-soft);
+  --bases-cards-shadow-hover: 0 0 0 1px var(--gtd-line);
   --bases-cards-radius: 6px;
   --bases-cards-font-size: 13px;
-  --bases-kanban-column-background: #f2ede2;
-  --bases-kanban-card-background: #fcfaf5;
-  --bases-kanban-cover-background: #eee8dc;
-  --bases-kanban-card-shadow: 0 0 0 1px #d8d1c3;
-  --bases-kanban-card-shadow-hover: 0 0 0 1px #b6a58f;
-  --bases-kanban-card-shadow-focus: 0 0 0 2px #766049;
+  --bases-kanban-column-background: var(--background-primary-alt);
+  --bases-kanban-card-background: var(--background-modifier-form-field);
+  --bases-kanban-cover-background: var(--background-secondary);
+  --bases-kanban-card-shadow: 0 0 0 1px var(--gtd-line-soft);
+  --bases-kanban-card-shadow-hover: 0 0 0 1px var(--gtd-line);
+  --bases-kanban-card-shadow-focus: 0 0 0 2px var(--interactive-accent);
   --bases-kanban-card-radius: 6px;
-  --gtd-line: #b0a083;
-  --gtd-line-soft: #c8b99b;
-  --gtd-surface: #f0e7d7;
-  --gtd-surface-raised: #e5dac4;
-  --gtd-accent-soft: rgb(104 81 61 / .14);
-  --gtd-accent-border: rgb(104 81 61 / .5);
+  --gtd-line: var(--color-base-35);
+  --gtd-line-soft: var(--background-modifier-border);
+  --gtd-surface: var(--background-primary-alt);
+  --gtd-surface-raised: #eaedf1;
+  --gtd-accent-soft: rgba(var(--color-accent-rgb), .08);
+  --gtd-accent-border: rgba(var(--color-accent-rgb), .45);
   color: var(--text-normal);
 }
-/* Obsidian's native breadcrumb gives CSS the folder path, including new pages. */
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content {
+/* The plugin marks the content pane for open GTD notes and Bases views. */
+.view-content.gtd-vault-page {
   background: var(--background-primary);
   color: var(--text-normal);
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.markdown-preview-view, .markdown-source-view, .cm-editor, .cm-scroller) {
+.view-content.gtd-vault-page :is(.markdown-preview-view, .markdown-source-view, .cm-editor, .cm-scroller) {
   background: var(--background-primary);
   color: var(--text-normal);
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.cm-content, input, textarea) {
+.view-content.gtd-vault-page :is(.cm-content, input, textarea) {
   caret-color: var(--text-normal);
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.markdown-preview-view, .markdown-source-view .cm-scroller, .markdown-source-view .cm-content) {
+.view-content.gtd-vault-page :is(.markdown-preview-view, .markdown-source-view .cm-scroller, .markdown-source-view .cm-content) {
   font-size: 14px;
   line-height: 1.45;
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-source-view .HyperMD-header {
+.view-content.gtd-vault-page .markdown-source-view .HyperMD-header {
   padding-top: 6px;
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.metadata-property-key, .metadata-properties-heading) {
+.view-content.gtd-vault-page :is(.metadata-property-key, .metadata-properties-heading) {
   color: var(--text-muted);
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content :is(.metadata-property-value, .metadata-property-value input, .metadata-input-longtext, .multi-select-pill-content) {
+.view-content.gtd-vault-page :is(.metadata-property-value, .metadata-property-value input, .metadata-input-longtext, .multi-select-pill-content) {
   color: var(--text-normal);
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-rendered table:not(.gtd-project-progress) {
+.view-content.gtd-vault-page .markdown-rendered table:not(.gtd-project-progress) {
   border-color: var(--gtd-line);
   font-size: 13px;
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-rendered table:not(.gtd-project-progress) :is(th, td) {
+.view-content.gtd-vault-page .markdown-rendered table:not(.gtd-project-progress) :is(th, td) {
   padding: 4px 8px;
   border-color: var(--gtd-line-soft);
 }
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-rendered table:not(.gtd-project-progress) th {
+.view-content.gtd-vault-page .markdown-rendered table:not(.gtd-project-progress) th {
   background: var(--gtd-surface-raised);
   color: var(--text-muted);
 }
@@ -246,15 +246,15 @@
   display: none !important;
 }
 .gtd-dashboard.markdown-preview-view,
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-preview-view {
+.view-content.gtd-vault-page .markdown-preview-view {
   --file-line-width: 1360px;
 }
 .gtd-dashboard.markdown-preview-view .markdown-preview-sizer,
-.workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content .markdown-preview-view .markdown-preview-sizer {
+.view-content.gtd-vault-page .markdown-preview-view .markdown-preview-sizer {
   max-width: 1360px;
   margin-inline: auto;
 }
-.workspace-leaf-content[data-type="bases"]:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content > :is(.bases-header, .bases-search-row, .bases-error, .bases-view) {
+.workspace-leaf-content[data-type="bases"] > .view-content.gtd-vault-page > :is(.bases-header, .bases-search-row, .bases-error, .bases-view) {
   width: calc(100% - 32px);
   max-width: 1360px;
   margin-inline: auto;
@@ -340,7 +340,7 @@
   padding: 4px 10px;
   border: 1px solid var(--gtd-line-soft);
   border-radius: 6px;
-  background: #fffdf7;
+  background: var(--background-modifier-form-field);
 }
 .gtd-dashboard .gtd-inbox-row {
   gap: 8px;
@@ -405,7 +405,7 @@
   border-spacing: 0;
   border-radius: 6px;
   overflow: hidden;
-  background: #fffdf7;
+  background: var(--background-modifier-form-field);
   font-size: 13px;
 }
 .gtd-project-progress th,
@@ -515,17 +515,20 @@
   background: var(--background-primary);
 }
 
-/* Soft row backgrounds: 32% Radix step 4 + 68% paper (#f7f2e8). */
+/* Soft row backgrounds: 32% Radix step 4 over the shared GTD base. */
 .gtd-project-progress .gtd-completed-visibility { color:var(--text-muted);border-radius:4px; }
 .gtd-project-progress .gtd-completed-visibility:hover { color:var(--text-accent);background:var(--gtd-accent-soft); }
-.gtd-project-progress li[data-task-color-level="0"] { --gtd-task-level-background:#f3eee4;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="1"] { --gtd-task-level-background:#ecf1ef;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="2"] { --gtd-task-level-background:#faf1d0;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="3"] { --gtd-task-level-background:#f3eeef;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="4"] { --gtd-task-level-background:#f7eced;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="5"] { --gtd-task-level-background:#f0efef;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="6"] { --gtd-task-level-background:#faecd8;--gtd-task-child-line:#d8cbb8; }
-.gtd-project-progress li[data-task-color-level="7"] { --gtd-task-level-background:#f3eee9;--gtd-task-child-line:#d8cbb8; }
+.gtd-project-progress li[data-task-color-level] {
+  --gtd-task-level-background: color-mix(in srgb, var(--background-primary) 68%, var(--gtd-task-level-tint));
+}
+.gtd-project-progress li[data-task-color-level="0"] { --gtd-task-level-tint: #eae6db; }
+.gtd-project-progress li[data-task-color-level="1"] { --gtd-task-level-tint: #d5efff; }
+.gtd-project-progress li[data-task-color-level="2"] { --gtd-task-level-tint: #ffee9c; }
+.gtd-project-progress li[data-task-color-level="3"] { --gtd-task-level-tint: #ebe4ff; }
+.gtd-project-progress li[data-task-color-level="4"] { --gtd-task-level-tint: #f7def8; }
+.gtd-project-progress li[data-task-color-level="5"] { --gtd-task-level-tint: #e1e9ff; }
+.gtd-project-progress li[data-task-color-level="6"] { --gtd-task-level-tint: #ffdfb5; }
+.gtd-project-progress li[data-task-color-level="7"] { --gtd-task-level-tint: #eae7ec; }
 .gtd-project-progress .gtd-task-list > li {
   margin: 0 !important;
   padding: 0;
@@ -542,7 +545,7 @@
   border-left-color: var(--gtd-line-soft);
 }
 .gtd-project-progress li[data-task-color-level] > .gtd-task-branch > .gtd-task-list,
-.gtd-project-progress li[data-task-color-level] > .gtd-task-list { border-left-color:var(--gtd-task-child-line,var(--gtd-line-soft)); }
+.gtd-project-progress li[data-task-color-level] > .gtd-task-list { border-left-color:var(--gtd-line-soft); }
 .gtd-project-progress summary.gtd-task-row::before { color:var(--text-muted);font-size:18px;line-height:1;text-align:center; }
 .gtd-project-progress .gtd-project-arrow { font-size:18px;line-height:1;text-align:center; }
 .gtd-project-progress [data-gtd-tree-row]:focus-visible { outline:1px solid var(--gtd-accent-border);outline-offset:-1px; }
@@ -715,7 +718,7 @@
   border-color: var(--gtd-line);
   border-radius: 6px;
   background: var(--gtd-surface-raised);
-  box-shadow: 0 6px 20px rgb(65 57 42 / .14);
+  box-shadow: 0 6px 20px rgba(var(--color-accent-rgb), .14);
 }
 .gtd-day-panel .gtd-day-panel-header { margin-bottom: 8px; }
 .gtd-day-panel .gtd-day-panel-header button {
@@ -738,9 +741,10 @@
 }
 .gtd-dashboard .tasks-calendar {
   --tasks-calendar-border: var(--gtd-line-soft);
-  --tasks-calendar-accent: #68513d;
-  --tasks-calendar-today: rgb(104 81 61 / .035);
+  --tasks-calendar-accent: var(--interactive-accent);
+  --tasks-calendar-today: rgba(var(--color-accent-rgb), .05);
   --tasks-calendar-completed-opacity: .72;
+  background: var(--background-modifier-form-field);
 }
 .gtd-dashboard .tasks-calendar-toolbar {
   gap: 8px;
@@ -799,16 +803,16 @@
   font-weight: 500;
 }
 .gtd-dashboard .tasks-calendar-task {
-  --tasks-calendar-task-accent: #68513d !important;
-  --tasks-calendar-task-background: #f0e7d9 !important;
+  --tasks-calendar-task-accent: var(--interactive-accent) !important;
+  --tasks-calendar-task-background: var(--background-secondary) !important;
   border-radius: 4px;
-  box-shadow: inset 2px 0 0 #68513d;
-  color: #453627;
+  box-shadow: inset 2px 0 0 var(--color-base-40);
+  color: var(--text-normal);
 }
 .gtd-dashboard .tasks-calendar-grid:is(.is-day,.is-week) .tasks-calendar-task-source { display: none; }
 .gtd-dashboard .tasks-calendar-overdue-meta { display: none; }
 /* Use the source deadline, never the projected dates of arranged occurrences. */
-:is(.gtd-dashboard, .workspace-leaf-content:has(> .view-header .view-header-breadcrumb:is([aria-label="00 GTD"], [aria-label^="00 GTD/"])) > .view-content) .tasks-calendar-task[data-gtd-deadline="true"],
+:is(.gtd-dashboard, .view-content.gtd-vault-page) .tasks-calendar-task[data-gtd-deadline="true"],
 .tasks-calendar-drag-overlay[data-gtd-deadline="true"] {
   --tasks-calendar-task-accent: #a3433b !important;
   --tasks-calendar-task-background: #f3d8d4 !important;
@@ -818,7 +822,7 @@
   box-shadow: inset 2px 0 0 #a3433b;
   color: #702f29;
 }
-.gtd-dashboard .tasks-calendar-day.is-outside { background: #eee9df; }
+.gtd-dashboard .tasks-calendar-day.is-outside { background: var(--background-primary-alt); }
 .gtd-dashboard .gtd-calendar-height-toggle {
   min-width: 26px;
   height: 25px;
@@ -952,44 +956,7 @@
   }
 }
 
-.workspace-leaf-content > .view-content :is(.markdown-preview-view, .markdown-source-view).gtd-dashboard.gtd-home {
-  --background-primary: #f1f3f5;
-  --background-primary-alt: #f7f8fa;
-  --background-secondary: #e9ecf0;
-  --background-secondary-alt: #e2e6eb;
-  --background-modifier-border: #c6ccd5;
-  --background-modifier-border-hover: #a3acb8;
-  --background-modifier-border-focus: #3a424e;
-  --background-modifier-form-field: #fff;
-  --background-modifier-hover: #e9ecf0;
-  --background-modifier-active-hover: #dfe4ea;
-  --color-accent: #3a424e;
-  --color-accent-rgb: 58, 66, 78;
-  --interactive-normal: #f7f8fa;
-  --interactive-hover: #e9ecf0;
-  --interactive-accent: #3a424e;
-  --interactive-accent-hover: #252d37;
-  --interactive-accent-rgb: 58, 66, 78;
-  --text-normal: #262a31;
-  --text-muted: #525b65;
-  --text-faint: #616a75;
-  --text-accent: #3a424e;
-  --text-accent-hover: #252d37;
-  --text-selection: rgb(58 66 78 / .16);
-  --h1-size: 24px;
-  --link-color: var(--text-accent);
-  --link-color-hover: var(--text-accent-hover);
-  --checkbox-color: var(--interactive-accent);
-  --checkbox-color-hover: var(--interactive-accent-hover);
-  --checkbox-border-color: #78828f;
-  --checkbox-border-color-hover: var(--interactive-accent);
-  --gtd-line: #aeb7c2;
-  --gtd-line-soft: #c6ccd5;
-  --gtd-surface: #f7f8fa;
-  --gtd-surface-raised: #eaedf1;
-  --gtd-accent-soft: rgb(58 66 78 / .08);
-  --gtd-accent-border: rgb(58 66 78 / .45);
-}
+.gtd-dashboard.gtd-home { --h1-size: 24px; }
 .gtd-home .callout[data-callout^="gtd-home-"] {
   box-sizing: border-box;
   min-width: 0;
@@ -997,7 +964,6 @@
   padding: 0;
   border: 0;
   background: transparent;
-  mix-blend-mode: normal;
 }
 .gtd-home .callout[data-callout^="gtd-home-"] > .callout-title { display: none; }
 .gtd-home .callout[data-callout^="gtd-home-"] > .callout-content {
@@ -1028,7 +994,6 @@
 .gtd-home .callout[data-callout="gtd-home-inbox"] .gtd-quick-actions { margin: 0; }
 .gtd-home .callout[data-callout^="gtd-home-"] h2 { margin: 0 0 6px; }
 .gtd-home .callout[data-callout="gtd-home-inbox"] h2 { margin: 0; }
-.gtd-home .gtd-inbox { background: var(--background-modifier-form-field); }
 .gtd-home .gtd-project-area:has(.gtd-project-card) {
   padding: 7px;
   border: 1px solid var(--gtd-line-soft);
@@ -1037,15 +1002,3 @@
 }
 .gtd-home .gtd-project-card-grid { padding: 0; border: 0; }
 .gtd-home .gtd-project-card { min-height: 68px; }
-.gtd-home .tasks-calendar {
-  --tasks-calendar-accent: var(--interactive-accent);
-  --tasks-calendar-today: rgb(58 66 78 / .05);
-  background: var(--background-modifier-form-field);
-}
-.gtd-home .tasks-calendar .tasks-calendar-day.is-outside { background: var(--background-primary-alt); }
-.gtd-home .tasks-calendar-task:not([data-gtd-deadline="true"]) {
-  --tasks-calendar-task-accent: var(--interactive-accent) !important;
-  --tasks-calendar-task-background: var(--background-secondary) !important;
-  box-shadow: inset 2px 0 0 #78828f;
-  color: var(--text-normal);
-}
