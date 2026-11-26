@@ -52,9 +52,12 @@ function addVisibilityButton(heading){
 const labels=summaryOnly?['项目','进度']:['项目','领域','状态','进度','完成 / 总计','截止日期'];
 if(cards){
   const actions=surface.createDiv({cls:'gtd-project-summary-actions'});
-  const add=actions.createEl('button',{text:'＋ 新建领域',cls:'gtd-project-area-add',attr:{type:'button'}});
-  add.dataset.gtdAction='new-area';
-  add.addEventListener('click',()=>plugin.openAreaModal());
+  const area=actions.createEl('button',{text:'+领域',attr:{type:'button'}});
+  area.dataset.gtdAction='new-area';
+  area.addEventListener('click',()=>plugin.openAreaModal());
+  const project=actions.createEl('button',{text:'+项目',attr:{type:'button'}});
+  project.dataset.gtdAction='new-project';
+  project.addEventListener('click',()=>plugin.openProjectModal());
 }else{
   const head=surface.createEl('thead').createEl('tr');
   for(const label of labels){
@@ -81,22 +84,13 @@ function reorderProjectRows(){
   const paths=orderedPaths.filter(path=>projectRows.has(path));
   if(cards){
     const sections=new Map([...body.children].map(section=>[section.dataset.gtdAreaHeading,section]));
-    const folders=new Map(plugin.listAreas().map(area=>[area.label,area.path]));
     const ordered=plugin.groupedProjectPaths(paths,true).map(([label,group])=>{
       let section=sections.get(label);
       if(!section){
         section=body.createEl('section',{cls:'gtd-project-area'});section.dataset.gtdAreaHeading=label;
-        const heading=section.createDiv({cls:'gtd-project-area-heading'});
-        heading.createEl('h3',{text:label});
-        const name='在「'+label+'」新建项目';
-        const add=heading.createEl('button',{text:'＋',cls:'gtd-project-area-add',attr:{type:'button','aria-label':name,title:name}});
-        add.dataset.gtdAction='new-project';
+        section.createEl('h3',{text:label,cls:'gtd-project-area-heading'});
         section.createDiv({cls:'gtd-project-card-grid'});
       }
-      const add=section.querySelector('[data-gtd-action="new-project"]');
-      const folder=folders.get(label);
-      add.hidden=!folder;
-      add.onclick=folder?()=>plugin.openProjectModal(folder):null;
       reconcile(section.querySelector('.gtd-project-card-grid'),group.map(path=>projectRows.get(path).row));
       return section;
     });

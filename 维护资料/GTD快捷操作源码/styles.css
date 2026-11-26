@@ -9,20 +9,17 @@
 .gtd-project-page-toolbar button { min-height:28px; padding:2px 8px; box-shadow:none; }
 .gtd-project-page-content { container-type:inline-size; overflow-x:auto; }
 .gtd-project-summary, .gtd-project-areas { display:grid; gap:10px; }
-.gtd-project-summary-actions { display:flex; }
-.gtd-project-area-heading { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
-.gtd-project-summary .gtd-project-area-heading h3 {
-  margin:0; color:var(--text-muted); font-size:var(--font-ui-small); font-weight:650;
+.gtd-project-summary-actions { display:flex; gap:6px; }
+.gtd-project-summary h3.gtd-project-area-heading {
+  margin:0 0 5px; color:var(--text-muted); font-size:var(--font-ui-small); font-weight:650;
 }
-.gtd-project-summary .gtd-project-area-add {
+.gtd-project-summary-actions button {
   height:28px; min-height:28px; padding:1px 8px;
   border:1px solid var(--background-modifier-border); border-radius:5px;
   background:var(--interactive-normal); box-shadow:none; color:var(--text-accent);
   font-size:var(--font-ui-small); white-space:nowrap;
 }
-.gtd-project-summary .gtd-project-area-add[hidden] { display:none; }
-.gtd-project-summary .gtd-project-area-add:hover { background:var(--interactive-hover); }
-.gtd-project-summary .gtd-project-area-heading .gtd-project-area-add { width:30px; padding:0; font-size:17px; }
+.gtd-project-summary-actions button:hover { background:var(--interactive-hover); }
 .gtd-project-card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,12rem),1fr)); gap:8px; }
 .gtd-project-card-grid:empty { display:none; }
 .gtd-project-card {
