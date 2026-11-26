@@ -79,7 +79,11 @@ const body=cards?surface.createDiv({cls:'gtd-project-areas'}):surface.createEl('
 const projectRows=new Map();
 let orderedPaths=[];
 const clearDropMarks=()=>dv.container.querySelectorAll('.gtd-drop-before,.gtd-drop-after').forEach(element=>element.classList.remove('gtd-drop-before','gtd-drop-after'));
-const dropSide=(event,element)=>event.clientY<element.getBoundingClientRect().top+element.getBoundingClientRect().height/2?'before':'after';
+const dropSide=(event,element)=>{
+  const rect=element.getBoundingClientRect();
+  const before=cards?event.clientX<rect.left+rect.width/2:event.clientY<rect.top+rect.height/2;
+  return before?'before':'after';
+};
 function reorderProjectRows(){
   const paths=orderedPaths.filter(path=>projectRows.has(path));
   if(cards){
