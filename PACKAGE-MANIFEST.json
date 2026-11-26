@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.14.7",
-  "builtAt": "2026-11-26T11:04:09+08:00",
+  "builtAt": "2026-11-26T14:34:21+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.15.0",
   "plugins": {
@@ -249,9 +249,29 @@
       "sha256": "c6d50ba7e6cc58b4b2c3dbcc988cde42ec35d4ccf4c1da14f61aecc23c07babb"
     },
     {
+      "path": "00 GTD/00 工作区/06 图解/01-home.png",
+      "bytes": 27869,
+      "sha256": "ef89100473736eca069cbf22dfff83fe8c2135a4bd574a09b66891c47aa71450"
+    },
+    {
+      "path": "00 GTD/00 工作区/06 图解/02-tasks.png",
+      "bytes": 36408,
+      "sha256": "f7541d671b48945e0a67ad9778462e1f3d14c15cba51c2016059dd4525d69d96"
+    },
+    {
+      "path": "00 GTD/00 工作区/06 图解/03-schedule.png",
+      "bytes": 17291,
+      "sha256": "a60b9435be59cda263d97e10b91e826cd6889a8f8a7e5be4ddc035d1f4b4499f"
+    },
+    {
+      "path": "00 GTD/00 工作区/06 图解/04-calendar.png",
+      "bytes": 25775,
+      "sha256": "3cf059c3f7687dcfe4b928bdf44ca71f7b4a5d865a2e5ccea6413d0111adb01f"
+    },
+    {
       "path": "00 GTD/使用说明.md",
-      "bytes": 22570,
-      "sha256": "16f10882fc505206a1cd063b81efec4d8e540d0a5fff9c374eb69645f083a884"
+      "bytes": 1432,
+      "sha256": "a177069096da8d523a3948587c8dabfda7bf9f31090882092a621ab25df1e853"
     },
     {
       "path": "00 GTD/首页.md",
@@ -266,7 +286,7 @@
     {
       "path": "README.md",
       "bytes": 3081,
-      "sha256": "49946d7663ab8f0d1d025503a381387eca88e3a871acc1c5ec0d132602fdd6fe"
+      "sha256": "ae10c101d33a384c8070aab5b558a19e5c15078e40610be5d461fdadd4f3e956"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -331,7 +351,7 @@
     {
       "path": "docs/安装与使用.md",
       "bytes": 19120,
-      "sha256": "910fe29aca3020d78a07a3a76f16c43a84a40dcf9cd45775b17658feef1bc213"
+      "sha256": "c81982ada7f345ac36a13df2863862898bd7a444f53deb1f27ec8b633741f3e1"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
