@@ -193,11 +193,15 @@ function taskBlockEnd(rows, task) {
   }
   return end;
 }
-function replaceProjectTask(content, reference, replacement, inheritFields = []) {
+function checkedProjectTaskRows(content, reference) {
   if (!reference || reference.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请在刷新后重新勾选');
   const rows = content.split(/\r?\n/);
   if (rows[reference.line] !== reference.raw) throw new Error('任务位置已变化，请刷新后重新勾选');
-  const status = raw => /^[ \t>]*(?:[-*+]|\d+[.)])\s+\[([^\]])\]/.exec(raw)?.[1];
+  return rows;
+}
+const status = raw => /^[ \t>]*(?:[-*+]|\d+[.)])\s+\[([^\]])\]/.exec(raw)?.[1];
+function replaceProjectTask(content, reference, replacement, inheritFields = []) {
+  const rows = checkedProjectTaskRows(content, reference);
   if (['x','X'].includes(status(replacement)) && !['x','X'].includes(status(reference.raw))) {
     const tasks = operationTaskTree(content, reference.raw), index = tasks.findIndex(task => task.line === reference.line && task.raw === reference.raw);
     let unfinished = 0;
@@ -235,6 +239,25 @@ function replaceProjectTask(content, reference, replacement, inheritFields = [])
     }
   }
   return result;
+}
+function completeProjectTaskBranch(content, reference, toggle) {
+  const rows = checkedProjectTaskRows(content, reference);
+  const tasks = operationTaskTree(content, reference.raw);
+  const target = tasks.find(task => task.line === reference.line);
+  if (!target) throw new Error('任务位置已变化，请刷新后重新勾选');
+  const end = taskBlockEnd(rows, target);
+  const branch = tasks.filter(task => task.line >= target.line && task.line < end);
+  if (branch.some(task => task.status === '-')) throw new Error('这组任务含已取消的任务，无法一键完成');
+  const parts = content.split(/(\r?\n)/);
+  for (const task of branch) {
+    if (['x','X'].includes(task.status)) continue;
+    const updated = toggle(task.raw).split(/\r?\n/);
+    if (!updated.some(raw => ['x','X'].includes(status(raw)))) throw new Error('此任务无法直接标记完成，请单独处理：' + task.title);
+    if (branch.length > 1 && updated.length > 1) throw new Error('这组任务含会生成下一次任务的重复任务，请单独处理：' + task.title);
+    const offset = task.line * 2;
+    parts[offset] = updated.join(parts[offset + 1] || '\n');
+  }
+  return parts.join('');
 }
 function rawTaskDates(raw) {
   return { due: /📅\s*(\d{4}-\d{2}-\d{2})/.exec(raw)?.[1] || '', days: taskDays(raw) };
@@ -608,4 +631,4 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, completeProjectTaskBranch, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };

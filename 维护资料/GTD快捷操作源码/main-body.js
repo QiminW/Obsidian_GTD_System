@@ -198,10 +198,11 @@ class QuickAreaModal extends EntryModal {
 }
 
 class QuickProjectModal extends EntryModal {
-  constructor(plugin) { super(plugin, '新建项目', 'project'); }
+  constructor(plugin, folder) { super(plugin, '新建项目', 'project'); this.folder = folder; }
   buildFields() {
     this.field('name', '项目名称').required = true;
-    this.field('folder', '所属领域', 'select', this.plugin.listAreas().map(area => ({ value: area.path, label: area.label })));
+    const field = this.field('folder', '所属领域', 'select', this.plugin.listAreas().map(area => ({ value: area.path, label: area.label })));
+    if (this.folder) field.value = this.folder;
     this.field('outcome', '完成标准');
     this.field('deadline', '项目截止日期', 'date');
   }
@@ -367,8 +368,9 @@ module.exports = class GtdQuickActions extends Plugin {
     if(target?.isContentEditable||field&&!(field.tagName==='INPUT'&&['checkbox','button','submit'].includes(field.type))||doc.querySelector('.modal'))return;
     const view=this.app.workspace.activeLeaf?.view;
     const type = view?.getViewType?.();
-    if (type !== PROJECT_PAGE && (type !== 'markdown' || !view.file?.path.startsWith('00 GTD/') || !view.containerEl.querySelector('.gtd-project-progress,.gtd-inbox'))) return;
-    if(view.getMode?.()==='source'&&!target?.closest?.('.gtd-project-progress,.gtd-inbox'))return;
+    const surfaces='.gtd-project-progress,.gtd-project-summary,.gtd-inbox';
+    if (type !== PROJECT_PAGE && (type !== 'markdown' || !view.file?.path.startsWith('00 GTD/') || !view.containerEl.querySelector(surfaces))) return;
+    if(view.getMode?.()==='source'&&!target?.closest?.(surfaces))return;
     event.preventDefault();event.stopPropagation();
     if(this.undoShortcutBusy)return;
     if([...this.inlineTaskEntries.values(),...this.taskTitleEdits.values(),...this.projectNameEdits.values()].some(state=>state.busy)){new Notice('正在保存，请稍后撤销');return;}
@@ -486,14 +488,14 @@ module.exports = class GtdQuickActions extends Plugin {
     const segments=path.slice(PROJECTS.length+1).split('/');
     return label||(segments.length>1?segments[0].replace(/^\d+\s*/,''):'')||'未分领域';
   }
-  groupedProjectPaths(paths) {
-    const groups=new Map();
+  groupedProjectPaths(paths, includeEmpty=false) {
+    const numbered=this.listAreas().map(area=>area.label);
+    const groups=new Map(includeEmpty ? numbered.map(label=>[label,[]]) : []);
     for(const path of this.orderedProjectPaths(paths)){
       const label=this.projectAreaLabel(path);
       if(!groups.has(label))groups.set(label,[]);
       groups.get(label).push(path);
     }
-    const numbered=this.listAreas().map(area=>area.label);
     const other=[...groups.keys()].filter(label=>label!=='未分领域').sort((a,b)=>a.localeCompare(b,'zh-CN'));
     return [...new Set([...numbered,...other,'未分领域'])].filter(label=>groups.has(label)).map(label=>[label,groups.get(label)]);
   }
@@ -897,15 +899,18 @@ module.exports = class GtdQuickActions extends Plugin {
     }
     this.saveData(this.data).catch(error=>console.error('GTD：无法保存折叠状态',error));
   }
-  async toggleProjectTask(path, reference) {
+  async toggleProjectTask(path, reference, includeDescendants=false) {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     const api = this.app.plugins.plugins['obsidian-tasks-plugin']?.apiV1;
     if (!api?.executeToggleTaskDoneCommand) throw new Error('请先启用 Tasks 插件');
+    const toggle = raw => logic.preserveTaskDays(raw, api.executeToggleTaskDoneCommand(logic.stripTaskDays(raw), path));
     let failure = null;
     await this.processGtdChange(file, content => {
       try {
-        return logic.replaceProjectTask(content, reference, logic.preserveTaskDays(reference.raw, api.executeToggleTaskDoneCommand(logic.stripTaskDays(reference.raw), path)));
+        return includeDescendants
+          ? logic.completeProjectTaskBranch(content, reference, toggle)
+          : logic.replaceProjectTask(content, reference, toggle(reference.raw));
       } catch (error) { failure = error; return content; }
     });
     if (failure) throw failure;
@@ -985,7 +990,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.rememberProject(path);
     return file;
   }
-  openProjectModal() { const modal = new QuickProjectModal(this); modal.open(); return modal; }
+  openProjectModal(folder) { const modal = new QuickProjectModal(this, folder); modal.open(); return modal; }
   openCaptureModal() { const modal = new QuickCaptureModal(this); modal.open(); return modal; }
   openAreaModal() { const modal = new QuickAreaModal(this); modal.open(); return modal; }
   async createArea(data) {
@@ -1088,13 +1093,6 @@ module.exports = class GtdQuickActions extends Plugin {
     workspace.setActiveLeaf(leaf, { focus: true });
     await workspace.revealLeaf(leaf);
     return leaf;
-  }
-  showProjectCreateMenu(event) {
-    const menu = new Menu();
-    menu.addItem(item => item.setTitle('新建项目').setIcon('list-todo').onClick(() => this.openProjectModal()));
-    menu.addItem(item => item.setTitle('新建领域').setIcon('folder-plus').onClick(() => this.openAreaModal()));
-    const rect = event.currentTarget.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom });
   }
   installBoardNavigation() {
     for (const leaf of this.app.workspace.getLeavesOfType('bases')) {

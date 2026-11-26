@@ -194,11 +194,15 @@ function taskBlockEnd(rows, task) {
   }
   return end;
 }
-function replaceProjectTask(content, reference, replacement, inheritFields = []) {
+function checkedProjectTaskRows(content, reference) {
   if (!reference || reference.version !== taskSourceVersion(content)) throw new Error('项目内容已变化，请在刷新后重新勾选');
   const rows = content.split(/\r?\n/);
   if (rows[reference.line] !== reference.raw) throw new Error('任务位置已变化，请刷新后重新勾选');
-  const status = raw => /^[ \t>]*(?:[-*+]|\d+[.)])\s+\[([^\]])\]/.exec(raw)?.[1];
+  return rows;
+}
+const status = raw => /^[ \t>]*(?:[-*+]|\d+[.)])\s+\[([^\]])\]/.exec(raw)?.[1];
+function replaceProjectTask(content, reference, replacement, inheritFields = []) {
+  const rows = checkedProjectTaskRows(content, reference);
   if (['x','X'].includes(status(replacement)) && !['x','X'].includes(status(reference.raw))) {
     const tasks = operationTaskTree(content, reference.raw), index = tasks.findIndex(task => task.line === reference.line && task.raw === reference.raw);
     let unfinished = 0;
@@ -236,6 +240,25 @@ function replaceProjectTask(content, reference, replacement, inheritFields = [])
     }
   }
   return result;
+}
+function completeProjectTaskBranch(content, reference, toggle) {
+  const rows = checkedProjectTaskRows(content, reference);
+  const tasks = operationTaskTree(content, reference.raw);
+  const target = tasks.find(task => task.line === reference.line);
+  if (!target) throw new Error('任务位置已变化，请刷新后重新勾选');
+  const end = taskBlockEnd(rows, target);
+  const branch = tasks.filter(task => task.line >= target.line && task.line < end);
+  if (branch.some(task => task.status === '-')) throw new Error('这组任务含已取消的任务，无法一键完成');
+  const parts = content.split(/(\r?\n)/);
+  for (const task of branch) {
+    if (['x','X'].includes(task.status)) continue;
+    const updated = toggle(task.raw).split(/\r?\n/);
+    if (!updated.some(raw => ['x','X'].includes(status(raw)))) throw new Error('此任务无法直接标记完成，请单独处理：' + task.title);
+    if (branch.length > 1 && updated.length > 1) throw new Error('这组任务含会生成下一次任务的重复任务，请单独处理：' + task.title);
+    const offset = task.line * 2;
+    parts[offset] = updated.join(parts[offset + 1] || '\n');
+  }
+  return parts.join('');
 }
 function rawTaskDates(raw) {
   return { due: /📅\s*(\d{4}-\d{2}-\d{2})/.exec(raw)?.[1] || '', days: taskDays(raw) };
@@ -609,7 +632,7 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, completeProjectTaskBranch, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
 
 return module.exports;
 })();
@@ -1229,10 +1252,11 @@ class QuickAreaModal extends EntryModal {
 }
 
 class QuickProjectModal extends EntryModal {
-  constructor(plugin) { super(plugin, '新建项目', 'project'); }
+  constructor(plugin, folder) { super(plugin, '新建项目', 'project'); this.folder = folder; }
   buildFields() {
     this.field('name', '项目名称').required = true;
-    this.field('folder', '所属领域', 'select', this.plugin.listAreas().map(area => ({ value: area.path, label: area.label })));
+    const field = this.field('folder', '所属领域', 'select', this.plugin.listAreas().map(area => ({ value: area.path, label: area.label })));
+    if (this.folder) field.value = this.folder;
     this.field('outcome', '完成标准');
     this.field('deadline', '项目截止日期', 'date');
   }
@@ -1398,8 +1422,9 @@ module.exports = class GtdQuickActions extends Plugin {
     if(target?.isContentEditable||field&&!(field.tagName==='INPUT'&&['checkbox','button','submit'].includes(field.type))||doc.querySelector('.modal'))return;
     const view=this.app.workspace.activeLeaf?.view;
     const type = view?.getViewType?.();
-    if (type !== PROJECT_PAGE && (type !== 'markdown' || !view.file?.path.startsWith('00 GTD/') || !view.containerEl.querySelector('.gtd-project-progress,.gtd-inbox'))) return;
-    if(view.getMode?.()==='source'&&!target?.closest?.('.gtd-project-progress,.gtd-inbox'))return;
+    const surfaces='.gtd-project-progress,.gtd-project-summary,.gtd-inbox';
+    if (type !== PROJECT_PAGE && (type !== 'markdown' || !view.file?.path.startsWith('00 GTD/') || !view.containerEl.querySelector(surfaces))) return;
+    if(view.getMode?.()==='source'&&!target?.closest?.(surfaces))return;
     event.preventDefault();event.stopPropagation();
     if(this.undoShortcutBusy)return;
     if([...this.inlineTaskEntries.values(),...this.taskTitleEdits.values(),...this.projectNameEdits.values()].some(state=>state.busy)){new Notice('正在保存，请稍后撤销');return;}
@@ -1517,14 +1542,14 @@ module.exports = class GtdQuickActions extends Plugin {
     const segments=path.slice(PROJECTS.length+1).split('/');
     return label||(segments.length>1?segments[0].replace(/^\d+\s*/,''):'')||'未分领域';
   }
-  groupedProjectPaths(paths) {
-    const groups=new Map();
+  groupedProjectPaths(paths, includeEmpty=false) {
+    const numbered=this.listAreas().map(area=>area.label);
+    const groups=new Map(includeEmpty ? numbered.map(label=>[label,[]]) : []);
     for(const path of this.orderedProjectPaths(paths)){
       const label=this.projectAreaLabel(path);
       if(!groups.has(label))groups.set(label,[]);
       groups.get(label).push(path);
     }
-    const numbered=this.listAreas().map(area=>area.label);
     const other=[...groups.keys()].filter(label=>label!=='未分领域').sort((a,b)=>a.localeCompare(b,'zh-CN'));
     return [...new Set([...numbered,...other,'未分领域'])].filter(label=>groups.has(label)).map(label=>[label,groups.get(label)]);
   }
@@ -1928,15 +1953,18 @@ module.exports = class GtdQuickActions extends Plugin {
     }
     this.saveData(this.data).catch(error=>console.error('GTD：无法保存折叠状态',error));
   }
-  async toggleProjectTask(path, reference) {
+  async toggleProjectTask(path, reference, includeDescendants=false) {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile) || !path.startsWith(PROJECTS + '/') || file.extension !== 'md') throw new Error('找不到项目笔记');
     const api = this.app.plugins.plugins['obsidian-tasks-plugin']?.apiV1;
     if (!api?.executeToggleTaskDoneCommand) throw new Error('请先启用 Tasks 插件');
+    const toggle = raw => logic.preserveTaskDays(raw, api.executeToggleTaskDoneCommand(logic.stripTaskDays(raw), path));
     let failure = null;
     await this.processGtdChange(file, content => {
       try {
-        return logic.replaceProjectTask(content, reference, logic.preserveTaskDays(reference.raw, api.executeToggleTaskDoneCommand(logic.stripTaskDays(reference.raw), path)));
+        return includeDescendants
+          ? logic.completeProjectTaskBranch(content, reference, toggle)
+          : logic.replaceProjectTask(content, reference, toggle(reference.raw));
       } catch (error) { failure = error; return content; }
     });
     if (failure) throw failure;
@@ -2016,7 +2044,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.rememberProject(path);
     return file;
   }
-  openProjectModal() { const modal = new QuickProjectModal(this); modal.open(); return modal; }
+  openProjectModal(folder) { const modal = new QuickProjectModal(this, folder); modal.open(); return modal; }
   openCaptureModal() { const modal = new QuickCaptureModal(this); modal.open(); return modal; }
   openAreaModal() { const modal = new QuickAreaModal(this); modal.open(); return modal; }
   async createArea(data) {
@@ -2119,13 +2147,6 @@ module.exports = class GtdQuickActions extends Plugin {
     workspace.setActiveLeaf(leaf, { focus: true });
     await workspace.revealLeaf(leaf);
     return leaf;
-  }
-  showProjectCreateMenu(event) {
-    const menu = new Menu();
-    menu.addItem(item => item.setTitle('新建项目').setIcon('list-todo').onClick(() => this.openProjectModal()));
-    menu.addItem(item => item.setTitle('新建领域').setIcon('folder-plus').onClick(() => this.openAreaModal()));
-    const rect = event.currentTarget.getBoundingClientRect();
-    menu.showAtPosition({ x: rect.left, y: rect.bottom });
   }
   installBoardNavigation() {
     for (const leaf of this.app.workspace.getLeavesOfType('bases')) {

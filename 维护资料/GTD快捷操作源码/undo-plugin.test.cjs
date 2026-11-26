@@ -23,6 +23,10 @@ test('project areas follow numbered groups, then saved order within each group',
  const groups=p.groupedProjectPaths([file.path,study.path,work.path,unassigned.path]);
  assert.deepEqual(JSON.parse(JSON.stringify(groups)),[['工作',[work.path,file.path]],['学习',[study.path]],['未分领域',[unassigned.path]]]);
 });
+test('the workbench can include empty areas for project creation',()=>{
+ const {p,file}=setup();p.listAreas=()=>[{label:'工作'},{label:'学习'}];
+ assert.deepEqual(JSON.parse(JSON.stringify(p.groupedProjectPaths([file.path],true))),[['工作',[file.path]],['学习',[]]]);
+});
 test('project pages reuse one tab and route only to original project notes',async()=>{
  const {p,file,inbox,files,File}=setup(),second=new File(ROOT+'/00 工作/Second.md','- [ ] second');files.set(second.path,second);
  const w=p.app.workspace,states=[],shown=[],opened=[];
@@ -83,6 +87,24 @@ test('a parent completes after its children and undo restores only that parent c
  const original='## 任务\r\n- [ ] Parent ^first\r\n  - [x] Child ✅ 2026-11-06 ^child\r\n';const {p,file}=setup(original);
  await p.toggleProjectTask(PATH,ref(file.text));assert.match(file.text,/- \[x\] Parent/);
  await p.undoHistory.undo();assert.equal(file.text,original);
+});
+
+test('branch completion saves every depth once and undo restores the entire branch',async()=>{
+ const original='## 任务\r\n- [ ] Parent ^first\r\n  Notes\n  - [ ] Child 📅 2026-11-29 ^child\r\n    - [ ] <!-- gtd-days: 2026-11-27 --> Grandchild ^grandchild\n  - [X] Already done ✅ 2026-11-06\r\n- [ ] Separate ^second\r\n';
+ const {p,file,events}=setup(original);
+ await p.toggleProjectTask(PATH,ref(original),true);
+ assert.equal(file.text,original.replace('[ ] Parent','[x] Parent').replace('[ ] Child','[x] Child').replace('[ ] <!--','[x] <!--'));
+ assert.equal(events.filter(e=>Array.isArray(e)&&e[0]==='gtd-project-tasks-changed').length,1);
+ await p.toggleProjectTask(PATH,ref(file.text),true);
+ assert.equal(p.undoHistory.entries.length,1);
+ await p.undoHistory.undo();assert.equal(file.text,original);
+});
+
+test('branch completion leaves the entire note unchanged if a nested task cannot be closed',async()=>{
+ const original='- [ ] Parent ^first\n  - [ ] Other child\n  - [-] Cancelled\n';
+ const {p,file}=setup(original);
+ await assert.rejects(p.toggleProjectTask(PATH,ref(original),true),/已取消/);
+ assert.equal(file.text,original);assert.equal(p.undoHistory.entries.length,0);
 });
 
 test('inheriting a parent deadline is one undoable operation preserving each child date',async()=>{

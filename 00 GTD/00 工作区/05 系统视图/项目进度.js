@@ -6,6 +6,9 @@ const refreshGuard=plugin.protectProjectView(dv.component,dv.container);
 const finishView=refreshGuard.begin();
 try {
 const summaryOnly=!projectPath&&input?.summaryOnly&&typeof plugin.openProjectPage==='function';
+// The older loaded plugin keeps its table until the vault is reopened after an update.
+const scopedCreation=plugin.openProjectModal?.length>0;
+const cards=summaryOnly&&scopedCreation;
 function readPages(){
   if(projectPath){
     const page=dv.page(projectPath);
@@ -20,10 +23,10 @@ const scope = projectPath || dv.current().file.path;
 const visibilityKey=scope+'::show-completed';
 let showCompleted=!summaryOnly&&plugin.projectTreeExpanded(visibilityKey,true);
 const treeRenderers=new Map();
-const table = dv.container.createEl('table', { cls:'gtd-project-progress' });
-if(summaryOnly)table.classList.add('gtd-project-summary');
-if(projectPath)table.classList.add('gtd-project-single');
-const keyboard=plugin.installProjectKeyboard(dv.component,table,scope);
+const surface=dv.container.createEl(cards?'div':'table',{cls:cards?'gtd-project-summary':'gtd-project-progress'});
+if(summaryOnly&&!cards)surface.classList.add('gtd-project-summary');
+if(projectPath)surface.classList.add('gtd-project-single');
+const keyboard=plugin.installProjectKeyboard(dv.component,surface,scope);
 const reconcile=(parent,elements)=>{
   const keep=new Set(elements);for(const child of [...parent.children])if(!keep.has(child))child.remove();
   let cursor=parent.firstElementChild;for(const element of elements){if(element===cursor)cursor=cursor.nextElementSibling;else parent.insertBefore(element,cursor);}
@@ -38,7 +41,7 @@ function addVisibilityButton(heading){
     app.workspace.trigger('gtd-completed-visibility-changed',scope);
   });
   dv.component.registerEvent(app.workspace.on('gtd-completed-visibility-changed',changedScope=>{
-    if(changedScope!==scope||!table.isConnected)return;
+    if(changedScope!==scope||!surface.isConnected)return;
     showCompleted=plugin.projectTreeExpanded(visibilityKey,true);
     plugin.renderTaskVisibilityButton(button,showCompleted);
     for(const panel of dv.container.querySelectorAll('.gtd-day-panel:popover-open'))panel.hidePopover();
@@ -46,40 +49,68 @@ function addVisibilityButton(heading){
     for(const render of treeRenderers.values())render().catch(error=>plugin.showTaskActionError(error));
   }));
 }
-const head = table.createEl('thead').createEl('tr');
 const labels=summaryOnly?['项目','进度']:['项目','领域','状态','进度','完成 / 总计','截止日期'];
-for (const label of labels) {
-  const heading=head.createEl('th').createDiv({cls:'gtd-table-heading'});heading.createSpan({text:label});
-  if(label==='截止日期')addVisibilityButton(heading);
-  if(!projectPath&&(label==='项目'||label==='领域')) {
-    const name=summaryOnly?'新建':label==='项目'?'新建项目':'新建领域';
-    const add=heading.createEl('button',{text:'＋',cls:'gtd-task-action gtd-header-add',attr:{type:'button','aria-label':name,title:name}});
-    add.dataset.gtdAction=label==='项目'?'new-project':'new-area';
-    add.addEventListener('click',event=>{
-      if(summaryOnly)plugin.showProjectCreateMenu(event);
-      else if(label==='项目')plugin.openProjectModal();
-      else plugin.openAreaModal();
-    });
+if(cards){
+  const actions=surface.createDiv({cls:'gtd-project-summary-actions'});
+  const add=actions.createEl('button',{text:'＋ 新建领域',cls:'gtd-project-area-add',attr:{type:'button'}});
+  add.dataset.gtdAction='new-area';
+  add.addEventListener('click',()=>plugin.openAreaModal());
+}else{
+  const head=surface.createEl('thead').createEl('tr');
+  for(const label of labels){
+    const heading=head.createEl('th').createDiv({cls:'gtd-table-heading'});heading.createSpan({text:label});
+    if(label==='截止日期')addVisibilityButton(heading);
+    if(!projectPath&&(label==='项目'||label==='领域')){
+      const name=summaryOnly?'新建':label==='项目'?'新建项目':'新建领域';
+      const add=heading.createEl('button',{text:'＋',cls:'gtd-task-action gtd-header-add',attr:{type:'button','aria-label':name,title:name}});
+      add.dataset.gtdAction=label==='项目'?'new-project':'new-area';
+      add.addEventListener('click',event=>{
+        if(summaryOnly)plugin.showProjectCreateMenu(event);
+        else if(label==='项目')plugin.openProjectModal();
+        else plugin.openAreaModal();
+      });
+    }
   }
 }
-const body = table.createEl('tbody');
+const body=cards?surface.createDiv({cls:'gtd-project-areas'}):surface.createEl('tbody');
 const projectRows=new Map();
 let orderedPaths=[];
 const clearDropMarks=()=>dv.container.querySelectorAll('.gtd-drop-before,.gtd-drop-after').forEach(element=>element.classList.remove('gtd-drop-before','gtd-drop-after'));
 const dropSide=(event,element)=>event.clientY<element.getBoundingClientRect().top+element.getBoundingClientRect().height/2?'before':'after';
 function reorderProjectRows(){
   const paths=orderedPaths.filter(path=>projectRows.has(path));
-  if(summaryOnly){
-    const headings=new Map([...body.querySelectorAll('tr[data-gtd-area-heading]')].map(row=>[row.dataset.gtdAreaHeading,row]));
-    const ordered=plugin.groupedProjectPaths(paths).flatMap(([label,group])=>{
-      let heading=headings.get(label);
-      if(!heading){
-        heading=body.createEl('tr',{cls:'gtd-project-area'});heading.dataset.gtdAreaHeading=label;
+  if(cards){
+    const sections=new Map([...body.children].map(section=>[section.dataset.gtdAreaHeading,section]));
+    const folders=new Map(plugin.listAreas().map(area=>[area.label,area.path]));
+    const ordered=plugin.groupedProjectPaths(paths,true).map(([label,group])=>{
+      let section=sections.get(label);
+      if(!section){
+        section=body.createEl('section',{cls:'gtd-project-area'});section.dataset.gtdAreaHeading=label;
+        const heading=section.createDiv({cls:'gtd-project-area-heading'});
+        heading.createEl('h3',{text:label});
+        const name='在「'+label+'」新建项目';
+        const add=heading.createEl('button',{text:'＋',cls:'gtd-project-area-add',attr:{type:'button','aria-label':name,title:name}});
+        add.dataset.gtdAction='new-project';
+        section.createDiv({cls:'gtd-project-card-grid'});
+      }
+      const add=section.querySelector('[data-gtd-action="new-project"]');
+      const folder=folders.get(label);
+      add.hidden=!folder;
+      add.onclick=folder?()=>plugin.openProjectModal(folder):null;
+      reconcile(section.querySelector('.gtd-project-card-grid'),group.map(path=>projectRows.get(path).row));
+      return section;
+    });
+    reconcile(body,ordered);
+  }else if(summaryOnly){
+    const headings=new Map([...body.children].map(row=>[row.dataset.gtdAreaHeading,row]));
+    reconcile(body,plugin.groupedProjectPaths(paths).flatMap(([label,group])=>{
+      const heading=headings.get(label)||body.createEl('tr',{cls:'gtd-project-area'});
+      if(!heading.dataset.gtdAreaHeading){
+        heading.dataset.gtdAreaHeading=label;
         heading.createEl('td',{text:label,attr:{colspan:'2'}});
       }
       return [heading,...group.map(path=>projectRows.get(path).row)];
-    });
-    reconcile(body,ordered);
+    }));
   }else{
     const ordered=projectPath?paths:plugin.orderedProjectPaths(paths);
     reconcile(body,ordered.flatMap(path=>{const {row,detail}=projectRows.get(path);return detail?[row,detail]:[row];}));
@@ -101,7 +132,7 @@ function addProjectDrag(row,title,path,name){
   row.addEventListener('drop',event=>{const source=dragSource();if(!source)return;event.preventDefault();event.stopPropagation();const side=dropSide(event,row);plugin.draggedProject=null;clearDropMarks();plugin.moveProjectDisplay(source,path,side).catch(error=>plugin.showTaskActionError(error));});
 }
 function addProjectProgress(row){
-  const progressCell=row.createEl('td',{cls:'gtd-progress-cell'});
+  const progressCell=row.createEl(cards?'div':'td',{cls:'gtd-progress-cell'});
   const bar=progressCell.createEl('progress',{attr:{max:'100',value:'0'}});
   const percent=progressCell.createSpan();
   const count=summaryOnly?progressCell.createSpan({cls:'gtd-project-summary-count'}):row.createEl('td');
@@ -116,12 +147,12 @@ function addProjectProgress(row){
 }
 async function createProjectSummary(project){
   const {path,name}=project.file;
-  const row=body.createEl('tr');row.dataset.projectPath=path;
-  const title=row.createEl('td');
+  const row=cards?body.createDiv({cls:'gtd-project-card'}):body.createEl('tr');row.dataset.projectPath=path;
+  const title=cards?row.createDiv({cls:'gtd-project-card-heading'}):row.createEl('td');
   addProjectDrag(row,title,path,name);
   const open=()=>plugin.openProjectPage(path).catch(error=>plugin.showTaskActionError(error));
   const link=title.createEl('button',{text:name,cls:'gtd-project-open',attr:{type:'button','aria-label':'打开项目：'+name}});
-  link.addEventListener('click',open);
+  (cards?row:link).addEventListener('click',open);
   row.addEventListener('keydown',event=>{
     if(event.target!==row||event.key!=='Enter'||event.defaultPrevented||event.isComposing||event.keyCode===229||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey)return;
     event.preventDefault();event.stopPropagation();
@@ -438,10 +469,16 @@ async function createProjectView(project) {
       taskRow.addEventListener('dragleave',event=>{if(!taskRow.contains(event.relatedTarget))taskRow.classList.remove('gtd-drop-before','gtd-drop-after');});
       taskRow.addEventListener('drop',event=>{if(!allowedDrop())return;event.preventDefault();event.stopPropagation();const from=plugin.draggedTask,side=dropSide(event,taskRow);plugin.draggedTask=null;clearDropMarks();writeTask(()=>plugin.reorderProjectTask(path,from.reference,node.reference,side));});
       const checkbox=taskRow.createEl('input',{attr:{type:'checkbox','aria-label':'完成：'+(node.title||'未命名任务')}});
+      if(scopedCreation&&node.children.length)checkbox.title='Ctrl＋左键完成此任务及全部子任务';
       checkbox.dataset.gtdTaskCheckbox='true';checkbox.dataset.taskKey=node.key;checkbox.dataset.cancelled=String(node.cancelled);
       checkbox.dataset.unavailable=String(node.cancelled);
       checkbox.checked=node.completed;checkbox.disabled=busy||node.cancelled;
-      checkbox.addEventListener('click',e=>e.stopPropagation());
+      checkbox.addEventListener('click',event=>{
+        event.stopPropagation();
+        if(!scopedCreation||!event.ctrlKey||event.button!==0)return;
+        event.preventDefault();
+        writeTask(()=>plugin.toggleProjectTask(path,node.reference,true));
+      });
       checkbox.addEventListener('change',()=>writeTask(async()=>{
         try { await plugin.toggleProjectTask(path,node.reference); }
         catch(error) { checkbox.checked=node.completed;throw error; }
@@ -571,7 +608,7 @@ async function updateProjects(){
       else await createProjectView(page);
     }
     reorderProjectRows();
-    if(!pages.length&&!body.children.length){
+    if(!cards&&!pages.length&&!body.children.length){
       const message=projectPath&&app.vault.getAbstractFileByPath(projectPath)?'正在读取项目…':'暂无项目';
       const cell=body.createEl('tr').createEl('td',{text:message});cell.colSpan=labels.length;
     }
