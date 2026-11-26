@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.14.3 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.14.4 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 首页调用项目进度视图时使用 `summaryOnly`，按 `groupedProjectPaths` 输出领域和卡片，顶部的「+领域」和「+项目」打开相应的表单。打开项目会复用 `gtd-project-page` 标签页，通过 Dataview 的 `executeJs` 用 `projectPath` 载入同一个视图。独立页读写原项目文件，同一份任务也用于日历。
 

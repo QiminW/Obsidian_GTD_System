@@ -20,7 +20,10 @@
   font-size:var(--font-ui-small); white-space:nowrap;
 }
 .gtd-project-summary-actions button:hover { background:var(--interactive-hover); }
-.gtd-project-card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,12rem),1fr)); gap:8px; }
+.gtd-project-card-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,12rem),1fr)); gap:8px;
+  padding:7px; border:1px solid var(--background-modifier-border); border-radius:7px;
+}
 .gtd-project-card-grid:empty { display:none; }
 .gtd-project-card {
   display:flex; flex-direction:column; justify-content:space-between; gap:8px;

@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.14.3",
-  "builtAt": "2026-11-26T10:00:30+08:00",
+  "version": "1.14.4",
+  "builtAt": "2026-11-26T10:02:36+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.15.0",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.14.3",
+      "version": "1.14.4",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -106,12 +106,12 @@
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 285,
-      "sha256": "7102782117cb63fed40fb9f0b9e5171f6f2b2fcfcc65e4e26a53c4c6698f92cb"
+      "sha256": "1e3044cca2f4811a7aed0ae084d9cee558ff4030df41bdeeac60c58ad753e563"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
-      "bytes": 16455,
-      "sha256": "dfa313350d671cf897a1d6a1d0dbfd169c18754cb45970c995ffe3ffe1f25c6b"
+      "bytes": 16546,
+      "sha256": "2bebc6d08f3a46d23a98df67833c8b54039679f77826d5227da4c6f103a51ad2"
     },
     {
       "path": ".obsidian/plugins/obsidian-tasks-plugin/LICENSE.txt",
@@ -331,7 +331,7 @@
     {
       "path": "docs/安装与使用.md",
       "bytes": 18915,
-      "sha256": "6b450d9345c6a2049036ea5a99ec59929d355beac865f870d3bb74a2d8c349ed"
+      "sha256": "727ed5accda0214a7fe259731623e3e6b7ddd367c82acbd671bcdf4c4bc81643"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
@@ -470,8 +470,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/styles.css",
-      "bytes": 16455,
-      "sha256": "dfa313350d671cf897a1d6a1d0dbfd169c18754cb45970c995ffe3ffe1f25c6b"
+      "bytes": 16546,
+      "sha256": "2bebc6d08f3a46d23a98df67833c8b54039679f77826d5227da4c6f103a51ad2"
     },
     {
       "path": "维护资料/GTD快捷操作源码/task-controls.native.js",
@@ -521,7 +521,7 @@
     {
       "path": "维护资料/README.md",
       "bytes": 10574,
-      "sha256": "5c499a4318e2201bc00d65187f3f172791ba13f7a4dcf759661731246224cb34"
+      "sha256": "e6325136244f9fbcc8a3cb32a76222445f56e697cd4cf81a2eee08a9525d431f"
     },
     {
       "path": "维护资料/底色来源.md",
