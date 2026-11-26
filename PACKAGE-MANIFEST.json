@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.15.0",
-  "builtAt": "2026-11-26T17:27:43+08:00",
+  "builtAt": "2026-11-26T19:07:26+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.15.0",
   "plugins": {
@@ -285,8 +285,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3274,
-      "sha256": "cce09ff936d9ce272d4a1018958ebe83d18d7c6f5c7019a1e74da7a859b58683"
+      "bytes": 6707,
+      "sha256": "826f4cd3480d58fa79897a9904da81db10e303732a8b36ec16ff619a39f26293"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -302,6 +302,11 @@
       "path": "docs/images/completed-hidden.png",
       "bytes": 55977,
       "sha256": "0afd5aee5b5d63572c6b2f675e3dac3e98072c6add572a71554485d5e90fb428"
+    },
+    {
+      "path": "docs/images/focus-session.png",
+      "bytes": 260561,
+      "sha256": "eac5cfb3f93147a84a15fdda15edabd15daf19e95fa5e0880a061a507467a34d"
     },
     {
       "path": "docs/images/home-overview.png",
@@ -320,23 +325,23 @@
     },
     {
       "path": "docs/images/promo-01-cover.png",
-      "bytes": 131241,
-      "sha256": "25e666789d3cad88aacf02cfce13d2797a1fdda31d181ddf6bdfec1162416406"
+      "bytes": 181127,
+      "sha256": "e4a46f5adb14ed0dcea106a9db4b6e01e6c5e710bbc5018295e827a3cf9b5983"
     },
     {
       "path": "docs/images/promo-02-tasks.png",
-      "bytes": 139650,
-      "sha256": "2a937c277a2b95036a96797feda4ef7ad746f190edf926e42f05ff21167075f2"
+      "bytes": 249678,
+      "sha256": "1153492a026902790ed07241f5510b47a3ebbc8c220383cb8a34b3ac4c12aac3"
     },
     {
       "path": "docs/images/promo-03-calendar.png",
-      "bytes": 182035,
-      "sha256": "29a731d45c3c22044b34cc988e502d70bb43c7af6c061e5332f516c23f067ae3"
+      "bytes": 294476,
+      "sha256": "04bd0e47ba4225a0a6dde1a400ca99bfb03beab80fcc92aa70081658ee12d0c0"
     },
     {
       "path": "docs/images/promo-hero.png",
-      "bytes": 160362,
-      "sha256": "3d7526931c2ad7190b33c3f10426f855dfb0bd74426747166db0e193bf936174"
+      "bytes": 357619,
+      "sha256": "7935335a1c3ce807980e2a4dcd21134597503da5da21ea594db57ba1556a08bd"
     },
     {
       "path": "docs/images/task-hierarchy.png",
