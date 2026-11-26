@@ -8,7 +8,9 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.13.9 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.14.1 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+
+首页调用项目进度视图时使用 `summaryOnly`，按 `groupedProjectPaths` 输出领域和项目。打开项目会复用 `gtd-project-page` 标签页，通过 Dataview 的 `executeJs` 用 `projectPath` 载入同一个视图。独立页读写原项目文件，同一份任务也用于日历。
 
 如修改源码，安装 Python 后，在当前文件夹执行：
 
@@ -36,7 +38,7 @@ node --test
 
 运行 `python GTD快捷操作源码/界面验证/build.py` 可生成独立 HTML，使用内存中的演示项目验证键盘、局部更新、连续添加、日期面板和缩进。用浏览器打开输出文件即可查看 JSON 结果；该验证不读取个人笔记，也不操作当前 Obsidian 输入框。
 
-`refresh-input.native.js` 和 `refresh-reading-mode.native.js` 是 Obsidian 内的输入与滚动回归脚本。前者检查组合输入、异步读取、连续提交、Esc 和并发高度释放；后者通过真实 Dataview 刷新检查查看模式中的输入、滚动及日历间距。使用专用演示库打开首页的查看模式，退出其他编辑后，通过 Obsidian CLI 的 `eval` 执行脚本。结果保存在 `window.__gtdRefreshInputTest` 和 `window.__realRefreshTest`；每次运行会创建并清理自己的示例项目。
+`refresh-input.native.js` 和 `refresh-reading-mode.native.js` 是 Obsidian 内的输入与滚动回归脚本。前者检查组合输入、异步读取、连续提交、Esc 和并发高度释放；后者通过真实 Dataview 刷新检查独立项目页的输入和滚动。使用专用演示库，退出其他编辑后，通过 Obsidian CLI 的 `eval` 执行脚本。结果保存在 `window.__gtdRefreshInputTest` 和 `window.__realRefreshTest`，示例项目会自动清理。
 
 ## Tasks Calendar 截止日红底
 
@@ -44,7 +46,7 @@ node --test
 
 `calendarTaskContexts` 按准确的源笔记层级生成完整父任务路径与逐级身份，完整索引先验证源引用，再筛选末级任务。`calendar-bridge.cjs` 安装可选 `_gtdRenderDayTasks` 回调，由原生日历 React 按项目、各级父任务构建递归分组，共同上级合并；不同来源的同名分支保持独立。保留原任务渲染和排序处理，不移动 React 管理的卡片 DOM。日期列表与逾期列表使用独立折叠键，各级数量统计当前列表的末级卡片；稳定父任务块 ID 可保留折叠身份。收缩时隐藏所有层级中没有可见卡片的组。`calendar-context.test.cjs`、`calendar-groups.test.cjs` 和 `calendar-parent-layout.native.js` 验证来源、层级合并、布局切换、折叠、勾选、撤销、窄屏及定位。
 
-分组顺序与项目进度共用 `orderProjectPaths` 和 `projectOrder`，未指定的项目按名称 `localeCompare` 补齐，同名项目再按完整路径排序。任务按原始源行号排序，直属任务与子分组交错渲染，已完成卡片保留源位置；每组使用原生 SortableContext。项目顺序事件触发日历局部更新，任务拖动通过源笔记变更同步，卸载时解除事件订阅。
+日历分组与首页共用 `groupedProjectPaths`。领域按文件夹编号排列，领域内沿用 `projectOrder`，未指定的项目按名称和完整路径补齐。任务按原始源行号排序，直属任务与子分组交错渲染，已完成卡片保留源位置。每组使用原生 SortableContext。项目顺序事件触发日历局部更新，任务拖动通过源笔记变更同步，卸载时解除事件订阅。
 
 源笔记读取与 Tasks Calendar 的批量索引异步到达。`calendar-bridge.cjs` 为每个源文件保存最近一次通过完整引用校核的末级任务模型；两份数据不一致时保留该模型的层级、卡片身份和日期，并将可写引用设为 `null`。一致后一次替换，避免分组标题在中间帧消失、日历高度塌陷。删除、重命名和卸载时清理模型；原有源版本校核继续执行。`calendar-sync.test.cjs` 覆盖两种到达顺序和删除后重建，`calendar-stability.native.js` 在演示库延迟原生索引，逐帧验证分组数量、高度和勾选撤销。
 

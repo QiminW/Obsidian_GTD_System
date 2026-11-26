@@ -12,7 +12,7 @@ function treeKeyAction(rows,id,key){
  if(key==='t'||key==='T')return row.canToday?{type:'today',id}:none;
  if(key==='Enter')return row.branch?toggle(!row.expanded):none;
  if(key==='ArrowLeft')return row.branch&&row.expanded?toggle(false):row.parent&&rows.some(item=>item.id===row.parent)?focus(rows.find(item=>item.id===row.parent)):none;
- if(key==='ArrowRight')return row.branch&&!row.expanded?toggle(true):row.branch&&rows[index+1]?.parent===id?focus(rows[index+1]):none;
+ if(key==='ArrowRight')return row.branch&&!row.expanded?toggle(true):rows[index+1]?.parent===id?focus(rows[index+1]):none;
  return none;
 }
 

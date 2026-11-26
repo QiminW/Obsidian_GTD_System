@@ -30,6 +30,10 @@ test('left collapses an expanded branch or moves to its visible parent',()=>{
 test('right expands a closed branch then enters its first visible child',()=>{
  assert.deepEqual(treeKeyAction(rows,'q','ArrowRight'),{type:'toggle',id:'q',expanded:true});assert.deepEqual(treeKeyAction(rows,'a','ArrowRight'),{type:'focus',id:'b'});assert.deepEqual(treeKeyAction(rows,'b','ArrowRight'),{type:'none'});
 });
+test('right enters the first task beneath an always-open project',()=>{
+ const detail=[{...rows[0],branch:false},...rows.slice(1)];
+ assert.deepEqual(treeKeyAction(detail,'p','ArrowRight'),{type:'focus',id:'a'});
+});
 test('home and end select first and last visible rows; unknown input does nothing',()=>{
  assert.deepEqual(treeKeyAction(rows,'b','Home'),{type:'focus',id:'p'});assert.deepEqual(treeKeyAction(rows,'b','End'),{type:'focus',id:'q'});assert.deepEqual(treeKeyAction(rows,'b','z'),{type:'none'});assert.deepEqual(treeKeyAction([],'missing','ArrowDown'),{type:'none'});
 });

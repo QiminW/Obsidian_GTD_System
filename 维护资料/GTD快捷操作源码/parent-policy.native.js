@@ -8,7 +8,7 @@
  const flatten=nodes=>nodes.flatMap(n=>[n,...flatten(n.children)]),visible=e=>!!e?.offsetWidth;
  const history=p.undoHistory,entries=history.entries.slice(),lastProject=p.data.lastProject;
  const w=window.electron.remote.getCurrentWindow();w.webContents.setBackgroundThrottling(false);w.showInactive();w.moveTop();
- const path='00 GTD/00 工作区/01 项目/00 工作/__父子规则验证_'+Date.now()+'.md';let file;
+ const path='00 GTD/00 工作区/01 项目/00 工作/__父子规则验证_'+Date.now()+'.md';let file,leaf;
  const initial='---\ntype: gtd-project\narea: 工作\nstatus: active\n---\n## 任务\n- [ ] <!-- gtd-days: 2026-11-06 --> 父任务 ^parent\n  - [ ] 空白子任务 ^empty\n  - [ ] <!-- gtd-days: 2026-11-08 --> 自定子任务 📅 2026-11-15 ^own\n    - [ ] 孙任务 ^grand\n    - [ ] 另一孙任务 ^grand2\n';
  const model=async()=>flatten(logic.projectTaskTree(await app.vault.read(file)).roots);
  const node=async name=>(await model()).find(n=>n.title===name);
@@ -16,8 +16,7 @@
  const row=name=>[...document.querySelectorAll('.gtd-task-row')].find(e=>visible(e)&&e.closest('tr')?.previousElementSibling?.dataset.projectPath===path&&e.querySelector('.gtd-task-title')?.textContent===name);
  const taskRow=name=>row(name)||[...document.querySelectorAll('.gtd-task-row')].find(e=>visible(e)&&e.querySelector('.gtd-task-title')?.textContent===name&&e.querySelector('input[data-task-key="block:'+({父任务:'parent',空白子任务:'empty',自定子任务:'own',孙任务:'grand'}[name]||'')+'"]'));
  try{
-  file=await app.vault.create(path,initial);await until(project,'project indexed');
-  if(project().querySelector('.gtd-project-toggle').getAttribute('aria-expanded')!=='true')project().querySelector('.gtd-project-toggle').click();
+  file=await app.vault.create(path,initial);leaf=await p.openProjectPage(path);await until(project,'project page indexed');
   await until(()=>taskRow('父任务'),'parent visible');
   for(const branch of project().nextElementSibling.querySelectorAll('details'))branch.open=true;
   for(let attempt=0;attempt<3;attempt++){
@@ -138,6 +137,7 @@
   await history.undo();check('one undo restores all calendar completion records',await app.vault.read(file)===completedSource);
   await history.undo();check('undoing parent completion keeps every child completed',(await model()).slice(1).every(n=>n.completed)&&!(await node('父任务')).completed);
  }catch(error){results.push({name:error.stack,pass:false})}finally{
+  if(file&&leaf?.view.file===file)leaf.detach();
   if(file&&app.vault.getAbstractFileByPath(path))await app.vault.delete(file);
   history.entries.splice(0,history.entries.length,...entries);if(lastProject===undefined)delete p.data.lastProject;else p.data.lastProject=lastProject;await p.saveData(p.data);w.webContents.setBackgroundThrottling(true);
   window.__parentPolicyNative={pass:results.every(r=>r.pass),checks:results.length,failed:results.filter(r=>!r.pass),results};

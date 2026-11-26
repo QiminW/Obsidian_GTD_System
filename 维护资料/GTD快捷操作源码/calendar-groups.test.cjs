@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),install=require('./calendar-bridge.cjs'),logic=require('./logic.cjs');
 global.window={setTimeout:()=>0,clearTimeout(){}};
 const jsx={jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})};
-function setup(){const calendar={taskStore:{getTasks:()=>[]},refreshCalendars(){}};const plugin={data:{calendarDayLayout:'group'},app:{plugins:{plugins:{'tasks-calendar':calendar}},vault:{on:()=>({}),offref(){},getMarkdownFiles:()=>[]}}};const bridge=install(plugin,logic,class{});return {plugin,calendar,bridge};}
+function setup(){const calendar={taskStore:{getTasks:()=>[]},refreshCalendars(){}};const plugin={data:{calendarDayLayout:'group'},groupedProjectPaths(paths){return [['示例领域',logic.orderProjectPaths(paths,this.data.projectOrder)]];},app:{plugins:{plugins:{'tasks-calendar':calendar}},vault:{on:()=>({}),offref(){},getMarkdownFiles:()=>[]}}};const bridge=install(plugin,logic,class{});return {plugin,calendar,bridge};}
 const opts=(extra={})=>({mode:'day',gridRef:{current:{closest:()=>({})}},date:'2026-11-09',active:[],completed:[],jsx,sortable:'sortable',strategy:'vertical',renderTask:task=>({type:'card',props:{task}}),...extra});
 const task=(id,group='p',project='Example')=>({id,path:'00 GTD/'+project+'.md',_gtdAncestors:['Root',group],_gtdAncestorKeys:['root',group]});
 const children=group=>group.props.children[1].props.children.props.children.filter(node=>node.type==='details');

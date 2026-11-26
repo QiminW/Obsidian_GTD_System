@@ -13,6 +13,35 @@ function setup(content='## 任务\n- [ ] First ^first\n- [ ] Second ^second\n'){
  return {p,file,inbox,files,notices,events,vault,File};
 }
 const ref=(text,key='block:first')=>{const flatten=nodes=>nodes.flatMap(n=>[n,...flatten(n.children)]);return flatten(logic.projectTaskTree(text).roots).find(n=>n.key===key).reference;};
+test('project areas follow numbered groups, then saved order within each group',()=>{
+ const {p,file,files,File}=setup();
+ const study=new File(ROOT+'/01 学习/Study.md',''),work=new File(ROOT+'/01 学习/Work.md',''),unassigned=new File(ROOT+'/Unassigned.md','');
+ for(const note of [study,work,unassigned])files.set(note.path,note);
+ p.app.metadataCache.getFileCache=note=>({frontmatter:{area:note===work?'工作':undefined}});
+ p.listAreas=()=>[{label:'工作'},{label:'学习'}];
+ p.data.projectOrder=[study.path,work.path,file.path];
+ const groups=p.groupedProjectPaths([file.path,study.path,work.path,unassigned.path]);
+ assert.deepEqual(JSON.parse(JSON.stringify(groups)),[['工作',[work.path,file.path]],['学习',[study.path]],['未分领域',[unassigned.path]]]);
+});
+test('project pages reuse one tab and route only to original project notes',async()=>{
+ const {p,file,inbox,files,File}=setup(),second=new File(ROOT+'/00 工作/Second.md','- [ ] second');files.set(second.path,second);
+ const w=p.app.workspace,states=[],shown=[],opened=[];
+ const detail={view:{},async setViewState(state){states.push(state);this.view.file=files.get(state.state.path);}};
+ w.getLeavesOfType=()=>states.length?[detail]:[];
+ w.getLeaf=kind=>{opened.push(kind);return detail;};
+ w.revealLeaf=async leaf=>shown.push(leaf);
+ w.setActiveLeaf=()=>{};
+ assert.equal(await p.openProjectPage(file.path),detail);assert.equal(await p.openProjectPage(file.path),detail);
+ assert.equal(await p.openProjectPage(second.path),detail);
+ assert.deepEqual(opened,['tab']);assert.deepEqual(states.map(x=>x.state.path),[file.path,second.path]);assert.equal(shown.length,3);
+ await assert.rejects(p.openProjectPage(inbox.path),/找不到项目/);assert.equal(states.length,2);
+});
+test('quick add opens the selected project page and its existing task entry',async()=>{
+ const {p,file}=setup();const opened=[];let clicks=0;
+ p.openProjectPage=async path=>{opened.push(path);return p.app.workspace.activeLeaf={view:{file,containerEl:{querySelector:()=>({click:()=>clicks++})}}};};
+ p.data.lastProject=file.path;await p.openInlineTaskFromCommand();
+ assert.deepEqual(opened,[file.path]);assert.equal(clicks,1);
+});
 test('saved task snapshots provide current references for the next action without a display reread',async()=>{
  const {p,file,events,vault}=setup(),read=vault.read;vault.read=async()=>{throw Error('Unexpected display read')};
  await p.toggleProjectTask(PATH,ref(file.text));
@@ -135,6 +164,19 @@ test('a stable parent ID does not make duplicate unmarked children unambiguous',
 function shortcut(target={},extra={}){return {key:'z',ctrlKey:true,target:{isContentEditable:false,closest:()=>null,...target},preventDefault(){this.defaultPrevented=true;},stopPropagation(){this.stopped=true;},...extra};}
 test('Ctrl+Z in rendered homepage undoes once and shows the action label',async()=>{
  const {p,file,notices}=setup(),before=file.text;await p.addTask({project:PATH,title:'Added'});const event=shortcut();p.handleUndoShortcut(event,{querySelector:()=>null});await p.undoHistory.tail;await new Promise(setImmediate);assert.equal(event.defaultPrevented,true);assert.equal(file.text,before);assert.match(notices.at(-1),/已撤销.*添加任务/);
+});
+test('Ctrl+Z in the standalone project page restores its original note',async()=>{
+ const {p,file}=setup(),before=file.text;await p.addTask({project:PATH,title:'Added'});
+ Object.assign(p.app.workspace.activeLeaf.view,{file,getViewType:()=> 'gtd-project-page',getMode:undefined});
+ const event=shortcut();p.handleUndoShortcut(event,{querySelector:()=>null});await p.undoHistory.tail;await new Promise(setImmediate);
+ assert.equal(event.defaultPrevented,true);assert.equal(file.text,before);
+});
+test('Ctrl+Z restores an archive from the now empty project page',async()=>{
+ const {p,file,vault}=setup();vault.createFolder=async()=>{};await p.archiveProject(PATH);
+ assert.notEqual(file.path,PATH);
+ Object.assign(p.app.workspace.activeLeaf.view,{file,getViewType:()=> 'gtd-project-page',getMode:undefined,containerEl:{querySelector:()=>null}});
+ const event=shortcut();p.handleUndoShortcut(event,{querySelector:()=>null});await p.undoHistory.tail;await new Promise(setImmediate);
+ assert.equal(event.defaultPrevented,true);assert.equal(file.path,PATH);
 });
 test('editable text, date fields, composition, dialogs and non-GTD pages retain native shortcuts',async()=>{
  for(const mode of ['text','date','editable','composition','dialog','other','source','redo']){

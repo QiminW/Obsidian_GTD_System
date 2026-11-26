@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
-  "version": "1.13.9",
-  "builtAt": "2026-11-18T10:34:17+08:00",
+  "version": "1.14.1",
+  "builtAt": "2026-11-26T09:35:12+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.15.0",
   "plugins": {
@@ -18,7 +18,7 @@
       "minAppVersion": "1.8.7"
     },
     "gtd-quick-actions": {
-      "version": "1.13.9",
+      "version": "1.14.1",
       "minAppVersion": "1.8.7"
     },
     "remotely-save": {
@@ -100,18 +100,18 @@
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/main.js",
-      "bytes": 129417,
-      "sha256": "6c51283244a73842d5a5f782dfe3366b1afd84134293eec6a9bf86a8673d2f85"
+      "bytes": 135547,
+      "sha256": "17efbf2120b35cb6b4844dd6886d236da3c16910fc49bb97cde9c1e5d55f7f28"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/manifest.json",
       "bytes": 285,
-      "sha256": "6c2e087d6f58033f3d872cae96fcc03d825c6ce970398588c7eb3a952a627d4c"
+      "sha256": "58084ccbd3e0c7b9f862840a1321548a20e8c8a8ab4ea97087f4261684b99c4d"
     },
     {
       "path": ".obsidian/plugins/gtd-quick-actions/styles.css",
-      "bytes": 12852,
-      "sha256": "0d0df1f76ccd1a8bf53616f257ebc72709042ac9e77d32fca510e00b5581b35d"
+      "bytes": 15072,
+      "sha256": "1eb86f9fae03c71c4f795bdd9b55496cde9e6af6c32bc2e11e5ebb90c3c92ec0"
     },
     {
       "path": ".obsidian/plugins/obsidian-tasks-plugin/LICENSE.txt",
@@ -245,18 +245,18 @@
     },
     {
       "path": "00 GTD/00 工作区/05 系统视图/项目进度.js",
-      "bytes": 42505,
-      "sha256": "adba6b9481fd18f0ac282e24c110175f62ffe689b1ee39a02d58cca3231463a3"
+      "bytes": 46349,
+      "sha256": "68cd393b133b480c265b12a8dc67b22f3683bbfd930fa3e29345f1572ddd1f1b"
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 22218,
-      "sha256": "69cb47934f00a1569d2157066d5ccbe8cb941198647d39e740be1648da836819"
+      "bytes": 22519,
+      "sha256": "4e8ca10867d26c5021aa6b28cbb8a482bea884d001e39dea85f28472ce8be9f6"
     },
     {
       "path": "00 GTD/首页.md",
-      "bytes": 475,
-      "sha256": "04d420d6271d5456c527860f761e932b6443a5a773718d6af49641dcaa929a3d"
+      "bytes": 494,
+      "sha256": "3aaf0793b62eacaec9a00c8f8338373a32ab5bfd00d84fd97472fd2a10946e22"
     },
     {
       "path": "LICENSE",
@@ -266,7 +266,7 @@
     {
       "path": "README.md",
       "bytes": 3041,
-      "sha256": "70cff72496641e51d73074f77eda044aace91c65641afc65fdf68603b64329df"
+      "sha256": "488d8d2c425650a03705e0c34d8801659b66cfa6704adb2f8a61ed9a8d3392de"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -330,13 +330,13 @@
     },
     {
       "path": "docs/安装与使用.md",
-      "bytes": 18472,
-      "sha256": "cdc02352203926c7129a8ccf124520f323d45e4e4ed919d4023ea8c53139bf98"
+      "bytes": 18563,
+      "sha256": "e365a99db5284c02498c09d8bc02d9608dd03513e298b2f5a46d99bfb25c4844"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-bridge.cjs",
-      "bytes": 11126,
-      "sha256": "d814fbb45eca58645f92e72175f09a468ab47bd52cb9bc86bb1611afdf142060"
+      "bytes": 11158,
+      "sha256": "bc7c42e005af96573ad69565f8b922d02bf4bdfde29bb0d9a285e3e57b4f864e"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-context.test.cjs",
@@ -350,8 +350,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-groups.test.cjs",
-      "bytes": 7789,
-      "sha256": "65fecd0735d7c104e0b8ed49166bdc5a54f1a35e058cc13b0141eb272c3f9d1f"
+      "bytes": 7898,
+      "sha256": "bcae6b047ea378f38ac37b7c55f1a2eeceb3382e3e90a00d9c9dfa0920f5bcbd"
     },
     {
       "path": "维护资料/GTD快捷操作源码/calendar-layout.cjs",
@@ -435,8 +435,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/main-body.js",
-      "bytes": 62726,
-      "sha256": "3a17799fc5cf1c5742df3415a2c2a8629fc1bd72b5de8e2b81c1b30cee45962b"
+      "bytes": 68835,
+      "sha256": "724fec917bb836fe6d0a23700f6c4891a673e0ecc2544658eb9074e859508855"
     },
     {
       "path": "维护资料/GTD快捷操作源码/name-edit-state.test.cjs",
@@ -455,8 +455,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/parent-policy.native.js",
-      "bytes": 17873,
-      "sha256": "0fb433d42228ebb916c64c88b3738bfa5d5509979be8670373904e8cfaaf427a"
+      "bytes": 17820,
+      "sha256": "dda5aacf5b179d074ec8a76ab4bdbaa0987d0bd044614386990e9307f39c9e80"
     },
     {
       "path": "维护资料/GTD快捷操作源码/refresh-input.native.js",
@@ -465,13 +465,13 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/refresh-reading-mode.native.js",
-      "bytes": 3751,
-      "sha256": "d63768f0724f9827d50819b7681d56a44a2174eaf3be21dff95911a5d88d187c"
+      "bytes": 3774,
+      "sha256": "3b4da94046edd4bfff131ece907e89a74fc6b214dd94bebad5b76763f8328202"
     },
     {
       "path": "维护资料/GTD快捷操作源码/styles.css",
-      "bytes": 12852,
-      "sha256": "0d0df1f76ccd1a8bf53616f257ebc72709042ac9e77d32fca510e00b5581b35d"
+      "bytes": 15072,
+      "sha256": "1eb86f9fae03c71c4f795bdd9b55496cde9e6af6c32bc2e11e5ebb90c3c92ec0"
     },
     {
       "path": "维护资料/GTD快捷操作源码/task-controls.native.js",
@@ -480,13 +480,13 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/tree-keyboard.cjs",
-      "bytes": 6212,
-      "sha256": "f981267e670dfd4327b04eb06823d3033cfc8e381bf0f768d4bdd8728185a50c"
+      "bytes": 6200,
+      "sha256": "335a7523a587384bba4f08400e8c6f77381c21538c2eea55d37d404eb2c0c469"
     },
     {
       "path": "维护资料/GTD快捷操作源码/tree-keyboard.test.cjs",
-      "bytes": 3361,
-      "sha256": "1c0d5931d27b2ee149da78002d50ae0ed1a384e5fa8ea6c01b871ed15f64be16"
+      "bytes": 3578,
+      "sha256": "e5406ae30b16109823e1ad045b665cd2a0e3388844cd2595ae5c10e4e6ce629f"
     },
     {
       "path": "维护资料/GTD快捷操作源码/undo-history.cjs",
@@ -500,8 +500,8 @@
     },
     {
       "path": "维护资料/GTD快捷操作源码/undo-plugin.test.cjs",
-      "bytes": 18449,
-      "sha256": "9ecc324632fc29929a47131a04cbe1f5c49db0793cd9ff8855f6a626d6807fd5"
+      "bytes": 21691,
+      "sha256": "bd88cc67ca63656a49c0ac78cc62180c4c70fb68d20ae5540b367c6233751175"
     },
     {
       "path": "维护资料/GTD快捷操作源码/界面验证/build.py",
@@ -520,8 +520,8 @@
     },
     {
       "path": "维护资料/README.md",
-      "bytes": 10273,
-      "sha256": "431e3b30cb8520a0042002b9abf880e6a63a5163fff43354f906f975e2efc519"
+      "bytes": 10512,
+      "sha256": "b53da77b55bd4793322b7742eda5cf10d31cdec402d53af7228dedcaf04ded5f"
     },
     {
       "path": "维护资料/底色来源.md",
@@ -539,5 +539,5 @@
       "sha256": "e31d9ba309902455abebfabde149de29cacb73badef61cdcb66cdbee0190b812"
     }
   ],
-  "documentationUpdatedAt": "2026-11-18"
+  "documentationUpdatedAt": "2026-11-26"
 }

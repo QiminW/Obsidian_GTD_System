@@ -656,7 +656,8 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
     const groups=new Map();
     const tasks=[...active,...completed],paths=[...new Set(tasks.map(task=>task.path))];
-    const ranks=new Map(logic.orderProjectPaths(paths,plugin.data.projectOrder).map((path,index)=>[path,index]));
+    const ordered=plugin.groupedProjectPaths(paths).flatMap(([,group])=>group);
+    const ranks=new Map(ordered.map((path,index)=>[path,index]));
     tasks.sort((a,b)=>ranks.get(a.path)-ranks.get(b.path)||(source(a).line??Infinity)-(source(b).line??Infinity));
     const makeGroup=(key,label,full)=>({key,label,full,tasks:[],entries:[],children:new Map(),done:0,total:0});
     const count=(group,task)=>{group.total++;if(task.completed)group.done++;};
@@ -946,7 +947,7 @@ function treeKeyAction(rows,id,key){
  if(key==='t'||key==='T')return row.canToday?{type:'today',id}:none;
  if(key==='Enter')return row.branch?toggle(!row.expanded):none;
  if(key==='ArrowLeft')return row.branch&&row.expanded?toggle(false):row.parent&&rows.some(item=>item.id===row.parent)?focus(rows.find(item=>item.id===row.parent)):none;
- if(key==='ArrowRight')return row.branch&&!row.expanded?toggle(true):row.branch&&rows[index+1]?.parent===id?focus(rows[index+1]):none;
+ if(key==='ArrowRight')return row.branch&&!row.expanded?toggle(true):rows[index+1]?.parent===id?focus(rows[index+1]):none;
  return none;
 }
 
@@ -1028,12 +1029,14 @@ module.exports={treeKeyAction,installTreeKeyboard};
 
 return module.exports;
 })();
-const { Plugin, Modal, Notice, TFile, TFolder, Menu, MarkdownRenderChild, MarkdownRenderer, Component, setIcon, parseYaml, stringifyYaml } = require('obsidian');
+const { Plugin, ItemView, Modal, Notice, TFile, TFolder, Menu, MarkdownRenderChild, MarkdownRenderer, Component, setIcon, parseYaml, stringifyYaml } = require('obsidian');
 const HOME = '00 GTD/首页.md';
 const PROJECTS = '00 GTD/00 工作区/01 项目';
 const INBOX = '00 GTD/00 工作区/00 功能页面/收件箱.md';
 const AREAS = '00 GTD/00 工作区/02 领域';
 const ARCHIVE = '00 GTD/00 工作区/99 归档';
+const PROJECT_PAGE = 'gtd-project-page';
+const PROJECT_PROGRESS = '00 GTD/00 工作区/05 系统视图/项目进度';
 
 class InboxView extends MarkdownRenderChild {
   constructor(plugin, element) { super(element);this.plugin=plugin; }
@@ -1261,7 +1264,7 @@ module.exports = class GtdQuickActions extends Plugin {
       capture.dataset.gtdAction = 'capture';
       capture.addEventListener('click', () => this.openCaptureModal());
     });
-    this.addCommand({ id: 'add-task', name: '快速添加任务', callback: () => this.openInlineTaskFromCommand() });
+    this.addCommand({ id: 'add-task', name: '快速添加任务', callback: () => this.openInlineTaskFromCommand().catch(error => this.showTaskActionError(error)) });
     this.addCommand({ id: 'new-project', name: '新建项目', callback: () => this.openProjectModal() });
     this.addCommand({ id: 'capture', name: '快速收集', callback: () => this.openCaptureModal() });
     this.addCommand({ id: 'new-area', name: '新建领域', callback: () => this.openAreaModal() });
@@ -1280,12 +1283,8 @@ module.exports = class GtdQuickActions extends Plugin {
     this.registerDomEvent(document, 'scroll', hideDayPopover, true);
     this.registerDomEvent(window, 'resize', hideDayPopover);
     this.registerDomEvent(document,'click',event=>this.handleInlineEntryOutsideClick(event),true);
-    this.registerEvent(this.app.vault.on('rename',(file,oldPath)=>{
-      if(!Array.isArray(this.data.projectOrder))return;
-      let changed=false;
-      this.data.projectOrder=this.data.projectOrder.map(path=>{if(path===oldPath||path.startsWith(oldPath+'/')){changed=true;return file.path+path.slice(oldPath.length);}return path;});
-      if(changed)this.saveData(this.data);
-    }));
+    this.registerEvent(this.app.vault.on('rename',(file,oldPath)=>this.handleVaultRename(file,oldPath)));
+    this.installProjectPage();
     this.installTaskDayCheck();
     await this.migrateLegacyPlanningDates();
     this.installUndoHistory();
@@ -1398,7 +1397,8 @@ module.exports = class GtdQuickActions extends Plugin {
     const target=event.target?.nodeType===3?event.target.parentElement:event.target,field=target?.closest?.('input,textarea,select');
     if(target?.isContentEditable||field&&!(field.tagName==='INPUT'&&['checkbox','button','submit'].includes(field.type))||doc.querySelector('.modal'))return;
     const view=this.app.workspace.activeLeaf?.view;
-    if(!view?.file?.path.startsWith('00 GTD/')||view.getViewType?.()!=='markdown'||!view.containerEl.querySelector('.gtd-project-progress,.gtd-inbox'))return;
+    const type = view?.getViewType?.();
+    if (type !== PROJECT_PAGE && (type !== 'markdown' || !view.file?.path.startsWith('00 GTD/') || !view.containerEl.querySelector('.gtd-project-progress,.gtd-inbox'))) return;
     if(view.getMode?.()==='source'&&!target?.closest?.('.gtd-project-progress,.gtd-inbox'))return;
     event.preventDefault();event.stopPropagation();
     if(this.undoShortcutBusy)return;
@@ -1406,7 +1406,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.undoShortcutBusy=true;
     this.undoHistory.undo().then(label=>{
       if(label){this.taskDayPanels.clear();this.activeDayPopover?.hidePopover();this.app.workspace.trigger('gtd-task-day-changed');this.app.commands.executeCommandById('dataview:dataview-force-refresh-views');}
-      new Notice(label?'已撤销：'+label:'当前没有可撤销的首页操作',2500);
+      new Notice(label?'已撤销：'+label:'当前没有可撤销的操作',2500);
     }).catch(error=>new Notice(error.message||String(error))).finally(()=>this.undoShortcutBusy=false);
   }
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
@@ -1425,13 +1425,16 @@ module.exports = class GtdQuickActions extends Plugin {
   installProjectKeyboard(component,table,scope) {
     this.projectKeyboardStates||=new Map();this.projectKeyboardControllers||=new Map();
     if(this.projectKeyboardControllers.has(table))return this.projectKeyboardControllers.get(table);
-    const leaf=this.app.workspace.getLeavesOfType('markdown').find(item=>item.view.containerEl.contains(table))||this.app.workspace.activeLeaf;
+    const workspace = this.app.workspace;
+    const leaf = [...workspace.getLeavesOfType('markdown'), ...workspace.getLeavesOfType(PROJECT_PAGE)]
+      .find(item => item.view.containerEl.contains(table)) || workspace.activeLeaf;
     const key=JSON.stringify([scope,leaf?.id]);
     const state=this.projectKeyboardStates.get(key)||{};this.projectKeyboardStates.set(key,state);
     const controller=TreeKeyboard.installTreeKeyboard(table,{state,isActive:()=>this.app.workspace.activeLeaf===leaf&&leaf?.view.file?.path===scope&&!!table.getClientRects().length,onError:error=>new Notice(error.message||String(error))});
     this.projectKeyboardControllers.set(table,controller);
     component.register(()=>{controller.dispose();if(this.projectKeyboardControllers.get(table)===controller)this.projectKeyboardControllers.delete(table);});
-    this.register(()=>controller.dispose());return controller;
+    if (!table.closest('.gtd-project-page')) this.register(() => controller.dispose());
+    return controller;
   }
   protectProjectView(component,container) {
     if(component.gtdRefreshGuard)return component.gtdRefreshGuard;
@@ -1501,10 +1504,30 @@ module.exports = class GtdQuickActions extends Plugin {
       if(component.render===refresh)component.render=original;
       if(component.gtdRefreshGuard===guard)delete component.gtdRefreshGuard;
     };
-    component.register(dispose);this.register(dispose);
+    component.register(dispose);
+    if (!container.closest('.gtd-project-page')) this.register(dispose);
     return guard;
   }
   orderedProjectPaths(paths) { return logic.orderProjectPaths(paths,this.data.projectOrder); }
+  projectAreaLabel(path) {
+    if(!path.startsWith(PROJECTS+'/'))return '未分领域';
+    const file=this.app.vault.getAbstractFileByPath(path);
+    const area=file instanceof TFile?this.app.metadataCache.getFileCache(file)?.frontmatter?.area:null;
+    const label=String((Array.isArray(area)?area[0]:area)||'').trim();
+    const segments=path.slice(PROJECTS.length+1).split('/');
+    return label||(segments.length>1?segments[0].replace(/^\d+\s*/,''):'')||'未分领域';
+  }
+  groupedProjectPaths(paths) {
+    const groups=new Map();
+    for(const path of this.orderedProjectPaths(paths)){
+      const label=this.projectAreaLabel(path);
+      if(!groups.has(label))groups.set(label,[]);
+      groups.get(label).push(path);
+    }
+    const numbered=this.listAreas().map(area=>area.label);
+    const other=[...groups.keys()].filter(label=>label!=='未分领域').sort((a,b)=>a.localeCompare(b,'zh-CN'));
+    return [...new Set([...numbered,...other,'未分领域'])].filter(label=>groups.has(label)).map(label=>[label,groups.get(label)]);
+  }
   async moveProjectDisplay(source,target,side) {
     const before=this.data.projectOrder;
     const paths=this.app.vault.getMarkdownFiles().filter(file=>file.path.startsWith(PROJECTS+'/')).sort((a,b)=>a.basename.localeCompare(b.basename,'zh-CN')).map(file=>file.path);
@@ -1713,18 +1736,28 @@ module.exports = class GtdQuickActions extends Plugin {
     }
   }
   async openInlineTaskFromCommand() {
-    await this.openHome();
-    const leaf = this.app.workspace.activeLeaf;
-    if (leaf.view.getViewType() === 'markdown' && leaf.view.getMode() !== 'preview') await leaf.setViewState({ type: 'markdown', state: { file: HOME, mode: 'preview' } });
+    const current = this.app.workspace.activeLeaf?.view.file?.path;
+    const projects = this.listProjects();
+    const available = projects.filter(file => (this.app.metadataCache.getFileCache(file)?.frontmatter?.status || 'active') === 'active');
+    const path = projects.find(file => file.path === current)?.path
+      || available.find(file => file.path === this.data.lastProject)?.path
+      || this.orderedProjectPaths(available.map(file => file.path))[0];
+    if (path) await this.openProjectTaskEntry(path);
+    else new Notice('请先新建一个进行中的项目');
+  }
+  async openProjectTaskEntry(path) {
+    const leaf = await this.openProjectPage(path);
     const deadline = Date.now() + 3000;
-    while (Date.now() < deadline) {
-      const rows = [...leaf.view.containerEl.querySelectorAll('.markdown-preview-view tr[data-project-path]')].filter(item => item.querySelector('[data-gtd-project-add]') && !item.querySelector('[data-gtd-project-add]').disabled);
-      const row = rows.find(item => item.dataset.projectPath === this.data.lastProject) || rows[0];
-      if (row) { row.querySelector('[data-gtd-project-add]').click(); return; }
-      if (leaf.view.containerEl.querySelector('.markdown-preview-view .gtd-project-progress')) break;
+    while (this.app.workspace.activeLeaf === leaf && leaf.view.file?.path === path && Date.now() < deadline) {
+      const button = leaf.view.containerEl.querySelector('[data-gtd-project-add]');
+      if (button) {
+        if (button.disabled) new Notice('请先将项目恢复为进行中');
+        else button.click();
+        return;
+      }
       await new Promise(resolve => window.setTimeout(resolve, 50));
     }
-    new Notice('请先新建一个项目');
+    if (this.app.workspace.activeLeaf === leaf && leaf.view.file?.path === path) new Notice('项目页面还没准备好，请打开后点击「＋」');
   }
   async readProjectTaskTree(path) {
     const file = this.app.vault.getAbstractFileByPath(path);
@@ -1836,16 +1869,32 @@ module.exports = class GtdQuickActions extends Plugin {
     const content=await this.app.vault.read(file),before=logic.projectTaskTree(content);
     if(file.path!==path)throw new Error('项目位置已变化，请刷新后重试');
     if(destination!==path)await this.renameGtdFile(file,destination,true);
-    const remap=value=>value===path?destination:value;
-    const remapKey=key=>key.split('::').map((part,index)=>index===0?remap(part):part.replace(/^(project|task|days):(.*)$/,(_,kind,value)=>kind+':'+remap(value))).join('::');
-    this.data.treeExpanded=Object.fromEntries(Object.entries(this.data.treeExpanded||{}).map(([key,value])=>[remapKey(key),value]));
-    this.taskDayPanels=new Map([...this.taskDayPanels].map(([key,value])=>[remapKey(key),value]));
-    for(const state of [...this.inlineTaskEntries.values()])if(state.project===path){const oldKey=state.key;this.inlineTaskEntries.delete(oldKey);state.project=destination;state.key=JSON.stringify([state.scope,destination,state.parentKey]);this.inlineTaskEntries.set(state.key,state);if(this.inlineTaskFocusKey===oldKey)this.inlineTaskFocusKey=state.key;}
-    if(this.data.lastProject===path)this.data.lastProject=destination;
-    this.saveData(this.data).catch(error=>console.error('GTD：无法保存项目显示状态',error));
     let after={roots:[]};
     try{if(await this.app.vault.read(file)===content)after=before;}catch(_){}
     return {path,newPath:destination,file,before,after};
+  }
+  handleVaultRename(file,oldPath) {
+    const destination=file.path;
+    let changed=false;
+    if(Array.isArray(this.data.projectOrder)){
+      this.data.projectOrder=this.data.projectOrder.map(path=>{if(path===oldPath||path.startsWith(oldPath+'/')){changed=true;return destination+path.slice(oldPath.length);}return path;});
+    }
+    if(file instanceof TFile&&oldPath.startsWith(PROJECTS+'/')&&destination.startsWith(PROJECTS+'/')){
+      const remap=value=>value===oldPath?destination:value;
+      const remapKey=key=>key.split('::').map((part,index)=>index===0?remap(part):part.replace(/^(project|task|days):(.*)$/,(_,kind,value)=>kind+':'+remap(value))).join('::');
+      this.data.treeExpanded=Object.fromEntries(Object.entries(this.data.treeExpanded||{}).map(([key,value])=>[remapKey(key),value]));
+      this.taskDayPanels=new Map([...this.taskDayPanels].map(([key,value])=>[remapKey(key),value]));
+      for(const state of [...this.inlineTaskEntries.values()])if(state.project===oldPath){
+        const oldKey=state.key;
+        this.inlineTaskEntries.delete(oldKey);
+        state.project=destination;state.scope=remap(state.scope);state.key=JSON.stringify([state.scope,destination,state.parentKey]);
+        this.inlineTaskEntries.set(state.key,state);
+        if(this.inlineTaskFocusKey===oldKey)this.inlineTaskFocusKey=state.key;
+      }
+      if(this.data.lastProject===oldPath)this.data.lastProject=destination;
+      changed=true;
+    }
+    if(changed)this.saveData(this.data).catch(error=>console.error('GTD：无法保存项目显示状态',error));
   }
   async renameProjectTask(path,reference,title) {
     const file=this.app.vault.getAbstractFileByPath(path);
@@ -2000,6 +2049,83 @@ module.exports = class GtdQuickActions extends Plugin {
       return;
     }
     await this.app.workspace.getLeaf('tab').openFile(file, { state: { mode: 'preview' } });
+  }
+  projectPageFile(path) {
+    if (typeof path !== 'string' || !path.startsWith(PROJECTS + '/')) return;
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile && file.extension === 'md') return file;
+  }
+  installProjectPage() {
+    const plugin = this;
+    this.registerView(PROJECT_PAGE, leaf => new class extends ItemView {
+      getViewType() { return PROJECT_PAGE; }
+      getDisplayText() { return this.file?.basename || '项目'; }
+      getIcon() { return 'list-todo'; }
+      getState() { return { path: this.file?.path }; }
+      async onOpen() {
+        this.contentEl.addClass('gtd-dashboard', 'gtd-project-page');
+        const refresh = () => this.renderProject().catch(error => plugin.showTaskActionError(error));
+        this.registerEvent(this.app.vault.on('rename', () => {
+          if (!this.file || this.file.path === this.renderedPath) return;
+          this.leaf.updateHeader?.();
+          this.app.workspace.requestSaveLayout();
+          refresh();
+        }));
+        this.registerEvent(this.app.vault.on('delete', file => {
+          if (file !== this.file) return;
+          this.file = undefined;
+          refresh();
+        }));
+      }
+      async setState(state, result) {
+        this.file = plugin.projectPageFile(state.path);
+        await this.renderProject();
+        await super.setState(state, result);
+      }
+      async renderProject() {
+        if (this.renderer) this.removeChild(this.renderer);
+        this.renderer = undefined;
+        this.contentEl.empty();
+        const toolbar = this.contentEl.createDiv({ cls: 'gtd-project-page-toolbar' });
+        toolbar.createEl('button', { text: '← 工作台', attr: { type: 'button' } }).addEventListener('click', () => plugin.openHome());
+        const file = plugin.projectPageFile(this.file?.path);
+        this.renderedPath = this.file?.path;
+        if (!file) {
+          this.contentEl.createDiv({ cls: 'gtd-task-empty', text: '此项目已移动或删除' });
+          return;
+        }
+        toolbar.createEl('button', { text: '项目笔记', attr: { type: 'button' } }).addEventListener('click', () =>
+          this.app.workspace.getLeaf('tab').openFile(file, { active: true }).catch(error => plugin.showTaskActionError(error)));
+        const host = this.contentEl.createDiv({ cls: 'gtd-project-page-content' });
+        const api = this.app.plugins.plugins.dataview?.api;
+        if (!api) {
+          host.textContent = '请启用 Dataview 插件';
+          return;
+        }
+        this.renderer = this.addChild(new Component());
+        this.renderer.register(() => { host.gtdProjectPageDisposed = true; });
+        const input = JSON.stringify({ projectPath: file.path });
+        await api.executeJs(`await dv.view(${JSON.stringify(PROJECT_PROGRESS)}, ${input});`, host, this.renderer, file.path);
+      }
+    }(leaf));
+    this.register(() => this.app.workspace.detachLeavesOfType(PROJECT_PAGE));
+  }
+  async openProjectPage(path) {
+    const file = this.projectPageFile(path);
+    if (!file) throw new Error('找不到项目笔记');
+    const workspace = this.app.workspace;
+    const leaf = workspace.getLeavesOfType(PROJECT_PAGE)[0] || workspace.getLeaf('tab');
+    if (leaf.view.file !== file) await leaf.setViewState({ type: PROJECT_PAGE, state: { path }, active: true });
+    workspace.setActiveLeaf(leaf, { focus: true });
+    await workspace.revealLeaf(leaf);
+    return leaf;
+  }
+  showProjectCreateMenu(event) {
+    const menu = new Menu();
+    menu.addItem(item => item.setTitle('新建项目').setIcon('list-todo').onClick(() => this.openProjectModal()));
+    menu.addItem(item => item.setTitle('新建领域').setIcon('folder-plus').onClick(() => this.openAreaModal()));
+    const rect = event.currentTarget.getBoundingClientRect();
+    menu.showAtPosition({ x: rect.left, y: rect.bottom });
   }
   installBoardNavigation() {
     for (const leaf of this.app.workspace.getLeavesOfType('bases')) {

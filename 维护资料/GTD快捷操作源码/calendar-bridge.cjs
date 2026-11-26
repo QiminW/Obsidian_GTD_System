@@ -40,7 +40,8 @@ module.exports = function installTaskCalendarBridge(plugin, logic, Notice) {
     if(mode!=='day'||plugin.data?.calendarDayLayout!=='group'||!gridRef.current?.closest('.gtd-dashboard'))return null;
     const groups=new Map();
     const tasks=[...active,...completed],paths=[...new Set(tasks.map(task=>task.path))];
-    const ranks=new Map(logic.orderProjectPaths(paths,plugin.data.projectOrder).map((path,index)=>[path,index]));
+    const ordered=plugin.groupedProjectPaths(paths).flatMap(([,group])=>group);
+    const ranks=new Map(ordered.map((path,index)=>[path,index]));
     tasks.sort((a,b)=>ranks.get(a.path)-ranks.get(b.path)||(source(a).line??Infinity)-(source(b).line??Infinity));
     const makeGroup=(key,label,full)=>({key,label,full,tasks:[],entries:[],children:new Map(),done:0,total:0});
     const count=(group,task)=>{group.total++;if(task.completed)group.done++;};
