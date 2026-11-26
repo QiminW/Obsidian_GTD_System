@@ -2,6 +2,25 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
   const doc = scope.ownerDocument || scope, selector = '.block-language-tasks-calendar.tasks-calendar';
   const entries = new Map();
   let disposed = false;
+  function createFocusButton() {
+    const button = doc.createElement('button');
+    button.type = 'button'; button.className = 'gtd-calendar-focus';
+    const label = doc.createElement('span'), name = doc.createTextNode('专注'), clock = doc.createTextNode('');
+    label.append(name); button.append(label, clock);
+    button.addEventListener('click', () => plugin.openFocus());
+    return {button, name, clock};
+  }
+  function renderFocus({button, name, clock}) {
+    const session = plugin.focusSession, title = session?.title || '专注';
+    const seconds = session ? Math.max(0, Math.ceil((session.endsAt - Date.now()) / 1000)) : 0;
+    const time = session ? ' · 剩余 '+String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0') : '';
+    // Editing text nodes keeps ticks outside the calendar's childList observer.
+    if (name.data !== title) name.data = title;
+    if (clock.data !== time) clock.data = time;
+    const hint = session ? '提前结束「'+title+'」的本轮专注' : '从今天的任务开始专注';
+    if (button.title !== hint) button.title = hint;
+    if (button.getAttribute('aria-pressed') !== String(!!session)) button.setAttribute('aria-pressed', String(!!session));
+  }
   const restoreTooltips = entry => {
     for (const [card, name] of entry.cardNames) if (card.getAttribute('aria-label') !== name) card.setAttribute('aria-label', name);
     entry.cardNames.clear();
@@ -45,6 +64,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     for (const task of root.querySelectorAll('[data-gtd-compact-hidden]')) if (!controlled.has(task)) task.removeAttribute('data-gtd-compact-hidden');
   }
   function removeEntry(root, entry) {
+    entry.focus?.button.remove();
     restoreTooltips(entry); entry.button.remove(); entry.contextSwitch.remove(); root.removeEventListener('click', entry.onMore, true);
     root.querySelectorAll('[data-gtd-compact-more]').forEach(button => button.remove());
     root.querySelectorAll('[data-gtd-compact-hidden]').forEach(task => task.removeAttribute('data-gtd-compact-hidden'));
@@ -94,6 +114,13 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       const day=!!root.querySelector('.tasks-calendar-grid.is-day'),layout=plugin.data.calendarDayLayout==='group'?'group':'path';
       entry.contextSwitch.hidden=!day;root.classList.toggle('gtd-calendar-day-path',day&&layout==='path');
       if(entry.contextSwitch.parentElement!==controls)controls.insertBefore(entry.contextSwitch,button);
+      if (root.closest('.gtd-home')) {
+        entry.focus ||= createFocusButton();
+        if (entry.focus.button.parentElement !== controls) controls.insertBefore(entry.focus.button, entry.contextSwitch);
+        renderFocus(entry.focus);
+      } else if (entry.focus) {
+        entry.focus.button.remove(); delete entry.focus;
+      }
       for(const choice of entry.contextSwitch.children)if(choice.getAttribute('aria-pressed')!==String(choice.dataset.gtdCalendarLayout===layout))choice.setAttribute('aria-pressed',String(choice.dataset.gtdCalendarLayout===layout));
       compactTasks(root, compact);
       const cards = new Set(root.querySelectorAll('.tasks-calendar-task'));
@@ -119,6 +146,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
   sync();
   return {
     refresh: sync,
+    updateFocus() { for (const entry of entries.values()) if (entry.focus) renderFocus(entry.focus); },
     destroy() {
       disposed = true; observer.disconnect();
       for (const [root, entry] of entries) removeEntry(root, entry);

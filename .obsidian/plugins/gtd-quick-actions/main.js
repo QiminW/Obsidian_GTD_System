@@ -403,16 +403,20 @@ function calendarTaskReference(content, source) {
   if(reference.version!==taskSourceVersion(content)||reference.raw!==source.raw||reference.line!==source.line||content.split(/\r?\n/)[reference.line]!==reference.raw)throw new Error('任务内容已变化，请刷新日历后重试');
   return reference;
 }
+function calendarTaskRows(content) {
+  return content.split(/\r?\n/).map((raw,line)=>({raw,line})).filter(task=>/^[\s\t>]*(?:[-*+]|\d+[.)])\s+\[(.)\]\s*(.*)$/u.test(task.raw));
+}
 function calendarTaskReferences(content, indexed) {
-  const tasks=content.split(/\r?\n/).map((raw,line)=>({raw,line})).filter(task=>/^[\s\t>]*(?:[-*+]|\d+[.)])\s+\[(.)\]\s*(.*)$/u.test(task.raw)),byLine=new Map(indexed.map(task=>[task.line,task.raw]));
+  const tasks=calendarTaskRows(content),byLine=new Map(indexed.map(task=>[task.line,task.raw]));
   if(tasks.length!==indexed.length||tasks.some(task=>byLine.get(task.line)!==task.raw))return null;
   const version=taskSourceVersion(content);
   return new Map(tasks.map(task=>[task.line,{line:task.line,raw:task.raw,version,nativeCalendar:true}]));
 }
+// Calendar also accepts "- [ ]Task"; normalize only the parsing copy.
+const calendarTaskSpacing = raw => raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/, '$1 ');
 function calendarLeafTasks(content, indexed) {
   const rows = content.split(/\r?\n/), quotes = new Map(), parents = new Set();
-  // Calendar also accepts "- [ ]Task"; normalize only the parsing copy.
-  const parseable = rows.map(raw => raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/, '$1 ')).join('\n');
+  const parseable = rows.map(calendarTaskSpacing).join('\n');
   for (const task of indexed) quotes.set(quoteTaskRow(task.raw).depth, task.raw);
   for (const raw of quotes.values()) {
     const tasks = operationTaskTree(parseable, raw);
@@ -425,7 +429,7 @@ function calendarLeafTasks(content, indexed) {
 }
 function calendarTaskContexts(content, indexed) {
   const rows=content.split(/\r?\n/),byLine=new Map(indexed.map(task=>[task.line,task])),quotes=new Map(),contexts=new Map();
-  const parseable=rows.map(raw=>raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/,'$1 ')).join('\n');
+  const parseable=rows.map(calendarTaskSpacing).join('\n');
   for(const task of indexed)quotes.set(quoteTaskRow(task.raw).depth,task.raw);
   const title=node=>node.title.replace(/(?:^|\s)#(?:doing|gtd\/(?:doing|waiting|someday))(?=\s|$)/g,'').trim();
   for(const raw of quotes.values()){
@@ -441,6 +445,20 @@ function calendarTaskContexts(content, indexed) {
     }
   }
   return contexts;
+}
+function focusTasksForDay(content, day) {
+  if (!content.includes(day)) return [];
+  const today = calendarTaskRows(content).filter(({raw}) => {
+    if (!raw.includes(day) || ['x','X','-','_'].includes(status(raw))) return false;
+    const {days, due} = rawTaskDates(raw);
+    return due === day || days.includes(day);
+  });
+  if (!today.length) return [];
+  const contexts = calendarTaskContexts(content, today);
+  return calendarLeafTasks(content, today).filter(task => contexts.has(task.line)).map(({line, raw}) => ({
+    line, raw, title: editableTaskName(calendarTaskSpacing(quoteTaskRow(raw).raw)) || '未命名任务',
+    parents: contexts.get(line)._gtdAncestors
+  }));
 }
 function calendarTaskInstances(tasks) {
   return tasks.flatMap(task => {
@@ -632,7 +650,7 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, completeProjectTaskBranch, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, completeProjectTaskBranch, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, focusTasksForDay, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
 
 return module.exports;
 })();
@@ -796,6 +814,25 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
   const doc = scope.ownerDocument || scope, selector = '.block-language-tasks-calendar.tasks-calendar';
   const entries = new Map();
   let disposed = false;
+  function createFocusButton() {
+    const button = doc.createElement('button');
+    button.type = 'button'; button.className = 'gtd-calendar-focus';
+    const label = doc.createElement('span'), name = doc.createTextNode('专注'), clock = doc.createTextNode('');
+    label.append(name); button.append(label, clock);
+    button.addEventListener('click', () => plugin.openFocus());
+    return {button, name, clock};
+  }
+  function renderFocus({button, name, clock}) {
+    const session = plugin.focusSession, title = session?.title || '专注';
+    const seconds = session ? Math.max(0, Math.ceil((session.endsAt - Date.now()) / 1000)) : 0;
+    const time = session ? ' · 剩余 '+String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0') : '';
+    // Editing text nodes keeps ticks outside the calendar's childList observer.
+    if (name.data !== title) name.data = title;
+    if (clock.data !== time) clock.data = time;
+    const hint = session ? '提前结束「'+title+'」的本轮专注' : '从今天的任务开始专注';
+    if (button.title !== hint) button.title = hint;
+    if (button.getAttribute('aria-pressed') !== String(!!session)) button.setAttribute('aria-pressed', String(!!session));
+  }
   const restoreTooltips = entry => {
     for (const [card, name] of entry.cardNames) if (card.getAttribute('aria-label') !== name) card.setAttribute('aria-label', name);
     entry.cardNames.clear();
@@ -839,6 +876,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
     for (const task of root.querySelectorAll('[data-gtd-compact-hidden]')) if (!controlled.has(task)) task.removeAttribute('data-gtd-compact-hidden');
   }
   function removeEntry(root, entry) {
+    entry.focus?.button.remove();
     restoreTooltips(entry); entry.button.remove(); entry.contextSwitch.remove(); root.removeEventListener('click', entry.onMore, true);
     root.querySelectorAll('[data-gtd-compact-more]').forEach(button => button.remove());
     root.querySelectorAll('[data-gtd-compact-hidden]').forEach(task => task.removeAttribute('data-gtd-compact-hidden'));
@@ -888,6 +926,13 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
       const day=!!root.querySelector('.tasks-calendar-grid.is-day'),layout=plugin.data.calendarDayLayout==='group'?'group':'path';
       entry.contextSwitch.hidden=!day;root.classList.toggle('gtd-calendar-day-path',day&&layout==='path');
       if(entry.contextSwitch.parentElement!==controls)controls.insertBefore(entry.contextSwitch,button);
+      if (root.closest('.gtd-home')) {
+        entry.focus ||= createFocusButton();
+        if (entry.focus.button.parentElement !== controls) controls.insertBefore(entry.focus.button, entry.contextSwitch);
+        renderFocus(entry.focus);
+      } else if (entry.focus) {
+        entry.focus.button.remove(); delete entry.focus;
+      }
       for(const choice of entry.contextSwitch.children)if(choice.getAttribute('aria-pressed')!==String(choice.dataset.gtdCalendarLayout===layout))choice.setAttribute('aria-pressed',String(choice.dataset.gtdCalendarLayout===layout));
       compactTasks(root, compact);
       const cards = new Set(root.querySelectorAll('.tasks-calendar-task'));
@@ -913,6 +958,7 @@ module.exports = function installCalendarLayout(plugin, scope = document) {
   sync();
   return {
     refresh: sync,
+    updateFocus() { for (const entry of entries.values()) if (entry.focus) renderFocus(entry.focus); },
     destroy() {
       disposed = true; observer.disconnect();
       for (const [root, entry] of entries) removeEntry(root, entry);
@@ -1060,10 +1106,11 @@ const AREAS = '00 GTD/00 工作区/02 领域';
 const ARCHIVE = '00 GTD/00 工作区/99 归档';
 const PROJECT_PAGE = 'gtd-project-page';
 const PROJECT_PROGRESS = '00 GTD/00 工作区/05 系统视图/项目进度';
+const FOCUS_STORAGE = 'gtd-quick-actions:focus';
 
 function installGtdPageTheme(plugin) {
   const { workspace, vault } = plugin.app;
-  const views = () => ['markdown', 'bases'].flatMap(type => workspace.getLeavesOfType(type).map(leaf => leaf.view));
+  const views = () => ['markdown', 'bases'].flatMap(type => workspace.getLeavesOfType(type).map(leaf => leaf.view)).filter(view => view.contentEl);
   const update = () => {
     for (const view of views()) {
       view.contentEl.classList.toggle('gtd-vault-page', !!view.file?.path.startsWith('00 GTD/'));
@@ -1192,6 +1239,73 @@ class EntryModal extends Modal {
   onClose() { this.entryClosed = true; this.contentEl.empty(); }
 }
 
+class FocusModal extends Modal {
+  constructor(plugin) { super(plugin.app); this.plugin = plugin; }
+  onOpen() {
+    const content = this.contentEl;
+    content.addClass('gtd-action-modal', 'gtd-focus-modal');
+    content.createEl('h2', {text:'开始专注'});
+    this.list = content.createDiv({cls:'gtd-focus-list', attr:{role:'radiogroup','aria-label':'今天的任务'}});
+    this.error = content.createDiv({cls:'gtd-form-error', attr:{role:'alert'}});
+    const form = content.createEl('form');
+    this.duration = form.createEl('fieldset', {cls:'gtd-focus-duration', attr:{'aria-label':'专注时长'}});
+    for (const minutes of [30, 60]) {
+      const preset = this.duration.createEl('button', {text:minutes+' 分钟', attr:{type:'button'}});
+      preset.onclick = () => this.start(minutes);
+    }
+    const custom = this.duration.createEl('input', {attr:{
+      type:'number', min:'1', step:'1', required:'', inputmode:'numeric', placeholder:'自定义分钟', 'aria-label':'自定义分钟数'
+    }});
+    this.duration.createEl('button', {text:'开始', cls:'mod-cta', attr:{type:'submit'}});
+    form.onsubmit = event => { event.preventDefault(); this.start(custom.valueAsNumber); };
+    this.loadTasks();
+  }
+  async loadTasks() {
+    this.selected = null;
+    this.duration.disabled = true;
+    this.list.textContent = '正在读取今天的任务…';
+    try {
+      const tasks = await this.plugin.listFocusTasks();
+      if (!this.list.isConnected) return;
+      this.list.empty();
+      this.duration.hidden = !tasks.length;
+      if (!tasks.length) this.list.createDiv({text:'今天没有已安排或到期的待办。可以在项目页点「今」加入一项。'});
+      for (const task of tasks) {
+        const row = this.list.createEl('label', {cls:'gtd-focus-choice'});
+        const radio = row.createEl('input', {attr:{type:'radio', name:'gtd-focus-task'}});
+        radio.onchange = () => { this.selected = task; this.duration.disabled = false; };
+        const label = row.createDiv();
+        label.createSpan({text:task.title});
+        label.createEl('small', {text:[task.project, ...task.parents].join(' › ')});
+      }
+    } catch (error) {
+      this.list.empty();
+      this.error.textContent = error.message || String(error);
+    }
+  }
+  async start(minutes) {
+    if (this.duration.disabled || !this.selected) return;
+    const clickedAt = Date.now(), task = this.selected;
+    this.duration.disabled = true;
+    this.error.empty();
+    try {
+      const current = await this.plugin.focusTasksInFile(task.path, this.plugin.todayDateKey());
+      if (!this.list.isConnected || this.selected !== task) return;
+      if (!current.some(item => item.line === task.line && item.raw === task.raw)) {
+        this.error.textContent = '这项任务的安排或内容已变，请重新选择。';
+        await this.loadTasks();
+        return;
+      }
+      this.plugin.startFocus(task.title, minutes, clickedAt);
+      this.close();
+    } catch (error) {
+      this.error.textContent = error.message || String(error);
+      this.duration.disabled = false;
+    }
+  }
+  onClose() { this.contentEl.empty(); }
+}
+
 class InboxMoveModal extends EntryModal {
   constructor(plugin, context) {
     super(plugin, '移入项目', 'move');
@@ -1288,6 +1402,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.data = (await this.loadData()) || {};
     this.calendarLayout = installCalendarLayout(this);
     this.register(() => this.calendarLayout?.destroy());
+    this.installFocusTimer();
     this.inlineTaskEntries = new Map();
     this.inlineTaskFocusKey = '';
     this.taskTitleEdits = new Map();
@@ -1453,6 +1568,57 @@ module.exports = class GtdQuickActions extends Plugin {
     }).catch(error=>new Notice(error.message||String(error))).finally(()=>this.undoShortcutBusy=false);
   }
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
+  async listFocusTasks() {
+    const day = this.todayDateKey();
+    const paths = this.app.vault.getMarkdownFiles().map(file => file.path).filter(path =>
+      path.startsWith('00 GTD/') && !path.startsWith(ARCHIVE+'/') && !path.startsWith('00 GTD/00 工作区/04 模板/'));
+    const ordered = this.groupedProjectPaths(paths).flatMap(([,group]) => group);
+    return (await Promise.all(ordered.map(path => this.focusTasksInFile(path, day)))).flat();
+  }
+  async focusTasksInFile(path, day) {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return [];
+    const content = await this.app.vault.cachedRead(file);
+    return logic.focusTasksForDay(content, day).map(task => ({...task, path, project:file.basename}));
+  }
+  installFocusTimer() {
+    const saved = this.app.loadLocalStorage(FOCUS_STORAGE);
+    this.focusSession = Number.isSafeInteger(saved?.endsAt) && typeof saved.title === 'string' ? saved : null;
+    const resume = () => { if (this.focusSession) this.tickFocusTimer(); };
+    this.registerDomEvent(window, 'focus', resume);
+    this.registerDomEvent(document, 'visibilitychange', () => { if (!document.hidden) resume(); });
+    this.register(() => window.clearTimeout(this.focusTimeout));
+    resume();
+  }
+  openFocus() {
+    if (!this.focusSession) new FocusModal(this).open();
+    else if (this.focusSession.endsAt <= Date.now()) this.tickFocusTimer();
+    else this.setFocusSession(null);
+  }
+  startFocus(title, minutes, clickedAt) {
+    const endsAt = clickedAt + minutes * 60000;
+    if (!Number.isSafeInteger(minutes) || minutes < 1 || !Number.isSafeInteger(endsAt)) throw new Error('请输入有效的正整数分钟数。');
+    if (this.focusSession) throw new Error('已有一轮专注正在进行。');
+    this.setFocusSession({title, endsAt});
+  }
+  setFocusSession(session) {
+    this.app.saveLocalStorage(FOCUS_STORAGE, session);
+    this.focusSession = session;
+    this.tickFocusTimer();
+  }
+  tickFocusTimer() {
+    window.clearTimeout(this.focusTimeout);
+    if (this.focusSession) {
+      const {title, endsAt} = this.focusSession, left = endsAt - Date.now();
+      if (left <= 0) {
+        this.setFocusSession(null);
+        new Notice('「'+title+'」的专注时间到了', 4000);
+        return;
+      }
+      this.focusTimeout = window.setTimeout(() => this.tickFocusTimer(), (left - 1) % 1000 + 1);
+    }
+    this.calendarLayout.updateFocus();
+  }
   checkTaskDay() {
     const day=this.todayDateKey();
     if(day===this.currentDayKey)return;

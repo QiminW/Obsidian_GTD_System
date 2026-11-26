@@ -823,7 +823,7 @@
   color: #702f29;
 }
 .gtd-dashboard .tasks-calendar-day.is-outside { background: var(--background-primary-alt); }
-.gtd-dashboard .gtd-calendar-height-toggle {
+.gtd-dashboard :is(.gtd-calendar-height-toggle, .gtd-calendar-focus) {
   min-width: 26px;
   height: 25px;
   min-height: 25px;
@@ -836,7 +836,7 @@
   font-size: 13px;
   line-height: 1;
 }
-.gtd-dashboard .gtd-calendar-height-toggle[aria-pressed=true] {
+.gtd-dashboard :is(.gtd-calendar-height-toggle, .gtd-calendar-focus)[aria-pressed=true] {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
 }

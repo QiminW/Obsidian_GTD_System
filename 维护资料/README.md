@@ -8,7 +8,7 @@
 
 ## GTD 快捷操作
 
-`GTD快捷操作源码/` 内保存当前 1.14.7 的逻辑、Obsidian 接口、日历桥接、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
+`GTD快捷操作源码/` 内保存当前 1.15.0 的逻辑、Obsidian 接口、日历桥接、专注计时、日历收缩与展开、撤销历史、键盘控制器、CSS 和检查文件。运行文件在库的 `.obsidian/plugins/gtd-quick-actions/` 中。
 
 首页调用项目进度视图时使用 `summaryOnly`，按 `groupedProjectPaths` 输出领域和卡片，顶部的「+领域」和「+项目」打开相应的表单。打开项目会复用 `gtd-project-page` 标签页，通过 Dataview 的 `executeJs` 用 `projectPath` 载入同一个视图。独立页读写原项目文件，同一份任务也用于日历。
 
@@ -41,6 +41,8 @@ node --test
 `refresh-input.native.js` 和 `refresh-reading-mode.native.js` 是 Obsidian 内的输入与滚动回归脚本。前者检查组合输入、异步读取、连续提交、Esc 和并发高度释放；后者通过真实 Dataview 刷新检查独立项目页的输入和滚动。使用专用演示库，退出其他编辑后，通过 Obsidian CLI 的 `eval` 执行脚本。结果保存在 `window.__gtdRefreshInputTest` 和 `window.__realRefreshTest`，示例项目会自动清理。
 
 ## Tasks Calendar 截止日红底
+
+首页的「专注」按打开时的本地日期读取未完成末级任务，包含当天安排和当天截止。每轮的任务名和结束时刻保存在 Obsidian 本机库设置 `gtd-quick-actions:focus`。倒计时只改工具栏的文字节点。演示库中执行 `focus.native.js` 可验证两种预设、自定义时长、切页与刷新恢复，以及真实一分钟到点后的单次提醒。
 
 `calendar-layout.cjs` 为 GTD 日历提供高度切换和日视图“路径／分组”开关，分别保存为 `calendarCompact` 与 `calendarDayLayout`。当天任务与逾期区在日视图中同步切换；周、月保持紧凑。卡片的完整归属提示读取 `data-gtd-project` 与 `data-gtd-parent-path`；卸载时恢复任务提示、移除按钮并断开观察器。
 

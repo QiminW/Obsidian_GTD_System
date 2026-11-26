@@ -402,16 +402,20 @@ function calendarTaskReference(content, source) {
   if(reference.version!==taskSourceVersion(content)||reference.raw!==source.raw||reference.line!==source.line||content.split(/\r?\n/)[reference.line]!==reference.raw)throw new Error('任务内容已变化，请刷新日历后重试');
   return reference;
 }
+function calendarTaskRows(content) {
+  return content.split(/\r?\n/).map((raw,line)=>({raw,line})).filter(task=>/^[\s\t>]*(?:[-*+]|\d+[.)])\s+\[(.)\]\s*(.*)$/u.test(task.raw));
+}
 function calendarTaskReferences(content, indexed) {
-  const tasks=content.split(/\r?\n/).map((raw,line)=>({raw,line})).filter(task=>/^[\s\t>]*(?:[-*+]|\d+[.)])\s+\[(.)\]\s*(.*)$/u.test(task.raw)),byLine=new Map(indexed.map(task=>[task.line,task.raw]));
+  const tasks=calendarTaskRows(content),byLine=new Map(indexed.map(task=>[task.line,task.raw]));
   if(tasks.length!==indexed.length||tasks.some(task=>byLine.get(task.line)!==task.raw))return null;
   const version=taskSourceVersion(content);
   return new Map(tasks.map(task=>[task.line,{line:task.line,raw:task.raw,version,nativeCalendar:true}]));
 }
+// Calendar also accepts "- [ ]Task"; normalize only the parsing copy.
+const calendarTaskSpacing = raw => raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/, '$1 ');
 function calendarLeafTasks(content, indexed) {
   const rows = content.split(/\r?\n/), quotes = new Map(), parents = new Set();
-  // Calendar also accepts "- [ ]Task"; normalize only the parsing copy.
-  const parseable = rows.map(raw => raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/, '$1 ')).join('\n');
+  const parseable = rows.map(calendarTaskSpacing).join('\n');
   for (const task of indexed) quotes.set(quoteTaskRow(task.raw).depth, task.raw);
   for (const raw of quotes.values()) {
     const tasks = operationTaskTree(parseable, raw);
@@ -424,7 +428,7 @@ function calendarLeafTasks(content, indexed) {
 }
 function calendarTaskContexts(content, indexed) {
   const rows=content.split(/\r?\n/),byLine=new Map(indexed.map(task=>[task.line,task])),quotes=new Map(),contexts=new Map();
-  const parseable=rows.map(raw=>raw.replace(/^([ \t>]*(?:[-*+]|\d+[.)])\s+\[[^\]]\])(?=\S|$)/,'$1 ')).join('\n');
+  const parseable=rows.map(calendarTaskSpacing).join('\n');
   for(const task of indexed)quotes.set(quoteTaskRow(task.raw).depth,task.raw);
   const title=node=>node.title.replace(/(?:^|\s)#(?:doing|gtd\/(?:doing|waiting|someday))(?=\s|$)/g,'').trim();
   for(const raw of quotes.values()){
@@ -440,6 +444,20 @@ function calendarTaskContexts(content, indexed) {
     }
   }
   return contexts;
+}
+function focusTasksForDay(content, day) {
+  if (!content.includes(day)) return [];
+  const today = calendarTaskRows(content).filter(({raw}) => {
+    if (!raw.includes(day) || ['x','X','-','_'].includes(status(raw))) return false;
+    const {days, due} = rawTaskDates(raw);
+    return due === day || days.includes(day);
+  });
+  if (!today.length) return [];
+  const contexts = calendarTaskContexts(content, today);
+  return calendarLeafTasks(content, today).filter(task => contexts.has(task.line)).map(({line, raw}) => ({
+    line, raw, title: editableTaskName(calendarTaskSpacing(quoteTaskRow(raw).raw)) || '未命名任务',
+    parents: contexts.get(line)._gtdAncestors
+  }));
 }
 function calendarTaskInstances(tasks) {
   return tasks.flatMap(task => {
@@ -631,4 +649,4 @@ function buildAreaNote(data) {
   const name = validateProjectName(data.name);
   return '---\ntype: gtd-area\narea: ' + JSON.stringify(name) + '\nstatus: active\n---\n# ' + name + '\n\n[[00 GTD/首页|首页]] · [[00 GTD/00 工作区/00 功能页面/项目总览|项目]]\n\n## 项目\n\n```dataview\nLIST FROM ' + JSON.stringify(data.folder) + '\nSORT file.name ASC\n```\n';
 }
-module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, completeProjectTaskBranch, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };
+module.exports = { buildTaskLine, insertTask, validateProjectName, buildProjectNote, nextAreaFolder, buildAreaNote, listParentTasks, insertSubtask, retainedParent, projectTaskTree, partitionCompletedTasks, replaceProjectTask, completeProjectTaskBranch, editableTaskName, renameProjectTask, projectDeadlineValue, deleteProjectTask, restoreProjectTask, updateProjectTaskDate, stripTaskDays, taskDays, setTaskDays, setProjectTaskDay, migrateTaskDays, preserveTaskDays, calendarTaskReference, calendarTaskReferences, calendarLeafTasks, calendarTaskContexts, focusTasksForDay, calendarTaskInstances, calendarOverdueTasks, moveSiblingTask, orderProjectPaths, moveDisplayItem, prepareInboxMove, commitInboxMove };

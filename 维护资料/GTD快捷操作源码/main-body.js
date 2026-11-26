@@ -6,10 +6,11 @@ const AREAS = '00 GTD/00 工作区/02 领域';
 const ARCHIVE = '00 GTD/00 工作区/99 归档';
 const PROJECT_PAGE = 'gtd-project-page';
 const PROJECT_PROGRESS = '00 GTD/00 工作区/05 系统视图/项目进度';
+const FOCUS_STORAGE = 'gtd-quick-actions:focus';
 
 function installGtdPageTheme(plugin) {
   const { workspace, vault } = plugin.app;
-  const views = () => ['markdown', 'bases'].flatMap(type => workspace.getLeavesOfType(type).map(leaf => leaf.view));
+  const views = () => ['markdown', 'bases'].flatMap(type => workspace.getLeavesOfType(type).map(leaf => leaf.view)).filter(view => view.contentEl);
   const update = () => {
     for (const view of views()) {
       view.contentEl.classList.toggle('gtd-vault-page', !!view.file?.path.startsWith('00 GTD/'));
@@ -138,6 +139,73 @@ class EntryModal extends Modal {
   onClose() { this.entryClosed = true; this.contentEl.empty(); }
 }
 
+class FocusModal extends Modal {
+  constructor(plugin) { super(plugin.app); this.plugin = plugin; }
+  onOpen() {
+    const content = this.contentEl;
+    content.addClass('gtd-action-modal', 'gtd-focus-modal');
+    content.createEl('h2', {text:'开始专注'});
+    this.list = content.createDiv({cls:'gtd-focus-list', attr:{role:'radiogroup','aria-label':'今天的任务'}});
+    this.error = content.createDiv({cls:'gtd-form-error', attr:{role:'alert'}});
+    const form = content.createEl('form');
+    this.duration = form.createEl('fieldset', {cls:'gtd-focus-duration', attr:{'aria-label':'专注时长'}});
+    for (const minutes of [30, 60]) {
+      const preset = this.duration.createEl('button', {text:minutes+' 分钟', attr:{type:'button'}});
+      preset.onclick = () => this.start(minutes);
+    }
+    const custom = this.duration.createEl('input', {attr:{
+      type:'number', min:'1', step:'1', required:'', inputmode:'numeric', placeholder:'自定义分钟', 'aria-label':'自定义分钟数'
+    }});
+    this.duration.createEl('button', {text:'开始', cls:'mod-cta', attr:{type:'submit'}});
+    form.onsubmit = event => { event.preventDefault(); this.start(custom.valueAsNumber); };
+    this.loadTasks();
+  }
+  async loadTasks() {
+    this.selected = null;
+    this.duration.disabled = true;
+    this.list.textContent = '正在读取今天的任务…';
+    try {
+      const tasks = await this.plugin.listFocusTasks();
+      if (!this.list.isConnected) return;
+      this.list.empty();
+      this.duration.hidden = !tasks.length;
+      if (!tasks.length) this.list.createDiv({text:'今天没有已安排或到期的待办。可以在项目页点「今」加入一项。'});
+      for (const task of tasks) {
+        const row = this.list.createEl('label', {cls:'gtd-focus-choice'});
+        const radio = row.createEl('input', {attr:{type:'radio', name:'gtd-focus-task'}});
+        radio.onchange = () => { this.selected = task; this.duration.disabled = false; };
+        const label = row.createDiv();
+        label.createSpan({text:task.title});
+        label.createEl('small', {text:[task.project, ...task.parents].join(' › ')});
+      }
+    } catch (error) {
+      this.list.empty();
+      this.error.textContent = error.message || String(error);
+    }
+  }
+  async start(minutes) {
+    if (this.duration.disabled || !this.selected) return;
+    const clickedAt = Date.now(), task = this.selected;
+    this.duration.disabled = true;
+    this.error.empty();
+    try {
+      const current = await this.plugin.focusTasksInFile(task.path, this.plugin.todayDateKey());
+      if (!this.list.isConnected || this.selected !== task) return;
+      if (!current.some(item => item.line === task.line && item.raw === task.raw)) {
+        this.error.textContent = '这项任务的安排或内容已变，请重新选择。';
+        await this.loadTasks();
+        return;
+      }
+      this.plugin.startFocus(task.title, minutes, clickedAt);
+      this.close();
+    } catch (error) {
+      this.error.textContent = error.message || String(error);
+      this.duration.disabled = false;
+    }
+  }
+  onClose() { this.contentEl.empty(); }
+}
+
 class InboxMoveModal extends EntryModal {
   constructor(plugin, context) {
     super(plugin, '移入项目', 'move');
@@ -234,6 +302,7 @@ module.exports = class GtdQuickActions extends Plugin {
     this.data = (await this.loadData()) || {};
     this.calendarLayout = installCalendarLayout(this);
     this.register(() => this.calendarLayout?.destroy());
+    this.installFocusTimer();
     this.inlineTaskEntries = new Map();
     this.inlineTaskFocusKey = '';
     this.taskTitleEdits = new Map();
@@ -399,6 +468,57 @@ module.exports = class GtdQuickActions extends Plugin {
     }).catch(error=>new Notice(error.message||String(error))).finally(()=>this.undoShortcutBusy=false);
   }
   todayDateKey() { return window.moment().format('YYYY-MM-DD'); }
+  async listFocusTasks() {
+    const day = this.todayDateKey();
+    const paths = this.app.vault.getMarkdownFiles().map(file => file.path).filter(path =>
+      path.startsWith('00 GTD/') && !path.startsWith(ARCHIVE+'/') && !path.startsWith('00 GTD/00 工作区/04 模板/'));
+    const ordered = this.groupedProjectPaths(paths).flatMap(([,group]) => group);
+    return (await Promise.all(ordered.map(path => this.focusTasksInFile(path, day)))).flat();
+  }
+  async focusTasksInFile(path, day) {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return [];
+    const content = await this.app.vault.cachedRead(file);
+    return logic.focusTasksForDay(content, day).map(task => ({...task, path, project:file.basename}));
+  }
+  installFocusTimer() {
+    const saved = this.app.loadLocalStorage(FOCUS_STORAGE);
+    this.focusSession = Number.isSafeInteger(saved?.endsAt) && typeof saved.title === 'string' ? saved : null;
+    const resume = () => { if (this.focusSession) this.tickFocusTimer(); };
+    this.registerDomEvent(window, 'focus', resume);
+    this.registerDomEvent(document, 'visibilitychange', () => { if (!document.hidden) resume(); });
+    this.register(() => window.clearTimeout(this.focusTimeout));
+    resume();
+  }
+  openFocus() {
+    if (!this.focusSession) new FocusModal(this).open();
+    else if (this.focusSession.endsAt <= Date.now()) this.tickFocusTimer();
+    else this.setFocusSession(null);
+  }
+  startFocus(title, minutes, clickedAt) {
+    const endsAt = clickedAt + minutes * 60000;
+    if (!Number.isSafeInteger(minutes) || minutes < 1 || !Number.isSafeInteger(endsAt)) throw new Error('请输入有效的正整数分钟数。');
+    if (this.focusSession) throw new Error('已有一轮专注正在进行。');
+    this.setFocusSession({title, endsAt});
+  }
+  setFocusSession(session) {
+    this.app.saveLocalStorage(FOCUS_STORAGE, session);
+    this.focusSession = session;
+    this.tickFocusTimer();
+  }
+  tickFocusTimer() {
+    window.clearTimeout(this.focusTimeout);
+    if (this.focusSession) {
+      const {title, endsAt} = this.focusSession, left = endsAt - Date.now();
+      if (left <= 0) {
+        this.setFocusSession(null);
+        new Notice('「'+title+'」的专注时间到了', 4000);
+        return;
+      }
+      this.focusTimeout = window.setTimeout(() => this.tickFocusTimer(), (left - 1) % 1000 + 1);
+    }
+    this.calendarLayout.updateFocus();
+  }
   checkTaskDay() {
     const day=this.todayDateKey();
     if(day===this.currentDayKey)return;
