@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.14.7",
-  "builtAt": "2026-11-26T14:34:21+08:00",
+  "builtAt": "2026-11-26T14:49:12+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.15.0",
   "plugins": {
@@ -270,8 +270,8 @@
     },
     {
       "path": "00 GTD/使用说明.md",
-      "bytes": 1432,
-      "sha256": "a177069096da8d523a3948587c8dabfda7bf9f31090882092a621ab25df1e853"
+      "bytes": 5338,
+      "sha256": "773b6abf2a2f27b46ed4934a85004e32dcb6996f2acd96a2c02afde0ec05691e"
     },
     {
       "path": "00 GTD/首页.md",
