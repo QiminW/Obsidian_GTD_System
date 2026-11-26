@@ -1,7 +1,7 @@
 {
   "name": "Obsidian GTD 工作台",
   "version": "1.14.7",
-  "builtAt": "2026-11-26T14:49:12+08:00",
+  "builtAt": "2026-11-26T15:31:45+08:00",
   "minObsidianVersion": "1.13.1",
   "testedDesktopVersion": "1.15.0",
   "plugins": {
@@ -250,23 +250,23 @@
     },
     {
       "path": "00 GTD/00 工作区/06 图解/01-home.png",
-      "bytes": 27869,
-      "sha256": "ef89100473736eca069cbf22dfff83fe8c2135a4bd574a09b66891c47aa71450"
+      "bytes": 105150,
+      "sha256": "cf2c6125ffe1a9015abee07e8a9029c02bdef30b4def5488fecf535ccc122d01"
     },
     {
       "path": "00 GTD/00 工作区/06 图解/02-tasks.png",
-      "bytes": 36408,
-      "sha256": "f7541d671b48945e0a67ad9778462e1f3d14c15cba51c2016059dd4525d69d96"
+      "bytes": 148742,
+      "sha256": "6d1999aab83e127fdd493d6ce0a1db622ed936c519d056f793e609d31615a44d"
     },
     {
       "path": "00 GTD/00 工作区/06 图解/03-schedule.png",
-      "bytes": 17291,
-      "sha256": "a60b9435be59cda263d97e10b91e826cd6889a8f8a7e5be4ddc035d1f4b4499f"
+      "bytes": 195808,
+      "sha256": "1596f665f9d5a675aeb14310852e23e2e39e7c28dd56769b45ba77156b9daff7"
     },
     {
       "path": "00 GTD/00 工作区/06 图解/04-calendar.png",
-      "bytes": 25775,
-      "sha256": "3cf059c3f7687dcfe4b928bdf44ca71f7b4a5d865a2e5ccea6413d0111adb01f"
+      "bytes": 155017,
+      "sha256": "c3c56f4b320ebe26dd0e3bc3421e09fa0591b80849351f8593973ae9d9fd9b5a"
     },
     {
       "path": "00 GTD/使用说明.md",
